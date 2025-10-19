@@ -1,6 +1,4 @@
-# aer Distribution
-
-This repository produces the public `aer` command-line binaries and GitHub Action.
+# aer
 
 `aer` (Apex Execution Runtime) lets you validate Apex code, execute tests, and
 bring up a lightweight Salesforce-compatible runtime on your workstation. It is
@@ -20,8 +18,31 @@ cycles fast and reproducible.
    - macOS/Linux: `shasum -a 256 aer_<platform>.zip`
    - Windows: `Get-FileHash .\aer_windows_amd64.zip -Algorithm SHA256`
 
-When a new release is published you only need to replace the binary; your
-existing projects continue to work with the updated CLI.
+## GitHub Action
+
+To run `aer test` in your GitHub Actions pipeline, add a workflow like:
+
+```yaml
+name: Apex Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Apex Tests
+        uses: octoberswimmer/aer-dist@main
+        with:
+          source: sfdx
+```
+
+Adjust `with.source` for your project's Apex root, and pin the `uses:` clause to the latest released tag (for example `@v0.1.0`).
+
 
 ## Quick Start
 
