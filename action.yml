@@ -1,0 +1,192 @@
+name: Run AER Tests
+description: Run Apex tests with the AER CLI.
+author: October Swimmer
+branding:
+  color: blue
+  icon: play
+inputs:
+  source:
+    description: Path passed to `aer test` (typically your Apex source directory).
+    required: false
+    default: .
+  flags:
+    description: Additional flags appended after the source argument.
+    required: false
+    default: ""
+  version:
+    description: Release tag of the AER binary to install (for example `v1.2.3`). Use `latest` to resolve dynamically.
+    required: false
+    default: latest
+runs:
+  using: composite
+  steps:
+    - name: Resolve release tag
+      id: resolve
+      shell: bash
+      env:
+        ACTION_REPO: ${{ github.action_repository || github.repository }}
+      run: |
+        set -euo pipefail
+
+        repo="${ACTION_REPO}"
+        if [[ -z "$repo" ]]; then
+          echo "Unable to determine repository that hosts the action." >&2
+          exit 1
+        fi
+
+        requested="${{ inputs.version }}"
+        if [[ -z "$requested" || "$requested" == "latest" ]]; then
+          export ACTION_REPO="$repo"
+          version="$(python3 - <<'PY'
+import json, os, sys, urllib.request
+
+repo = os.environ["ACTION_REPO"]
+url = f"https://api.github.com/repos/{repo}/releases/latest"
+try:
+    with urllib.request.urlopen(url) as response:
+        if response.status >= 400:
+            raise SystemExit(f"Failed to resolve latest release (HTTP {response.status}).")
+        payload = json.load(response)
+except Exception as exc:
+    print(f"Error resolving latest release: {exc}", file=sys.stderr)
+    sys.exit(1)
+
+tag = payload.get("tag_name")
+if not tag:
+    print("Latest release is missing a tag name.", file=sys.stderr)
+    sys.exit(1)
+
+print(tag)
+PY
+)"
+        else
+          version="$requested"
+        fi
+
+        echo "version=$version" >> "$GITHUB_OUTPUT"
+        echo "repo=$repo" >> "$GITHUB_OUTPUT"
+    - name: Install aer CLI
+      id: install
+      shell: bash
+      env:
+        VERSION: ${{ steps.resolve.outputs.version }}
+        ACTION_REPO: ${{ steps.resolve.outputs.repo }}
+      run: |
+        set -euo pipefail
+
+        repo="${ACTION_REPO}"
+        os="${RUNNER_OS}"
+        arch="$(uname -m)"
+
+        case "$os" in
+          Linux) platform="linux" ;;
+          macOS) platform="darwin" ;;
+          Windows) platform="windows" ;;
+          *)
+            echo "Unsupported operating system: $os" >&2
+            exit 1
+            ;;
+        esac
+
+        case "$arch" in
+          x86_64|amd64)
+            cpu="amd64"
+            ;;
+          arm64|aarch64)
+            if [[ "$platform" == "windows" ]]; then
+              echo "Windows arm64 is not supported by published AER builds." >&2
+              exit 1
+            fi
+            cpu="arm64"
+            ;;
+          *)
+            echo "Unsupported CPU architecture: $arch" >&2
+            exit 1
+            ;;
+        esac
+
+        if [[ "$platform" == "windows" ]]; then
+          archive="aer_${platform}_amd64.zip"
+          binary="aer.exe"
+        else
+          archive="aer_${platform}_${cpu}.zip"
+          binary="aer"
+        fi
+
+        dest="$RUNNER_TEMP/aer"
+        mkdir -p "$dest"
+
+        export ACTION_REPO="$repo"
+        export VERSION
+        export ARCHIVE="$archive"
+        export BINARY="$binary"
+        export DEST="$dest"
+
+        python3 - <<'PY'
+import os
+import pathlib
+import shutil
+import sys
+import tempfile
+import urllib.request
+import zipfile
+
+repo = os.environ["ACTION_REPO"]
+version = os.environ["VERSION"]
+archive = os.environ["ARCHIVE"]
+binary = os.environ["BINARY"]
+dest = pathlib.Path(os.environ["DEST"])
+
+url = f"https://github.com/{repo}/releases/download/{version}/{archive}"
+tmpdir = pathlib.Path(tempfile.mkdtemp(prefix="aer-action-"))
+
+try:
+    zip_path = tmpdir / archive
+    with urllib.request.urlopen(url) as response:
+        if response.status >= 400:
+            raise SystemExit(f"Failed to download {archive} (HTTP {response.status}).")
+        with open(zip_path, "wb") as handle:
+            shutil.copyfileobj(response, handle)
+
+    with zipfile.ZipFile(zip_path) as zf:
+        candidates = [
+            info for info in zf.infolist()
+            if info.filename.rstrip("/").endswith(binary)
+        ]
+        if not candidates:
+            raise SystemExit(f"{archive} does not contain {binary}.")
+        target = candidates[0]
+        zf.extract(target, tmpdir)
+        extracted = tmpdir / target.filename
+
+        if extracted.is_dir():
+            extracted = extracted / binary
+
+        dest.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(extracted), dest / binary)
+finally:
+    shutil.rmtree(tmpdir, ignore_errors=True)
+PY
+
+        chmod +x "$dest/$binary" 2>/dev/null || true
+        echo "$dest" >> "$GITHUB_PATH"
+        echo "binary=$dest/$binary" >> "$GITHUB_OUTPUT"
+    - name: Run aer test
+      shell: bash
+      env:
+        SOURCE: ${{ inputs.source }}
+        FLAGS: ${{ inputs.flags }}
+      run: |
+        set -euo pipefail
+
+        if [[ -z "${SOURCE}" ]]; then
+          echo "The source input cannot be empty." >&2
+          exit 1
+        fi
+
+        if [[ -z "${FLAGS}" ]]; then
+          aer test "${SOURCE}"
+        else
+          # shellcheck disable=SC2086
+          aer test "${SOURCE}" ${FLAGS}
+        fi
