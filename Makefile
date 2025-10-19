@@ -6,10 +6,11 @@ LINUX_ARM64 := $(EXECUTABLE)_linux_arm64
 DARWIN_AMD64 := $(EXECUTABLE)_darwin_amd64
 DARWIN_ARM64 := $(EXECUTABLE)_darwin_arm64
 ALL := $(WINDOWS) $(LINUX) $(LINUX_ARM64) $(DARWIN_AMD64) $(DARWIN_ARM64)
+RELEASE_ASSETS := $(addsuffix .zip,$(basename $(ALL))) SHA256SUMS-$(VERSION)
 
 GO_BUILD_FLAGS := -trimpath
 
-.PHONY: default install install-debug dist clean checksum
+.PHONY: default install install-debug dist clean checksum release
 
 default:
 	go build $(GO_BUILD_FLAGS)
@@ -48,6 +49,20 @@ dist: $(addsuffix .zip,$(basename $(ALL)))
 checksum: dist
 	shasum -a 256 $(addsuffix .zip,$(basename $(ALL))) > SHA256SUMS-$(VERSION)
 
+release: checksum
+	@if ! command -v gh >/dev/null 2>&1; then \
+		echo "gh CLI is required for 'make release'."; \
+		exit 1; \
+	fi
+	@if [ "$(VERSION)" = "dev" ] || printf "%s" "$(VERSION)" | grep -q "dirty"; then \
+		echo "VERSION '$(VERSION)' is not a clean tag. Tag the commit or invoke 'make release VERSION=vX.Y.Z' with a published tag."; \
+		exit 1; \
+	fi
+	@if ! git rev-parse --verify "refs/tags/$(VERSION)" >/dev/null 2>&1; then \
+		echo "Tag '$(VERSION)' does not exist. Create the tag before running 'make release'."; \
+		exit 1; \
+	fi
+	gh release create "$(VERSION)" --title "aer $(VERSION)" --generate-notes --verify-tag $(RELEASE_ASSETS)
+
 clean:
 	-rm -f $(EXECUTABLE) $(EXECUTABLE).exe $(EXECUTABLE)_* *.zip SHA256SUMS-*
-
