@@ -22,139 +22,38 @@ runs:
   steps:
     - name: Resolve release tag
       id: resolve
-      shell: python
-      env:
-        ACTION_REPO: ${{ github.action_repository }}
-        FALLBACK_REPO: ${{ github.repository }}
-        REQUESTED_VERSION: ${{ inputs.version }}
+      shell: bash
+      working-directory: ${{ github.action_path }}
       run: |
-        import json
-        import os
-        import sys
-        import urllib.request
-
-        repo = os.environ.get("ACTION_REPO") or os.environ.get("FALLBACK_REPO")
-        if not repo:
-          sys.stderr.write("Unable to determine repository that hosts the action.\n")
-          sys.exit(1)
-
-        requested = (os.environ.get("REQUESTED_VERSION") or "").strip()
-        version = requested
-
-        if not requested or requested == "latest":
-          url = f"https://api.github.com/repos/{repo}/releases/latest"
-          try:
-            with urllib.request.urlopen(url) as response:
-              if response.status >= 400:
-                raise SystemExit(f"Failed to resolve latest release (HTTP {response.status}).")
-              payload = json.load(response)
-          except Exception as exc:
-            sys.stderr.write(f"Error resolving latest release: {exc}\n")
-            sys.exit(1)
-
-          tag = payload.get("tag_name")
-          if not tag:
-            sys.stderr.write("Latest release is missing a tag name.\n")
-            sys.exit(1)
-          version = tag
-
-        output_path = os.environ["GITHUB_OUTPUT"]
-        with open(output_path, "a", encoding="utf-8") as handle:
-          handle.write(f"version={version}\n")
-          handle.write(f"repo={repo}\n")
+        set -euo pipefail
+        action_repo="${{ github.action_repository }}"
+        if [[ -z "${action_repo}" ]]; then
+          action_repo="octoberswimmer/aer-dist"
+        fi
+        go run ./cmd/actions/resolve \
+          --requested "${{ inputs.version }}" \
+          --repo "${action_repo}" \
+          --fallback "${{ github.repository }}"
 
     - name: Install aer CLI
       id: install
-      shell: python
+      shell: bash
+      working-directory: ${{ github.action_path }}
       env:
         ACTION_REPO: ${{ steps.resolve.outputs.repo }}
         VERSION: ${{ steps.resolve.outputs.version }}
-        RUNNER_TEMP: ${{ runner.temp }}
         RUNNER_OS: ${{ runner.os }}
+        RUNNER_ARCH: ${{ runner.arch }}
+        RUNNER_TEMP: ${{ runner.temp }}
       run: |
-        import os
-        import pathlib
-        import platform
-        import shutil
-        import sys
-        import tempfile
-        import urllib.request
-        import zipfile
-
-        repo = os.environ["ACTION_REPO"]
-        version = os.environ["VERSION"]
-
-        os_name = os.environ.get("RUNNER_OS", "").lower()
-        arch = platform.machine().lower()
-
-        if os_name == "linux":
-          platform_key = "linux"
-        elif os_name == "macos":
-          platform_key = "darwin"
-        elif os_name == "windows":
-          platform_key = "windows"
-        else:
-          sys.stderr.write(f"Unsupported operating system: {os_name!r}\n")
-          sys.exit(1)
-
-        if arch in ("x86_64", "amd64"):
-          cpu = "amd64"
-        elif arch in ("arm64", "aarch64"):
-          if platform_key == "windows":
-            sys.stderr.write("Windows arm64 is not supported by published AER builds.\n")
-            sys.exit(1)
-          cpu = "arm64"
-        else:
-          sys.stderr.write(f"Unsupported CPU architecture: {arch!r}\n")
-          sys.exit(1)
-
-        if platform_key == "windows":
-          archive_name = "aer_windows_amd64.zip"
-          binary_name = "aer.exe"
-        else:
-          archive_name = f"aer_{platform_key}_{cpu}.zip"
-          binary_name = "aer"
-
-        dest_dir = pathlib.Path(os.environ["RUNNER_TEMP"]) / "aer"
-        dest_dir.mkdir(parents=True, exist_ok=True)
-
-        url = f"https://github.com/{repo}/releases/download/{version}/{archive_name}"
-        tmpdir = pathlib.Path(tempfile.mkdtemp(prefix="aer-action-"))
-        try:
-          archive_path = tmpdir / archive_name
-          with urllib.request.urlopen(url) as response:
-            if response.status >= 400:
-              raise SystemExit(f"Failed to download {archive_name} (HTTP {response.status}).")
-            with open(archive_path, "wb") as outfile:
-              shutil.copyfileobj(response, outfile)
-
-          with zipfile.ZipFile(archive_path) as zf:
-            candidates = [
-              member for member in zf.infolist()
-              if not member.is_dir() and member.filename.rstrip("/").endswith(binary_name)
-            ]
-            if not candidates:
-              raise SystemExit(f"{archive_name} does not contain {binary_name}.")
-            target = candidates[0]
-            extracted_path = tmpdir / target.filename
-            extracted_path.parent.mkdir(parents=True, exist_ok=True)
-            zf.extract(target, tmpdir)
-
-          final_path = dest_dir / binary_name
-          shutil.move(str(extracted_path), final_path)
-        finally:
-          shutil.rmtree(tmpdir, ignore_errors=True)
-
-        if platform_key != "windows":
-          final_path.chmod(final_path.stat().st_mode | 0o111)
-
-        github_path = os.environ["GITHUB_PATH"]
-        with open(github_path, "a", encoding="utf-8") as handle:
-          handle.write(f"{dest_dir}\n")
-
-        output_path = os.environ["GITHUB_OUTPUT"]
-        with open(output_path, "a", encoding="utf-8") as handle:
-          handle.write(f"binary={final_path}\n")
+        set -euo pipefail
+        dest="${RUNNER_TEMP}/aer"
+        go run ./cmd/actions/install \
+          --repo "${ACTION_REPO}" \
+          --version "${VERSION}" \
+          --runner-os "${RUNNER_OS}" \
+          --runner-arch "${RUNNER_ARCH}" \
+          --dest "${dest}"
 
     - name: Run aer test
       shell: bash
