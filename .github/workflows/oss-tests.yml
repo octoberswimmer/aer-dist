@@ -23,3 +23,5 @@ jobs:
         uses: ./
         with:
           source: ${{ env.DLRS_SOURCE }}
+        env:
+          AER_LICENSE_KEY: eyJlIjoiZ2l0aHViQG9jdG9iZXJzd2ltbWVyLmNvbSIsIngiOjE3NjM2NTg4MzAsIm4iOjEwMDAsInMiOiJEMTZpVEJ5bTA2bjdPTk1HQzdXYnlHaHRjZHFqT2tlOE1tVW5KdmUxWUZvQVQvU2R5Z28wbk50VXBCdWhOWVIzMVA1YzF4ZlgzbTFKVW9tVnNMZ2NDUT09In0=
