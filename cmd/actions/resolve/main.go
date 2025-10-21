@@ -66,6 +66,9 @@ func resolveLatestTag(repo string) (string, error) {
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode == http.StatusNotFound {
+		return latestFromList(repo)
+	}
 	if resp.StatusCode >= 400 {
 		return "", fmt.Errorf("unexpected HTTP status %s", resp.Status)
 	}
@@ -81,4 +84,38 @@ func resolveLatestTag(repo string) (string, error) {
 	}
 
 	return payload.Tag, nil
+}
+
+func latestFromList(repo string) (string, error) {
+	req, err := http.NewRequest("GET", fmt.Sprintf("https://api.github.com/repos/%s/releases?per_page=1", repo), nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Accept", "application/vnd.github+json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		return "", fmt.Errorf("unexpected HTTP status %s", resp.Status)
+	}
+
+	var releases []struct {
+		Tag   string `json:"tag_name"`
+		Draft bool   `json:"draft"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&releases); err != nil {
+		return "", err
+	}
+	for _, rel := range releases {
+		if rel.Draft {
+			continue
+		}
+		if rel.Tag != "" {
+			return rel.Tag, nil
+		}
+	}
+	return "", fmt.Errorf("no published releases found")
 }
