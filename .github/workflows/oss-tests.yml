@@ -1,0 +1,25 @@
+name: OSS Apex Tests
+
+on:
+  workflow_dispatch:
+
+jobs:
+  dlrs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout action
+        uses: actions/checkout@v4
+
+      - name: Fetch dlrs release/2.23 sources
+        run: |
+          set -euo pipefail
+          workdir="oss/declarative-lookup-rollup-summaries"
+          mkdir -p "${workdir}"
+          curl -sSL https://github.com/SFDO-Community/declarative-lookup-rollup-summaries/archive/refs/tags/release/2.23.tar.gz \
+            | tar xz --strip-components=1 -C "${workdir}"
+          echo "DLRS_SOURCE=${workdir}/dlrs" >> "$GITHUB_ENV"
+
+      - name: Run aer test (dlrs release/2.23)
+        uses: ./
+        with:
+          source: ${{ env.DLRS_SOURCE }}
