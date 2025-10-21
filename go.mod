@@ -2,6 +2,8 @@ module aer
 
 go 1.24.6
 
+require github.com/octoberswimmer/aer v0.0.0-20251021174718-d71e23e9f0a8
+
 require (
 	github.com/ForceCLI/config v0.0.0-20230217143549-9149d42a3c99 // indirect
 	github.com/ForceCLI/force v1.0.11-0.20250716134127-ff03e80d640e // indirect
@@ -23,7 +25,6 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/nbio/xml v0.0.0-20251016084110-a619c1115f34 // indirect
 	github.com/ncruces/go-strftime v0.1.9 // indirect
-	github.com/octoberswimmer/aer v0.0.0-20251013181459-f1275d79dad6 // indirect
 	github.com/octoberswimmer/sformula v0.2.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
