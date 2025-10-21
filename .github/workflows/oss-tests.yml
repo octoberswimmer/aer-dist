@@ -23,3 +23,5 @@ jobs:
         uses: ./
         with:
           source: ${{ env.DLRS_SOURCE }}
+        env:
+          AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
