@@ -2,14 +2,13 @@ module aer
 
 go 1.24.6
 
-require github.com/octoberswimmer/aer v0.0.0
-
 require (
 	github.com/ForceCLI/config v0.0.0-20230217143549-9149d42a3c99 // indirect
 	github.com/ForceCLI/force v1.0.11-0.20250716134127-ff03e80d640e // indirect
 	github.com/ForceCLI/force-md v0.33.0 // indirect
 	github.com/ForceCLI/inflect v0.0.0-20130829110746-cc00b5ad7a6a // indirect
 	github.com/ViViDboarder/gotifier v0.0.0-20140619195515-0f19f3d7c54c // indirect
+	github.com/adrg/xdg v0.4.0 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
 	github.com/cwarden/mergo v0.3.12-0.20210528180603-9b708ca2c584 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
@@ -22,8 +21,9 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
-	github.com/nbio/xml v0.0.0-20240718025449-4db9e55cd3bf // indirect
+	github.com/nbio/xml v0.0.0-20251016084110-a619c1115f34 // indirect
 	github.com/ncruces/go-strftime v0.1.9 // indirect
+	github.com/octoberswimmer/aer v0.0.0-20251013181459-f1275d79dad6 // indirect
 	github.com/octoberswimmer/sformula v0.2.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
@@ -41,5 +41,3 @@ require (
 	modernc.org/memory v1.11.0 // indirect
 	modernc.org/sqlite v1.38.2 // indirect
 )
-
-replace github.com/octoberswimmer/aer => ../aer
