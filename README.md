@@ -43,6 +43,17 @@ jobs:
 
 Adjust `with.source` for your project's Apex root, and pin the `uses:` clause to the latest released tag (for example `@v0.1.0`).
 
+Set a license key for production use (running more than 100 tests).
+
+```yaml
+      - name: Run Apex Tests
+        uses: octoberswimmer/aer-dist@main
+        with:
+          source: sfdx
+        env:
+          AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
+```
+
 
 ## Quick Start
 
