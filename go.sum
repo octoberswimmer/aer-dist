@@ -48,8 +48,8 @@ github.com/nbio/xml v0.0.0-20251016084110-a619c1115f34 h1:nl44SgZciAoU7v6eR0aDoH
 github.com/nbio/xml v0.0.0-20251016084110-a619c1115f34/go.mod h1:990JnYmJZFrx1vI1TALoD6/fCqnWlTx2FrPbYy2wi5I=
 github.com/ncruces/go-strftime v0.1.9 h1:bY0MQC28UADQmHmaF5dgpLmImcShSi2kHU9XLdhx/f4=
 github.com/ncruces/go-strftime v0.1.9/go.mod h1:Fwc5htZGVVkseilnfgOVb9mKy6w1naJmn9CehxcKcls=
-github.com/octoberswimmer/aer v0.0.0-20251023212538-1f7c3968e5a8 h1:T486nvLXrZitcJ+lYEaTHEU9tRPXeYU2qp+TqqjW1Ww=
-github.com/octoberswimmer/aer v0.0.0-20251023212538-1f7c3968e5a8/go.mod h1:/fRwr2xLW9JyKsRExslotvwfFyM6zuhW+uOUbOU3EsM=
+github.com/octoberswimmer/aer v0.0.0-20251023230436-404728edf6bc h1:eOeaXDieiRvYLMC65U9QJKHgWZXDt/yCtxMfxa52OrE=
+github.com/octoberswimmer/aer v0.0.0-20251023230436-404728edf6bc/go.mod h1:/fRwr2xLW9JyKsRExslotvwfFyM6zuhW+uOUbOU3EsM=
 github.com/octoberswimmer/sformula v0.3.0 h1:XYHKBP9ibE/mw3fC0X7J+1fnI1dtz+OIV3ZGi+VM6f0=
 github.com/octoberswimmer/sformula v0.3.0/go.mod h1:isuBo3KPKaHf+TzZ9fNVl0MSmH2z35uLixmjfXmjp+Q=
 github.com/onsi/ginkgo v1.12.0 h1:Iw5WCbBcaAAd0fpRb1c9r5YCylv4XDoCSigm1zLevwU=
