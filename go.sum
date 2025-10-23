@@ -20,6 +20,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/dustin/go-humanize v1.0.1 h1:GzkhY7T5VNhEkwH0PVJgjz+fX1rhBrR7pRT3mDkpeCY=
 github.com/dustin/go-humanize v1.0.1/go.mod h1:Mu1zIs6XwVuF/gI1OepvI0qD18qycQx+mFykh5fBlto=
+github.com/fsnotify/fsnotify v1.4.9 h1:hsms1Qyu0jgnwNXIxa+/V/PDsU6CfLf6CNO8H7IWoS4=
+github.com/fsnotify/fsnotify v1.4.9/go.mod h1:znqG4EE+3YCdAaPaxE2ZRY/06pZUdp0tY4IgpuI1SZQ=
 github.com/golang-jwt/jwt/v5 v5.2.3 h1:kkGXqQOBSDDWRhWNXTFpqGSCMyh/PLnqUvMGJPDJDs0=
 github.com/golang-jwt/jwt/v5 v5.2.3/go.mod h1:pqrtFR0X4osieyHYxtmOUWsAWrfe1Q5UVIyoH402zdk=
 github.com/golang/protobuf v1.5.3 h1:KhyjKVUg7Usr/dYsdSqoFveMYd5ko72D+zANwlG1mmg=
@@ -46,10 +48,10 @@ github.com/nbio/xml v0.0.0-20251016084110-a619c1115f34 h1:nl44SgZciAoU7v6eR0aDoH
 github.com/nbio/xml v0.0.0-20251016084110-a619c1115f34/go.mod h1:990JnYmJZFrx1vI1TALoD6/fCqnWlTx2FrPbYy2wi5I=
 github.com/ncruces/go-strftime v0.1.9 h1:bY0MQC28UADQmHmaF5dgpLmImcShSi2kHU9XLdhx/f4=
 github.com/ncruces/go-strftime v0.1.9/go.mod h1:Fwc5htZGVVkseilnfgOVb9mKy6w1naJmn9CehxcKcls=
-github.com/octoberswimmer/aer v0.0.0-20251021174718-d71e23e9f0a8 h1:QavdB6jIdiowbmFVF+pMrQzggiFT/XjrCzgnelsQNv4=
-github.com/octoberswimmer/aer v0.0.0-20251021174718-d71e23e9f0a8/go.mod h1:Pfe5NlQHaGLgTR2sGNNG93ntUFmaXwg9mnAbovV10fA=
-github.com/octoberswimmer/sformula v0.2.0 h1:1vK7zlQreamVwTiWhuAth7VHKafhgOC0UZ7NxSlRB40=
-github.com/octoberswimmer/sformula v0.2.0/go.mod h1:isuBo3KPKaHf+TzZ9fNVl0MSmH2z35uLixmjfXmjp+Q=
+github.com/octoberswimmer/aer v0.0.0-20251023212538-1f7c3968e5a8 h1:T486nvLXrZitcJ+lYEaTHEU9tRPXeYU2qp+TqqjW1Ww=
+github.com/octoberswimmer/aer v0.0.0-20251023212538-1f7c3968e5a8/go.mod h1:/fRwr2xLW9JyKsRExslotvwfFyM6zuhW+uOUbOU3EsM=
+github.com/octoberswimmer/sformula v0.3.0 h1:XYHKBP9ibE/mw3fC0X7J+1fnI1dtz+OIV3ZGi+VM6f0=
+github.com/octoberswimmer/sformula v0.3.0/go.mod h1:isuBo3KPKaHf+TzZ9fNVl0MSmH2z35uLixmjfXmjp+Q=
 github.com/onsi/ginkgo v1.12.0 h1:Iw5WCbBcaAAd0fpRb1c9r5YCylv4XDoCSigm1zLevwU=
 github.com/onsi/ginkgo v1.12.0/go.mod h1:oUhWkIvk5aDxtKvDDuw8gItl8pKl42LzjC9KZE0HfGg=
 github.com/onsi/gomega v1.10.0 h1:Gwkk+PTu/nfOwNMtUB/mRUv0X7ewW5dO4AERT1ThVKo=
