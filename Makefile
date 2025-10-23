@@ -21,19 +21,19 @@ install:
 install-debug:
 	go install $(GO_BUILD_FLAGS) -gcflags="all=-N -l"
 
-$(WINDOWS):
+$(WINDOWS): go.mod
 	env CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build $(GO_BUILD_FLAGS) -o $@
 
-$(LINUX):
+$(LINUX): go.mod
 	env CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build $(GO_BUILD_FLAGS) -o $@
 
-$(LINUX_ARM64):
+$(LINUX_ARM64): go.mod
 	env CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build $(GO_BUILD_FLAGS) -o $@
 
-$(DARWIN_AMD64):
+$(DARWIN_AMD64): go.mod
 	env CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build $(GO_BUILD_FLAGS) -o $@
 
-$(DARWIN_ARM64):
+$(DARWIN_ARM64): go.mod
 	env CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build $(GO_BUILD_FLAGS) -o $@
 
 $(basename $(WINDOWS)).zip: $(WINDOWS)
