@@ -1,7 +1,5 @@
-github.com/ForceCLI/config v0.0.0-20230217143549-9149d42a3c99 h1:H2axnitaP3Dw+tocMHPQHjM2wJ/+grF8sOIQGaJeEsg=
-github.com/ForceCLI/config v0.0.0-20230217143549-9149d42a3c99/go.mod h1:WHFXv3VIHldTnYGmWAXAxsu4O754A9Zakq4DedI8PSA=
-github.com/ForceCLI/force v1.0.11-0.20250716134127-ff03e80d640e h1:C8tPC1vloFoCqSdiScF+zBQjZZ2sa/dLtK0Zjz+0hh8=
-github.com/ForceCLI/force v1.0.11-0.20250716134127-ff03e80d640e/go.mod h1:S+csSNhBOHrRsRV7PMKhmPP7N4SBLYJMrQzEc/OHLTs=
+github.com/ForceCLI/force v1.4.3-0.20251024162144-182768c80c6c h1:/46JQPYmyRCKry7bhz80bW9zPMwFI2q2nU8sxFvfjjs=
+github.com/ForceCLI/force v1.4.3-0.20251024162144-182768c80c6c/go.mod h1:peudCetOGrqSdcXK5nsTBLpuEHGSXF56FfrFaI/gCV8=
 github.com/ForceCLI/force-md v0.33.0 h1:xOvoE35VN7H4ajZ9dRUH/91mr16r3tMJA0ZqCCRUdxg=
 github.com/ForceCLI/force-md v0.33.0/go.mod h1:NUnIP1EiLSFDet6i2Oa7L4jiwxeIxzZkyfm93iMYBBI=
 github.com/ForceCLI/inflect v0.0.0-20130829110746-cc00b5ad7a6a h1:mMd54YgLoeupNpbph3KdwvF58O0lZ72RQaJ2cFPOFDE=
@@ -42,14 +40,12 @@ github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2
 github.com/inconshreveable/mousetrap v1.1.0/go.mod h1:vpF70FUmC8bwa3OWnCshd2FqLfsEA9PFc4w1p2J65bw=
 github.com/mattn/go-isatty v0.0.20 h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWEY=
 github.com/mattn/go-isatty v0.0.20/go.mod h1:W+V8PltTTMOvKvAeJH7IuucS94S2C6jfK/D7dTCTo3Y=
-github.com/mitchellh/go-homedir v1.1.0 h1:lukF9ziXFxDFPkA1vsr5zpc1XuPDn/wFntq5mG+4E0Y=
-github.com/mitchellh/go-homedir v1.1.0/go.mod h1:SfyaCUpYCn1Vlf4IUYiD9fPX4A5wJrkLzIz1N1q0pr0=
 github.com/nbio/xml v0.0.0-20251016084110-a619c1115f34 h1:nl44SgZciAoU7v6eR0aDoHlyIueb2wGF1QqgsEfTyeI=
 github.com/nbio/xml v0.0.0-20251016084110-a619c1115f34/go.mod h1:990JnYmJZFrx1vI1TALoD6/fCqnWlTx2FrPbYy2wi5I=
 github.com/ncruces/go-strftime v0.1.9 h1:bY0MQC28UADQmHmaF5dgpLmImcShSi2kHU9XLdhx/f4=
 github.com/ncruces/go-strftime v0.1.9/go.mod h1:Fwc5htZGVVkseilnfgOVb9mKy6w1naJmn9CehxcKcls=
-github.com/octoberswimmer/aer v0.0.0-20251023230436-404728edf6bc h1:eOeaXDieiRvYLMC65U9QJKHgWZXDt/yCtxMfxa52OrE=
-github.com/octoberswimmer/aer v0.0.0-20251023230436-404728edf6bc/go.mod h1:/fRwr2xLW9JyKsRExslotvwfFyM6zuhW+uOUbOU3EsM=
+github.com/octoberswimmer/aer v0.0.0-20251024213703-20a6a23154fe h1:UXC5FV72/cdUnFRyFctAH1oFctZBnbsiqW5QQB2J7Ag=
+github.com/octoberswimmer/aer v0.0.0-20251024213703-20a6a23154fe/go.mod h1:0liUnCdTZ5Knjk7B4nzRzJ4DwNbjwY/Zi01Aq+687lg=
 github.com/octoberswimmer/sformula v0.3.0 h1:XYHKBP9ibE/mw3fC0X7J+1fnI1dtz+OIV3ZGi+VM6f0=
 github.com/octoberswimmer/sformula v0.3.0/go.mod h1:isuBo3KPKaHf+TzZ9fNVl0MSmH2z35uLixmjfXmjp+Q=
 github.com/onsi/ginkgo v1.12.0 h1:Iw5WCbBcaAAd0fpRb1c9r5YCylv4XDoCSigm1zLevwU=
