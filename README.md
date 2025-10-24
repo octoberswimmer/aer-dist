@@ -1,3 +1,5 @@
+[![OSS Apex Tests](https://github.com/octoberswimmer/aer-dist/actions/workflows/oss-tests.yml/badge.svg)](https://github.com/octoberswimmer/aer-dist/actions/workflows/oss-tests.yml)
+
 # aer
 
 `aer` (Apex Execution Runtime) lets you validate Apex code, execute tests, and
