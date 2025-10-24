@@ -46,6 +46,8 @@ github.com/ncruces/go-strftime v0.1.9 h1:bY0MQC28UADQmHmaF5dgpLmImcShSi2kHU9XLdh
 github.com/ncruces/go-strftime v0.1.9/go.mod h1:Fwc5htZGVVkseilnfgOVb9mKy6w1naJmn9CehxcKcls=
 github.com/octoberswimmer/aer v0.0.0-20251024213703-20a6a23154fe h1:UXC5FV72/cdUnFRyFctAH1oFctZBnbsiqW5QQB2J7Ag=
 github.com/octoberswimmer/aer v0.0.0-20251024213703-20a6a23154fe/go.mod h1:0liUnCdTZ5Knjk7B4nzRzJ4DwNbjwY/Zi01Aq+687lg=
+github.com/octoberswimmer/aer v0.0.0-20251024231326-1af032129138 h1:rJ0gDCN6vL16O3lFQ1rfoXzqDAvuXsL/ZcrUm4nNi5o=
+github.com/octoberswimmer/aer v0.0.0-20251024231326-1af032129138/go.mod h1:0liUnCdTZ5Knjk7B4nzRzJ4DwNbjwY/Zi01Aq+687lg=
 github.com/octoberswimmer/sformula v0.3.0 h1:XYHKBP9ibE/mw3fC0X7J+1fnI1dtz+OIV3ZGi+VM6f0=
 github.com/octoberswimmer/sformula v0.3.0/go.mod h1:isuBo3KPKaHf+TzZ9fNVl0MSmH2z35uLixmjfXmjp+Q=
 github.com/onsi/ginkgo v1.12.0 h1:Iw5WCbBcaAAd0fpRb1c9r5YCylv4XDoCSigm1zLevwU=

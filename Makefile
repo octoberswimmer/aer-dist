@@ -9,32 +9,33 @@ ALL := $(WINDOWS) $(LINUX) $(LINUX_ARM64) $(DARWIN_AMD64) $(DARWIN_ARM64)
 RELEASE_ASSETS := $(addsuffix .zip,$(basename $(ALL))) SHA256SUMS-$(VERSION)
 
 GO_BUILD_FLAGS := -trimpath
+GO_LDFLAGS := -X main.version=$(VERSION)
 
 .PHONY: default install install-debug dist clean checksum release
 
 default:
-	go build $(GO_BUILD_FLAGS)
+	go build $(GO_BUILD_FLAGS) -ldflags "$(GO_LDFLAGS)"
 
 install:
-	go install $(GO_BUILD_FLAGS)
+	go install $(GO_BUILD_FLAGS) -ldflags "$(GO_LDFLAGS)"
 
 install-debug:
-	go install $(GO_BUILD_FLAGS) -gcflags="all=-N -l"
+	go install $(GO_BUILD_FLAGS) -ldflags "$(GO_LDFLAGS)" -gcflags="all=-N -l"
 
 $(WINDOWS): go.mod
-	env CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build $(GO_BUILD_FLAGS) -o $@
+	env CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build $(GO_BUILD_FLAGS) -ldflags "$(GO_LDFLAGS)" -o $@
 
 $(LINUX): go.mod
-	env CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build $(GO_BUILD_FLAGS) -o $@
+	env CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build $(GO_BUILD_FLAGS) -ldflags "$(GO_LDFLAGS)" -o $@
 
 $(LINUX_ARM64): go.mod
-	env CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build $(GO_BUILD_FLAGS) -o $@
+	env CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build $(GO_BUILD_FLAGS) -ldflags "$(GO_LDFLAGS)" -o $@
 
 $(DARWIN_AMD64): go.mod
-	env CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build $(GO_BUILD_FLAGS) -o $@
+	env CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build $(GO_BUILD_FLAGS) -ldflags "$(GO_LDFLAGS)" -o $@
 
 $(DARWIN_ARM64): go.mod
-	env CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build $(GO_BUILD_FLAGS) -o $@
+	env CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build $(GO_BUILD_FLAGS) -ldflags "$(GO_LDFLAGS)" -o $@
 
 $(basename $(WINDOWS)).zip: $(WINDOWS)
 	zip $@ $<
