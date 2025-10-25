@@ -38,10 +38,12 @@ $(DARWIN_ARM64): go.mod
 	env CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build $(GO_BUILD_FLAGS) -ldflags "$(GO_LDFLAGS)" -o $@
 
 $(basename $(WINDOWS)).zip: $(WINDOWS)
+	@rm -f $@
 	zip $@ $<
 	7za rn $@ $< $(EXECUTABLE).exe
 
 %.zip: %
+	@rm -f $@
 	zip $@ $<
 	7za rn $@ $< $(EXECUTABLE)
 
