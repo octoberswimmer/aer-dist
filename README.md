@@ -64,9 +64,17 @@ Set a license key for production use (running more than 100 tests).
 2. Execute your test suite with `aer test sfdx` (add `-f NamePattern`
    to focus on specific test classes).
 3. Run individual code paths with `aer run ClassName.methodName --path sfdx`.
+4. Use the interactive debugger to step through code, inspect variables, and
+   troubleshoot issues within VS Code with `aer test --debug` or `aer exec
+   --debug`.
 
 `aer` reads SObject metadata alongside your source so tests behave like they
 would in Salesforce.
+
+**Learn more:**
+- [Getting Started Guide](https://www.octoberswimmer.com/tools/aer/getting-started/)
+- [Documentation](https://www.octoberswimmer.com/tools/aer/docs/)
+- [Subscribe](https://www.octoberswimmer.com/tools/aer/subscribe/)
 
 ## Working With Salesforce Projects
 
