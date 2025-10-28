@@ -60,6 +60,7 @@ runs:
       env:
         SOURCE: ${{ inputs.source }}
         FLAGS: ${{ inputs.flags }}
+        GITHUB_TOKEN: ${{ github.token }}
       run: |
         set -euo pipefail
 
