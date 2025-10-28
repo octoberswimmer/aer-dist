@@ -2,7 +2,7 @@ module aer
 
 go 1.24.6
 
-require github.com/octoberswimmer/aer v0.0.0-20251027214523-71e6bbc9e74e
+require github.com/octoberswimmer/aer v0.0.10
 
 require (
 	github.com/ForceCLI/force v1.4.3-0.20251024162144-182768c80c6c // indirect

@@ -48,8 +48,8 @@ github.com/nbio/xml v0.0.0-20251016084110-a619c1115f34 h1:nl44SgZciAoU7v6eR0aDoH
 github.com/nbio/xml v0.0.0-20251016084110-a619c1115f34/go.mod h1:990JnYmJZFrx1vI1TALoD6/fCqnWlTx2FrPbYy2wi5I=
 github.com/ncruces/go-strftime v0.1.9 h1:bY0MQC28UADQmHmaF5dgpLmImcShSi2kHU9XLdhx/f4=
 github.com/ncruces/go-strftime v0.1.9/go.mod h1:Fwc5htZGVVkseilnfgOVb9mKy6w1naJmn9CehxcKcls=
-github.com/octoberswimmer/aer v0.0.0-20251027214523-71e6bbc9e74e h1:BWo9PmIjejERwOUkRdvPbi4Bo6seJAB0fKxvwW9zSHU=
-github.com/octoberswimmer/aer v0.0.0-20251027214523-71e6bbc9e74e/go.mod h1:SFmY9dBeWnikPvTuDzYp+aBJrGuP0TGTah38qhGgEm8=
+github.com/octoberswimmer/aer v0.0.10 h1:N7VwPEOokpzbk6WpikPpKCQK8l7rwjUgtD4P8AyiZYo=
+github.com/octoberswimmer/aer v0.0.10/go.mod h1:SFmY9dBeWnikPvTuDzYp+aBJrGuP0TGTah38qhGgEm8=
 github.com/octoberswimmer/apexfmt v0.39.0 h1:pTVbHNnPhOgokeRvAHs544h1ov2Px+rzcy/8h5mOFI4=
 github.com/octoberswimmer/apexfmt v0.39.0/go.mod h1:+ZcL3jpPbdw9B6eYfqSch8HxMxlu4B9vtVKuLO8gZHU=
 github.com/octoberswimmer/sformula v0.3.0 h1:XYHKBP9ibE/mw3fC0X7J+1fnI1dtz+OIV3ZGi+VM6f0=
