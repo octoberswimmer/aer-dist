@@ -65,7 +65,7 @@ release: checksum
 		echo "Tag '$(VERSION)' does not exist. Create the tag before running 'make release'."; \
 		exit 1; \
 	fi
-	gh release create "$(VERSION)" --title "aer $(VERSION)" --generate-notes --verify-tag $(RELEASE_ASSETS)
+	gh release create "$(VERSION)" --title "aer $(VERSION)" --notes-from-tag --verify-tag $(RELEASE_ASSETS)
 
 clean:
 	-rm -f $(EXECUTABLE) $(EXECUTABLE).exe $(EXECUTABLE)_* *.zip SHA256SUMS-*
