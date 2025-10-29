@@ -53,3 +53,27 @@ jobs:
           source: ${{ env.FFLIB_MOCKS_SOURCE }}
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
+
+  trigger-actions-framework:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout action
+        uses: actions/checkout@v4
+
+      - name: Fetch trigger-actions-framework commit cfda671
+        run: |
+          set -euo pipefail
+          workdir="oss/trigger-actions-framework"
+          mkdir -p "${workdir}"
+          git config --global --add advice.detachedHead false
+          git clone https://github.com/mitchspano/trigger-actions-framework.git "${workdir}"
+          cd "${workdir}"
+          git checkout cfda6715c0f4d3977224dcc2619aa30a84e537dd
+          echo "TAF_SOURCE=${workdir}/trigger-actions-framework" >> "$GITHUB_ENV"
+
+      - name: Run aer test (trigger-actions-framework commit cfda671)
+        uses: ./
+        with:
+          source: ${{ env.TAF_SOURCE }}
+        env:
+          AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
