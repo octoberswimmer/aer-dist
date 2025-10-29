@@ -29,3 +29,26 @@ jobs:
           source: ${{ env.DLRS_SOURCE }}
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
+
+  fflib-apex-mocks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout action
+        uses: actions/checkout@v4
+
+      - name: Fetch fflib-apex-mocks commit 0cf357a
+        run: |
+          set -euo pipefail
+          workdir="oss/fflib-apex-mocks"
+          mkdir -p "${workdir}"
+          git clone https://github.com/apex-enterprise-patterns/fflib-apex-mocks.git "${workdir}"
+          cd "${workdir}"
+          git checkout 0cf357ac9d42fb069f2c651573f7c18ba41f1786
+          echo "FFLIB_MOCKS_SOURCE=${workdir}/sfdx-source" >> "$GITHUB_ENV"
+
+      - name: Run aer test (fflib-apex-mocks commit 0cf357a)
+        uses: ./
+        with:
+          source: ${{ env.FFLIB_MOCKS_SOURCE }}
+        env:
+          AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
