@@ -6,7 +6,8 @@ LINUX_ARM64 := $(EXECUTABLE)_linux_arm64
 DARWIN_AMD64 := $(EXECUTABLE)_darwin_amd64
 DARWIN_ARM64 := $(EXECUTABLE)_darwin_arm64
 ALL := $(WINDOWS) $(LINUX) $(LINUX_ARM64) $(DARWIN_AMD64) $(DARWIN_ARM64)
-RELEASE_ASSETS := $(addsuffix .zip,$(basename $(ALL))) SHA256SUMS-$(VERSION)
+VERSIONED_ZIPS := $(addsuffix _$(VERSION).zip,$(basename $(ALL)))
+RELEASE_ASSETS := $(VERSIONED_ZIPS) SHA256SUMS-$(VERSION)
 
 GO_BUILD_FLAGS := -trimpath
 GO_LDFLAGS := -X main.version=$(VERSION)
@@ -37,20 +38,20 @@ $(DARWIN_AMD64): go.mod
 $(DARWIN_ARM64): go.mod
 	env CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build $(GO_BUILD_FLAGS) -ldflags "$(GO_LDFLAGS)" -o $@
 
-$(basename $(WINDOWS)).zip: $(WINDOWS)
+$(basename $(WINDOWS))_$(VERSION).zip: $(WINDOWS)
 	@rm -f $@
 	zip $@ $<
 	7za rn $@ $< $(EXECUTABLE).exe
 
-%.zip: %
+%_$(VERSION).zip: %
 	@rm -f $@
 	zip $@ $<
 	7za rn $@ $< $(EXECUTABLE)
 
-dist: $(addsuffix .zip,$(basename $(ALL)))
+dist: $(VERSIONED_ZIPS)
 
 checksum: dist
-	shasum -a 256 $(addsuffix .zip,$(basename $(ALL))) > SHA256SUMS-$(VERSION)
+	shasum -a 256 $(VERSIONED_ZIPS) > SHA256SUMS-$(VERSION)
 
 release: checksum
 	@if ! command -v gh >/dev/null 2>&1; then \

@@ -54,10 +54,10 @@ func main() {
 	var archiveName string
 	var binaryName string
 	if platformKey == "windows" {
-		archiveName = "aer_windows_amd64.zip"
+		archiveName = fmt.Sprintf("aer_windows_amd64_%s.zip", version)
 		binaryName = "aer.exe"
 	} else {
-		archiveName = fmt.Sprintf("aer_%s_%s.zip", platformKey, cpuKey)
+		archiveName = fmt.Sprintf("aer_%s_%s_%s.zip", platformKey, cpuKey, version)
 		binaryName = "aer"
 	}
 
