@@ -114,3 +114,27 @@ jobs:
           source: ${{ env.TAF_SOURCE }}
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
+
+  open-force-jsonparse:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout action
+        uses: actions/checkout@v4
+
+      - name: Fetch open-force/jsonparse commit 69da320
+        run: |
+          set -euo pipefail
+          workdir="oss/open-force-jsonparse"
+          mkdir -p "${workdir}"
+          git config --global --add advice.detachedHead false
+          git clone https://github.com/open-force/jsonparse.git "${workdir}"
+          cd "${workdir}"
+          git checkout 69da320c172da34d4112835509184a31ce500f80
+          echo "JSONPARSE_SOURCE=${workdir}" >> "$GITHUB_ENV"
+
+      - name: Run aer test (open-force/jsonparse commit 69da320)
+        uses: ./
+        with:
+          source: ${{ env.JSONPARSE_SOURCE }}
+        env:
+          AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
