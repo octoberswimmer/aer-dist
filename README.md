@@ -73,6 +73,8 @@ would in Salesforce.
 
 **Learn more:**
 - [Getting Started Guide](https://www.octoberswimmer.com/tools/aer/getting-started/)
+- [Interactive Debugging with VS Code](https://www.octoberswimmer.com/tools/aer/docs/interactive-debugging/)
+- [Interactive Debugging with IntelliJ](https://www.octoberswimmer.com/tools/aer/docs/intellij-debugging/)
 - [Documentation](https://www.octoberswimmer.com/tools/aer/docs/)
 - [Subscribe](https://www.octoberswimmer.com/tools/aer/subscribe/)
 
