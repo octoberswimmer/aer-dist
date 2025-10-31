@@ -1,8 +1,8 @@
 module aer
 
-go 1.24.6
+go 1.25.3
 
-require github.com/octoberswimmer/aer v0.0.20
+require github.com/octoberswimmer/aer v0.0.21
 
 require (
 	github.com/ForceCLI/force v1.4.3-0.20251024162144-182768c80c6c // indirect
@@ -11,6 +11,7 @@ require (
 	github.com/ViViDboarder/gotifier v0.0.0-20140619195515-0f19f3d7c54c // indirect
 	github.com/adrg/xdg v0.4.0 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
+	github.com/clbanning/mxj/v2 v2.7.0 // indirect
 	github.com/cwarden/mergo v0.3.12-0.20210528180603-9b708ca2c584 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/golang-jwt/jwt/v5 v5.2.3 // indirect
@@ -25,13 +26,14 @@ require (
 	github.com/nbio/xml v0.0.0-20251016084110-a619c1115f34 // indirect
 	github.com/ncruces/go-strftime v0.1.9 // indirect
 	github.com/octoberswimmer/apexfmt v0.40.0 // indirect
+	github.com/octoberswimmer/digger v0.5.0 // indirect
 	github.com/octoberswimmer/sformula v0.3.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
-	github.com/spf13/cobra v1.8.0 // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/spf13/cobra v1.10.1 // indirect
+	github.com/spf13/pflag v1.0.9 // indirect
 	github.com/tidwall/jsonc v0.3.2 // indirect
 	golang.org/x/exp v0.0.0-20250620022241-b7579e27df2b // indirect
 	golang.org/x/net v0.41.0 // indirect
