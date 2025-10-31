@@ -54,6 +54,43 @@ jobs:
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
 
+  fflib-apex-common:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout action
+        uses: actions/checkout@v4
+
+      - name: Fetch fflib-apex-common commit ca71952
+        run: |
+          set -euo pipefail
+          workdir="oss/fflib-apex-common"
+          mkdir -p "${workdir}"
+          git config --global --add advice.detachedHead false
+          git clone https://github.com/apex-enterprise-patterns/fflib-apex-common.git "${workdir}"
+          cd "${workdir}"
+          git checkout ca71952b3fc3928c06dbb6f57492b820c8167cf4
+          echo "FFLIB_COMMON_SOURCE=${workdir}/sfdx-source" >> "$GITHUB_ENV"
+
+      - name: Fetch fflib-apex-mocks commit 0cf357a (dependency)
+        run: |
+          set -euo pipefail
+          workdir="oss/fflib-apex-mocks"
+          mkdir -p "${workdir}"
+          git config --global --add advice.detachedHead false
+          git clone https://github.com/apex-enterprise-patterns/fflib-apex-mocks.git "${workdir}"
+          cd "${workdir}"
+          git checkout 0cf357ac9d42fb069f2c651573f7c18ba41f1786
+          echo "FFLIB_MOCKS_SOURCE=${workdir}/sfdx-source" >> "$GITHUB_ENV"
+
+      - name: Run aer test (fflib-apex-common commit ca71952)
+        uses: ./
+        with:
+          source: |
+            ${{ env.FFLIB_COMMON_SOURCE }}
+            ${{ env.FFLIB_MOCKS_SOURCE }}
+        env:
+          AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
+
   trigger-actions-framework:
     runs-on: ubuntu-latest
     steps:

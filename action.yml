@@ -6,7 +6,7 @@ branding:
   icon: play
 inputs:
   source:
-    description: Path passed to `aer test` (typically your Apex source directory).
+    description: Path(s) passed to `aer test` (typically your Apex source directory/directories). Can be a single path, multiple space-separated paths, or multiple newline-separated paths.
     required: false
     default: .
   flags:
@@ -69,9 +69,27 @@ runs:
           exit 1
         fi
 
+        # Parse SOURCE into array, handling both newline-separated and space-separated paths
+        paths=()
+        while IFS= read -r line; do
+          # Trim whitespace and skip empty lines
+          line=$(echo "$line" | xargs)
+          [[ -n "$line" ]] && paths+=("$line")
+        done <<< "${SOURCE}"
+
+        # If we got exactly one element containing spaces, split by spaces for backward compatibility
+        if [[ ${#paths[@]} -eq 1 && "${paths[0]}" == *" "* ]]; then
+          IFS=' ' read -ra paths <<< "${paths[0]}"
+        fi
+
+        if [[ ${#paths[@]} -eq 0 ]]; then
+          echo "The source input cannot be empty." >&2
+          exit 1
+        fi
+
         if [[ -z "${FLAGS}" ]]; then
-          aer test "${SOURCE}"
+          aer test "${paths[@]}"
         else
           # shellcheck disable=SC2086
-          aer test "${SOURCE}" ${FLAGS}
+          aer test "${paths[@]}" ${FLAGS}
         fi
