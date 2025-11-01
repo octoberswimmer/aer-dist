@@ -54,6 +54,8 @@ github.com/ncruces/go-strftime v0.1.9 h1:bY0MQC28UADQmHmaF5dgpLmImcShSi2kHU9XLdh
 github.com/ncruces/go-strftime v0.1.9/go.mod h1:Fwc5htZGVVkseilnfgOVb9mKy6w1naJmn9CehxcKcls=
 github.com/octoberswimmer/aer v0.0.24 h1:yc2YxIgykGSjkPuBnIK6DQgXWiRHzLRKMVV1KMceDvs=
 github.com/octoberswimmer/aer v0.0.24/go.mod h1:aFJy/CKIQOfxZiy+sVJx7+Chu9yRa0F9FuQobABRxN0=
+github.com/octoberswimmer/aer v0.0.25 h1:2vYl/KeK1dau6oDiQllGFXwTdP/4RBvvaUAGQmErzQg=
+github.com/octoberswimmer/aer v0.0.25/go.mod h1:aFJy/CKIQOfxZiy+sVJx7+Chu9yRa0F9FuQobABRxN0=
 github.com/octoberswimmer/apexfmt v0.41.0 h1:bp7OQFrVlEu7yHz9bRKtldrSdrRdKbO5EznXnqD3Bus=
 github.com/octoberswimmer/apexfmt v0.41.0/go.mod h1:+ZcL3jpPbdw9B6eYfqSch8HxMxlu4B9vtVKuLO8gZHU=
 github.com/octoberswimmer/digger v0.5.0 h1:bRXpJJ8o+hYcWrJpApM9E3O3P/0+yTq6SVCSYBC8fNc=
