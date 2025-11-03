@@ -1,4 +1,4 @@
-VERSION := $(shell git describe --tags --abbrev=0 --always --dirty 2>/dev/null || echo dev)
+VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 EXECUTABLE := aer
 WINDOWS := $(EXECUTABLE)_windows_amd64.exe
 LINUX := $(EXECUTABLE)_linux_amd64

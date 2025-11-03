@@ -7,6 +7,9 @@ on:
     branches:
       - main
 
+env:
+  AER_VERSION: v0.0.27
+
 jobs:
   dlrs:
     runs-on: ubuntu-latest
@@ -27,6 +30,7 @@ jobs:
         uses: ./
         with:
           source: ${{ env.DLRS_SOURCE }}
+          version: ${{ env.AER_VERSION }}
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
 
@@ -51,6 +55,7 @@ jobs:
         uses: ./
         with:
           source: ${{ env.FFLIB_MOCKS_SOURCE }}
+          version: ${{ env.AER_VERSION }}
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
 
@@ -88,6 +93,7 @@ jobs:
           source: |
             ${{ env.FFLIB_COMMON_SOURCE }}
             ${{ env.FFLIB_MOCKS_SOURCE }}
+          version: ${{ env.AER_VERSION }}
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
 
@@ -112,6 +118,7 @@ jobs:
         uses: ./
         with:
           source: ${{ env.TAF_SOURCE }}
+          version: ${{ env.AER_VERSION }}
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
 
@@ -136,5 +143,6 @@ jobs:
         uses: ./
         with:
           source: ${{ env.JSONPARSE_SOURCE }}
+          version: ${{ env.AER_VERSION }}
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
