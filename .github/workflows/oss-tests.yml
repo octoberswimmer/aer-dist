@@ -8,7 +8,7 @@ on:
       - main
 
 env:
-  AER_VERSION: v0.0.27
+  AER_VERSION: v0.0.28
 
 jobs:
   dlrs:
@@ -143,6 +143,56 @@ jobs:
         uses: ./
         with:
           source: ${{ env.JSONPARSE_SOURCE }}
+          version: ${{ env.AER_VERSION }}
+        env:
+          AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
+
+  r-apex:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout action
+        uses: actions/checkout@v4
+
+      - name: Fetch PropicSignifi/R.apex commit 28f6198
+        run: |
+          set -euo pipefail
+          workdir="oss/propicsignifi-rapex"
+          mkdir -p "${workdir}"
+          git config --global --add advice.detachedHead false
+          git clone https://github.com/PropicSignifi/R.apex.git "${workdir}"
+          cd "${workdir}"
+          git checkout 28f6198373eec788c0811db0f1089ce8a8b30746
+          echo "RAPEX_SOURCE=${workdir}/force-app/main/default" >> "$GITHUB_ENV"
+
+      - name: Run aer test (PropicSignifi/R.apex commit 28f6198)
+        uses: ./
+        with:
+          source: ${{ env.RAPEX_SOURCE }}
+          version: ${{ env.AER_VERSION }}
+        env:
+          AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
+
+  moxygen:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout action
+        uses: actions/checkout@v4
+
+      - name: Fetch ZackFra/Salesforce-Moxygen commit 687f30f
+        run: |
+          set -euo pipefail
+          workdir="oss/salesforce-moxygen"
+          mkdir -p "${workdir}"
+          git config --global --add advice.detachedHead false
+          git clone https://github.com/ZackFra/Salesforce-Moxygen.git "${workdir}"
+          cd "${workdir}"
+          git checkout 687f30faad095fd65843388dba6cfb5c4fa8235c
+          echo "MOXYGEN_SOURCE=${workdir}/moxygen" >> "$GITHUB_ENV"
+
+      - name: Run aer test (ZackFra/Salesforce-Moxygen commit 687f30f)
+        uses: ./
+        with:
+          source: ${{ env.MOXYGEN_SOURCE }}
           version: ${{ env.AER_VERSION }}
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
