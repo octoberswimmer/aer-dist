@@ -8,7 +8,7 @@ on:
       - main
 
 env:
-  AER_VERSION: v0.0.30
+  AER_VERSION: v0.0.31
 
 jobs:
   dlrs:
@@ -194,5 +194,7 @@ jobs:
         with:
           source: ${{ env.MOXYGEN_SOURCE }}
           version: ${{ env.AER_VERSION }}
+          # Skipping broken test pending fix: https://github.com/ZackFra/Salesforce-Moxygen/pull/315
+          flags: --skip SchemaServiceTest.testGetChildRelationshipFieldName
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
