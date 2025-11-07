@@ -129,8 +129,8 @@ tag:
 		echo "No changes produced by the tag workflow."; \
 		exit 1; \
 	fi; \
-	commit_message=$$(cat "$$tag_message_file"); \
-	git commit -m "$$next_version" -m "$$commit_message"; \
+	commit_message="Update aer to $$next_version"; \
+	git commit -m "$$commit_message"; \
 	if git rev-parse --verify --quiet "refs/tags/$$next_version" >/dev/null; then \
 		echo "Tag $$next_version already exists locally."; \
 		exit 1; \
