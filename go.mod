@@ -2,14 +2,14 @@ module aer
 
 go 1.25.3
 
-require github.com/octoberswimmer/aer v0.0.34
+require github.com/octoberswimmer/aer v0.0.35
 
 require (
 	github.com/ForceCLI/force v1.4.3-0.20251024162144-182768c80c6c // indirect
 	github.com/ForceCLI/force-md v0.33.0 // indirect
 	github.com/ForceCLI/inflect v0.0.0-20130829110746-cc00b5ad7a6a // indirect
 	github.com/ViViDboarder/gotifier v0.0.0-20140619195515-0f19f3d7c54c // indirect
-	github.com/adrg/xdg v0.4.0 // indirect
+	github.com/adrg/xdg v0.5.3 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
 	github.com/clbanning/mxj/v2 v2.7.0 // indirect
 	github.com/cwarden/mergo v0.3.12-0.20210528180603-9b708ca2c584 // indirect
