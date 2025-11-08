@@ -61,6 +61,7 @@ runs:
         SOURCE: ${{ inputs.source }}
         FLAGS: ${{ inputs.flags }}
         GITHUB_TOKEN: ${{ github.token }}
+        RUNNER_TEMP: ${{ runner.temp }}
       run: |
         set -euo pipefail
 
@@ -87,9 +88,26 @@ runs:
           exit 1
         fi
 
+        # Generate JSON output for GitHub Summary
+        json_output="${RUNNER_TEMP}/aer-test-results.json"
+
         if [[ -z "${FLAGS}" ]]; then
-          aer test "${paths[@]}"
+          aer test "${paths[@]}" --coverage --json "${json_output}"
         else
           # shellcheck disable=SC2086
-          aer test "${paths[@]}" ${FLAGS}
+          aer test "${paths[@]}" ${FLAGS} --coverage --json "${json_output}"
+        fi
+
+    - name: Generate Test Summary
+      if: always()
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      env:
+        RUNNER_TEMP: ${{ runner.temp }}
+      run: |
+        json_file="${RUNNER_TEMP}/aer-test-results.json"
+        if [[ -f "${json_file}" ]]; then
+          go run ./cmd/actions/summary "${json_file}"
+        else
+          echo "⚠️ No test results found" >> $GITHUB_STEP_SUMMARY
         fi
