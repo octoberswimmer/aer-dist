@@ -172,6 +172,31 @@ jobs:
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
 
+  universalmock:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout action
+        uses: actions/checkout@v4
+
+      - name: Fetch surajp/universalmock commit 1e04164
+        run: |
+          set -euo pipefail
+          workdir="oss/surajp-universalmock"
+          mkdir -p "${workdir}"
+          git config --global --add advice.detachedHead false
+          git clone https://github.com/surajp/universalmock.git "${workdir}"
+          cd "${workdir}"
+          git checkout 1e04164ca66258b21cc9bab9e614060ca3594b28
+          echo "UNIVERSALMOCK_SOURCE=${workdir}/force-app/main/default" >> "$GITHUB_ENV"
+
+      - name: Run aer test (surajp/universalmock commit 1e04164)
+        uses: ./
+        with:
+          source: ${{ env.UNIVERSALMOCK_SOURCE }}
+          version: ${{ env.AER_VERSION }}
+        env:
+          AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
+
   moxygen:
     runs-on: ubuntu-latest
     steps:
