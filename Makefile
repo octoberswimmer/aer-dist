@@ -139,5 +139,8 @@ tag:
 	trap - EXIT; \
 	rm -rf "$$tmpdir"
 
+test:
+	ghproxy --repo octoberswimmer/aer-dist -- act
+
 clean:
 	-rm -f $(EXECUTABLE) $(EXECUTABLE).exe $(EXECUTABLE)_* *.zip SHA256SUMS-*
