@@ -34,6 +34,7 @@ type ClassCoverageInfo struct {
 	UncoveredCount int     `json:"uncoveredCount"`
 	Percentage     float64 `json:"percentage"`
 	TopLevel       bool    `json:"topLevel,omitempty"`
+	TopLevelClass  string  `json:"topLevelClass,omitempty"`
 }
 
 type CoverageSummary struct {
@@ -137,8 +138,8 @@ func generateSummary(results *TestResults) string {
 		barChart := generateCoverageBar(coverage)
 		sb.WriteString(fmt.Sprintf("```\n%s\n```\n\n", barChart))
 
-		// Coverage by class
-		topLevelClasses := filterTopLevelClasses(results.Coverage.Classes)
+		// Coverage by class (aggregate inner classes into their top-level owner)
+		topLevelClasses := aggregateCoverageByTopLevel(results.Coverage.Classes)
 		if len(topLevelClasses) > 0 {
 			sb.WriteString("### Coverage by Class\n\n")
 			sb.WriteString("<details>\n")
@@ -284,25 +285,41 @@ func generateMiniBar(percentage float64) string {
 	return fmt.Sprintf("`%s%s`", strings.Repeat("█", filled), strings.Repeat("░", empty))
 }
 
-func filterTopLevelClasses(classes []ClassCoverageInfo) []ClassCoverageInfo {
-	hasExplicit := false
-	for _, cls := range classes {
-		if cls.TopLevel {
-			hasExplicit = true
-			break
-		}
+func aggregateCoverageByTopLevel(classes []ClassCoverageInfo) []ClassCoverageInfo {
+	if len(classes) == 0 {
+		return nil
 	}
 
-	var filtered []ClassCoverageInfo
+	agg := make(map[string]*ClassCoverageInfo)
 	for _, cls := range classes {
-		if hasExplicit {
-			if !cls.TopLevel {
-				continue
+		topName := cls.TopLevelClass
+		if topName == "" {
+			if strings.Contains(cls.ClassName, ".") {
+				topName = cls.ClassName[:strings.Index(cls.ClassName, ".")]
+			} else {
+				topName = cls.ClassName
 			}
-		} else if strings.Contains(cls.ClassName, ".") {
-			continue
 		}
-		filtered = append(filtered, cls)
+
+		entry := agg[topName]
+		if entry == nil {
+			entry = &ClassCoverageInfo{ClassName: topName}
+			agg[topName] = entry
+		}
+		entry.TotalLines += cls.TotalLines
+		entry.CoveredCount += cls.CoveredCount
 	}
-	return filtered
+
+	result := make([]ClassCoverageInfo, 0, len(agg))
+	for _, entry := range agg {
+		if entry.TotalLines > 0 {
+			if entry.CoveredCount > entry.TotalLines {
+				entry.CoveredCount = entry.TotalLines
+			}
+			entry.UncoveredCount = entry.TotalLines - entry.CoveredCount
+			entry.Percentage = float64(entry.CoveredCount) / float64(entry.TotalLines) * 100.0
+		}
+		result = append(result, *entry)
+	}
+	return result
 }

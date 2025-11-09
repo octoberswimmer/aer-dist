@@ -20,25 +20,28 @@ func TestGenerateSummaryIncludesCoverageDetails(t *testing.T) {
 			UncoveredLines:  10,
 			Classes: []ClassCoverageInfo{
 				{
-					ClassName:    "Alpha",
-					CoveredCount: 30,
-					TotalLines:   40,
-					Percentage:   75.0,
-					TopLevel:     true,
+					ClassName:     "Alpha",
+					CoveredCount:  20,
+					TotalLines:    30,
+					Percentage:    66.6,
+					TopLevel:      true,
+					TopLevelClass: "Alpha",
 				},
 				{
-					ClassName:    "Beta",
-					CoveredCount: 10,
-					TotalLines:   20,
-					Percentage:   50.0,
-					TopLevel:     true,
+					ClassName:     "Beta",
+					CoveredCount:  10,
+					TotalLines:    20,
+					Percentage:    50.0,
+					TopLevel:      true,
+					TopLevelClass: "Beta",
 				},
 				{
-					ClassName:    "Alpha.InnerHelper",
-					CoveredCount: 5,
-					TotalLines:   5,
-					Percentage:   100.0,
-					TopLevel:     false,
+					ClassName:     "Alpha.InnerHelper",
+					CoveredCount:  8,
+					TotalLines:    10,
+					Percentage:    80.0,
+					TopLevel:      false,
+					TopLevelClass: "Alpha",
 				},
 			},
 		},
@@ -60,8 +63,14 @@ func TestGenerateSummaryIncludesCoverageDetails(t *testing.T) {
 	if !strings.Contains(summary, "Coverage: 75.00%") {
 		t.Fatalf("Coverage bar missing or incorrect: %s", summary)
 	}
-	if !strings.Contains(summary, "`Alpha` | 🟡 75.0%") {
-		t.Fatalf("Coverage by class table missing Alpha row: %s", summary)
+	if !strings.Contains(summary, "`Alpha` | 🟡 70.0%") {
+		t.Fatalf("Coverage by class table missing aggregated Alpha row: %s", summary)
+	}
+	if !strings.Contains(summary, "28 / 40") {
+		t.Fatalf("Aggregated Alpha coverage counts missing: %s", summary)
+	}
+	if !strings.Contains(summary, "10 / 20") {
+		t.Fatalf("Aggregated Beta coverage counts missing: %s", summary)
 	}
 	if strings.Contains(summary, "Alpha.InnerHelper") {
 		t.Fatalf("Inner classes should be hidden from coverage table: %s", summary)
@@ -112,7 +121,12 @@ func TestGenerateSummaryIncludesClassesWhenTopLevelUnknown(t *testing.T) {
 					CoveredCount: 1,
 					TotalLines:   10,
 					Percentage:   10,
-					// TopLevel field omitted to mimic older JSON
+				},
+				{
+					ClassName:    "Delta.Inner",
+					CoveredCount: 2,
+					TotalLines:   4,
+					Percentage:   50,
 				},
 			},
 		},
@@ -121,5 +135,8 @@ func TestGenerateSummaryIncludesClassesWhenTopLevelUnknown(t *testing.T) {
 	summary := generateSummary(results)
 	if !strings.Contains(summary, "`Gamma`") {
 		t.Fatalf("Class Gamma should be included when top-level flag missing: %s", summary)
+	}
+	if !strings.Contains(summary, "`Delta`") {
+		t.Fatalf("Dotted class names should roll up to their prefix when metadata missing: %s", summary)
 	}
 }
