@@ -122,6 +122,34 @@ jobs:
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
 
+  jira-sf-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout action
+        uses: actions/checkout@v4
+
+      - name: Fetch jawills/jira-sf-integration commit 38c27d2
+        run: |
+          set -euo pipefail
+          workdir="oss/jira-sf-integration"
+          mkdir -p "${workdir}"
+          git config --global --add advice.detachedHead false
+          git clone https://github.com/jawills/jira-sf-integration.git "${workdir}"
+          cd "${workdir}"
+          git checkout 38c27d2a8353eadd468778a859e09a787f075026
+          echo "JIRA_SF_CORE=${workdir}/jira-integration/core" >> "$GITHUB_ENV"
+          echo "JIRA_SF_AUTH=${workdir}/jira-integration/auth" >> "$GITHUB_ENV"
+
+      - name: Run aer test (jawills/jira-sf-integration commit 38c27d2)
+        uses: ./
+        with:
+          source: |
+            ${{ env.JIRA_SF_CORE }}
+            ${{ env.JIRA_SF_AUTH }}
+          version: ${{ env.AER_VERSION }}
+        env:
+          AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
+
   open-force-jsonparse:
     runs-on: ubuntu-latest
     steps:
