@@ -147,6 +147,32 @@ jobs:
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
 
+  codefriar-apexkit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout action
+        uses: actions/checkout@v4
+
+      - name: Fetch codefriar/ApexKit commit a6e8921
+        run: |
+          set -euo pipefail
+          workdir="oss/codefriar-apexkit"
+          mkdir -p "${workdir}"
+          git config --global --add advice.detachedHead false
+          # Using fork pending fix: https://github.com/codefriar/ApexKit/pull/398
+          git clone https://github.com/cwarden/ApexKit.git "${workdir}"
+          cd "${workdir}"
+          git checkout d6d1b613d94e8a1d055328b36ce128a982ba3160
+          echo "APEXKIT_SOURCE=${workdir}/force-app/main/default" >> "$GITHUB_ENV"
+
+      - name: Run aer test (codefriar/ApexKit commit a6e8921)
+        uses: ./
+        with:
+          source: ${{ env.APEXKIT_SOURCE }}
+          version: ${{ env.AER_VERSION }}
+        env:
+          AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
+
   r-apex:
     runs-on: ubuntu-latest
     steps:
