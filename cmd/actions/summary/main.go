@@ -27,12 +27,13 @@ type TestSummary struct {
 }
 
 type ClassCoverageInfo struct {
-	ClassName      string    `json:"className"`
-	CoveredLines   []int     `json:"coveredLines"`
-	TotalLines     int       `json:"totalLines"`
-	CoveredCount   int       `json:"coveredCount"`
-	UncoveredCount int       `json:"uncoveredCount"`
-	Percentage     float64   `json:"percentage"`
+	ClassName      string  `json:"className"`
+	CoveredLines   []int   `json:"coveredLines"`
+	TotalLines     int     `json:"totalLines"`
+	CoveredCount   int     `json:"coveredCount"`
+	UncoveredCount int     `json:"uncoveredCount"`
+	Percentage     float64 `json:"percentage"`
+	TopLevel       bool    `json:"topLevel,omitempty"`
 }
 
 type CoverageSummary struct {
@@ -137,35 +138,26 @@ func generateSummary(results *TestResults) string {
 		sb.WriteString(fmt.Sprintf("```\n%s\n```\n\n", barChart))
 
 		// Coverage by class
-		if len(results.Coverage.Classes) > 0 {
+		topLevelClasses := filterTopLevelClasses(results.Coverage.Classes)
+		if len(topLevelClasses) > 0 {
 			sb.WriteString("### Coverage by Class\n\n")
 			sb.WriteString("<details>\n")
-			sb.WriteString(fmt.Sprintf("<summary>View %d classes</summary>\n\n", len(results.Coverage.Classes)))
+			sb.WriteString(fmt.Sprintf("<summary>View %d classes</summary>\n\n", len(topLevelClasses)))
 			sb.WriteString("| Class | Coverage | Lines Covered |\n")
 			sb.WriteString("|-------|----------|---------------|\n")
 
 			// Sort classes by coverage percentage (descending)
-			sortedClasses := make([]ClassCoverageInfo, len(results.Coverage.Classes))
-			copy(sortedClasses, results.Coverage.Classes)
+			sortedClasses := make([]ClassCoverageInfo, len(topLevelClasses))
+			copy(sortedClasses, topLevelClasses)
 			sort.Slice(sortedClasses, func(i, j int) bool {
 				return sortedClasses[i].Percentage > sortedClasses[j].Percentage
 			})
 
-			maxClasses := 20
-			if len(sortedClasses) < maxClasses {
-				maxClasses = len(sortedClasses)
-			}
-
-			for i := 0; i < maxClasses; i++ {
-				cls := sortedClasses[i]
+			for _, cls := range sortedClasses {
 				emoji := getCoverageEmoji(cls.Percentage)
 				bar := generateMiniBar(cls.Percentage)
 				sb.WriteString(fmt.Sprintf("| `%s` | %s %.1f%% %s | %d / %d |\n",
 					cls.ClassName, emoji, cls.Percentage, bar, cls.CoveredCount, cls.TotalLines))
-			}
-
-			if len(sortedClasses) > maxClasses {
-				sb.WriteString(fmt.Sprintf("\n*...and %d more classes*\n", len(sortedClasses)-maxClasses))
 			}
 
 			sb.WriteString("\n</details>\n\n")
@@ -290,4 +282,27 @@ func generateMiniBar(percentage float64) string {
 	empty := barLength - filled
 
 	return fmt.Sprintf("`%s%s`", strings.Repeat("█", filled), strings.Repeat("░", empty))
+}
+
+func filterTopLevelClasses(classes []ClassCoverageInfo) []ClassCoverageInfo {
+	hasExplicit := false
+	for _, cls := range classes {
+		if cls.TopLevel {
+			hasExplicit = true
+			break
+		}
+	}
+
+	var filtered []ClassCoverageInfo
+	for _, cls := range classes {
+		if hasExplicit {
+			if !cls.TopLevel {
+				continue
+			}
+		} else if strings.Contains(cls.ClassName, ".") {
+			continue
+		}
+		filtered = append(filtered, cls)
+	}
+	return filtered
 }
