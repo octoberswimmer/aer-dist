@@ -28,7 +28,7 @@ type TestSummary struct {
 
 type ClassCoverageInfo struct {
 	ClassName      string  `json:"className"`
-	CoveredLines   []int   `json:"coveredLines"`
+	UncoveredLines []int   `json:"uncoveredLines"`
 	TotalLines     int     `json:"totalLines"`
 	CoveredCount   int     `json:"coveredCount"`
 	UncoveredCount int     `json:"uncoveredCount"`

@@ -140,3 +140,38 @@ func TestGenerateSummaryIncludesClassesWhenTopLevelUnknown(t *testing.T) {
 		t.Fatalf("Dotted class names should roll up to their prefix when metadata missing: %s", summary)
 	}
 }
+
+func TestAggregateCoverageByTopLevelCombinesInnerClasses(t *testing.T) {
+	classes := []ClassCoverageInfo{
+		{ClassName: "Alpha", CoveredCount: 5, TotalLines: 10, TopLevel: true, TopLevelClass: "Alpha"},
+		{ClassName: "Alpha.InnerOne", CoveredCount: 3, TotalLines: 4, TopLevelClass: "Alpha"},
+		{ClassName: "Alpha.InnerTwo", CoveredCount: 2, TotalLines: 6, TopLevelClass: "Alpha"},
+		{ClassName: "Beta", CoveredCount: 1, TotalLines: 5, TopLevel: true, TopLevelClass: "Beta"},
+	}
+
+	aggregated := aggregateCoverageByTopLevel(classes)
+	if len(aggregated) != 2 {
+		t.Fatalf("expected 2 aggregated classes, got %d", len(aggregated))
+	}
+
+	classMap := make(map[string]ClassCoverageInfo)
+	for _, entry := range aggregated {
+		classMap[entry.ClassName] = entry
+	}
+
+	alpha := classMap["Alpha"]
+	if alpha.TotalLines != 20 {
+		t.Fatalf("expected Alpha total lines=20, got %d", alpha.TotalLines)
+	}
+	if alpha.CoveredCount != 10 {
+		t.Fatalf("expected Alpha covered lines=10, got %d", alpha.CoveredCount)
+	}
+	if alpha.UncoveredCount != 10 {
+		t.Fatalf("expected Alpha uncovered lines=10, got %d", alpha.UncoveredCount)
+	}
+
+	beta := classMap["Beta"]
+	if beta.TotalLines != 5 || beta.CoveredCount != 1 {
+		t.Fatalf("unexpected Beta aggregation: %+v", beta)
+	}
+}
