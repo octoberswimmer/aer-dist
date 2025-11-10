@@ -187,10 +187,9 @@ jobs:
           workdir="oss/codefriar-apexkit"
           mkdir -p "${workdir}"
           git config --global --add advice.detachedHead false
-          # Using fork pending fix: https://github.com/codefriar/ApexKit/pull/398
-          git clone https://github.com/cwarden/ApexKit.git "${workdir}"
+          git clone https://github.com/codefriar/ApexKit.git "${workdir}"
           cd "${workdir}"
-          git checkout d6d1b613d94e8a1d055328b36ce128a982ba3160
+          git checkout 4c1d9cb4d3555ba56956405341679be95c46e66c
           echo "APEXKIT_SOURCE=${workdir}/force-app/main/default" >> "$GITHUB_ENV"
 
       - name: Run aer test (codefriar/ApexKit commit a6e8921)
