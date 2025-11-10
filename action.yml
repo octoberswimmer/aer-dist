@@ -35,8 +35,16 @@ runs:
           --repo "${action_repo}" \
           --fallback "${{ github.repository }}"
 
+    - name: Cache aer binary
+      id: cache
+      uses: actions/cache@v4
+      with:
+        path: ${{ runner.temp }}/aer-bin
+        key: aer-${{ runner.os }}-${{ runner.arch }}-${{ steps.resolve.outputs.version }}
+
     - name: Install aer CLI
       id: install
+      if: steps.cache.outputs.cache-hit != 'true'
       shell: bash
       working-directory: ${{ github.action_path }}
       env:
@@ -47,7 +55,8 @@ runs:
         RUNNER_TEMP: ${{ runner.temp }}
       run: |
         set -euo pipefail
-        dest="${RUNNER_TEMP}/aer"
+        dest="${RUNNER_TEMP}/aer-bin/aer"
+        mkdir -p "$(dirname "${dest}")"
         go run ./cmd/actions/install \
           --repo "${ACTION_REPO}" \
           --version "${VERSION}" \
@@ -64,6 +73,9 @@ runs:
         RUNNER_TEMP: ${{ runner.temp }}
       run: |
         set -euo pipefail
+
+        # Add aer to PATH
+        export PATH="${RUNNER_TEMP}/aer-bin:${PATH}"
 
         if [[ -z "${SOURCE}" ]]; then
           echo "The source input cannot be empty." >&2
