@@ -276,3 +276,28 @@ jobs:
           flags: --skip SchemaServiceTest.testGetChildRelationshipFieldName
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
+
+  apex-opensource-library:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout action
+        uses: actions/checkout@v4
+
+      - name: Fetch pkozuchowski/Apex-Opensource-Library commit 9110e87
+        run: |
+          set -euo pipefail
+          workdir="oss/apex-opensource-library"
+          mkdir -p "${workdir}"
+          git config --global --add advice.detachedHead false
+          git clone https://github.com/pkozuchowski/Apex-Opensource-Library.git "${workdir}"
+          cd "${workdir}"
+          git checkout 9110e8760b4dff82e102af7738044ed69ce54747
+          echo "APEX_OSS_LIB_SOURCE=${workdir}/force-app/commons" >> "$GITHUB_ENV"
+
+      - name: Run aer test (pkozuchowski/Apex-Opensource-Library commit 9110e87)
+        uses: ./
+        with:
+          source: ${{ env.APEX_OSS_LIB_SOURCE }}
+          version: ${{ env.AER_VERSION }}
+        env:
+          AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
