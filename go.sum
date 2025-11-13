@@ -1,5 +1,5 @@
-github.com/ForceCLI/force v1.4.3-0.20251024162144-182768c80c6c h1:/46JQPYmyRCKry7bhz80bW9zPMwFI2q2nU8sxFvfjjs=
-github.com/ForceCLI/force v1.4.3-0.20251024162144-182768c80c6c/go.mod h1:peudCetOGrqSdcXK5nsTBLpuEHGSXF56FfrFaI/gCV8=
+github.com/ForceCLI/force v1.4.3 h1:8s9ZLgaWwtMeFSDFiccIpq4yc43dGz26ae5YNTB3OBA=
+github.com/ForceCLI/force v1.4.3/go.mod h1:peudCetOGrqSdcXK5nsTBLpuEHGSXF56FfrFaI/gCV8=
 github.com/ForceCLI/force-md v0.33.0 h1:xOvoE35VN7H4ajZ9dRUH/91mr16r3tMJA0ZqCCRUdxg=
 github.com/ForceCLI/force-md v0.33.0/go.mod h1:NUnIP1EiLSFDet6i2Oa7L4jiwxeIxzZkyfm93iMYBBI=
 github.com/ForceCLI/inflect v0.0.0-20130829110746-cc00b5ad7a6a h1:mMd54YgLoeupNpbph3KdwvF58O0lZ72RQaJ2cFPOFDE=
@@ -24,6 +24,8 @@ github.com/dustin/go-humanize v1.0.1 h1:GzkhY7T5VNhEkwH0PVJgjz+fX1rhBrR7pRT3mDkp
 github.com/dustin/go-humanize v1.0.1/go.mod h1:Mu1zIs6XwVuF/gI1OepvI0qD18qycQx+mFykh5fBlto=
 github.com/fsnotify/fsnotify v1.4.9 h1:hsms1Qyu0jgnwNXIxa+/V/PDsU6CfLf6CNO8H7IWoS4=
 github.com/fsnotify/fsnotify v1.4.9/go.mod h1:znqG4EE+3YCdAaPaxE2ZRY/06pZUdp0tY4IgpuI1SZQ=
+github.com/gobuffalo/flect v1.0.3 h1:xeWBM2nui+qnVvNM4S3foBhCAL2XgPU+a7FdpelbTq4=
+github.com/gobuffalo/flect v1.0.3/go.mod h1:A5msMlrHtLqh9umBSnvabjsMrCcCpAyzglnDvkbYKHs=
 github.com/golang-jwt/jwt/v5 v5.2.3 h1:kkGXqQOBSDDWRhWNXTFpqGSCMyh/PLnqUvMGJPDJDs0=
 github.com/golang-jwt/jwt/v5 v5.2.3/go.mod h1:pqrtFR0X4osieyHYxtmOUWsAWrfe1Q5UVIyoH402zdk=
 github.com/golang/protobuf v1.5.3 h1:KhyjKVUg7Usr/dYsdSqoFveMYd5ko72D+zANwlG1mmg=
@@ -52,12 +54,12 @@ github.com/nbio/xml v0.0.0-20251016084110-a619c1115f34 h1:nl44SgZciAoU7v6eR0aDoH
 github.com/nbio/xml v0.0.0-20251016084110-a619c1115f34/go.mod h1:990JnYmJZFrx1vI1TALoD6/fCqnWlTx2FrPbYy2wi5I=
 github.com/ncruces/go-strftime v0.1.9 h1:bY0MQC28UADQmHmaF5dgpLmImcShSi2kHU9XLdhx/f4=
 github.com/ncruces/go-strftime v0.1.9/go.mod h1:Fwc5htZGVVkseilnfgOVb9mKy6w1naJmn9CehxcKcls=
-github.com/octoberswimmer/aer v0.0.42 h1:orUSE+TrJQr4K8w073uFk4OWgJcClGNCeXe8taCSr+Q=
-github.com/octoberswimmer/aer v0.0.42/go.mod h1:F5slOwBA3i8RPYZeKedVZY5V2ZvC6dvmouMZNpkxChM=
+github.com/octoberswimmer/aer v0.0.43 h1:i2EYwIxxpDKzVRlpqNAdaEj6sN93NTHW39f6EVRROOc=
+github.com/octoberswimmer/aer v0.0.43/go.mod h1:RB8FJYWeIqXM1zj6w7kcac6zHRaBeLAP4+XWgaJkMbE=
 github.com/octoberswimmer/apexfmt v0.45.0 h1:aFmnOi660V4AnoZ8pJ2W4AXoJipbyoH0qlDAkao4U0o=
 github.com/octoberswimmer/apexfmt v0.45.0/go.mod h1:+ZcL3jpPbdw9B6eYfqSch8HxMxlu4B9vtVKuLO8gZHU=
-github.com/octoberswimmer/digger v0.5.0 h1:bRXpJJ8o+hYcWrJpApM9E3O3P/0+yTq6SVCSYBC8fNc=
-github.com/octoberswimmer/digger v0.5.0/go.mod h1:8rczQu1f5p9QXr2IWYbunX8SgaNIERFPjcFysS4C+v4=
+github.com/octoberswimmer/digger v0.15.0 h1:zGNLMZzM9zLy/nVLls9/TOsV4hel8i3z6WEOs+b+lg8=
+github.com/octoberswimmer/digger v0.15.0/go.mod h1:KhtfRp/YTf6u7InQnhcL2be/CYWq2/SZ6rU5xgcZj+E=
 github.com/octoberswimmer/sformula v0.3.0 h1:XYHKBP9ibE/mw3fC0X7J+1fnI1dtz+OIV3ZGi+VM6f0=
 github.com/octoberswimmer/sformula v0.3.0/go.mod h1:isuBo3KPKaHf+TzZ9fNVl0MSmH2z35uLixmjfXmjp+Q=
 github.com/onsi/ginkgo v1.12.0 h1:Iw5WCbBcaAAd0fpRb1c9r5YCylv4XDoCSigm1zLevwU=
@@ -82,7 +84,12 @@ github.com/spf13/cobra v1.10.1/go.mod h1:7SmJGaTHFVBY0jW4NXGluQoLvhqFQM+6XSKD+P4
 github.com/spf13/pflag v1.0.9 h1:9exaQaMOCwffKiiiYk6/BndUBv+iRViNW+4lEMi0PvY=
 github.com/spf13/pflag v1.0.9/go.mod h1:McXfInJRrz4CZXVZOBLb0bTZqETkiAhM9Iw0y3An2Bg=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
+github.com/stretchr/objx v0.4.0/go.mod h1:YvHI0jy2hoMjB+UWwv71VJQ9isScKT/TqJzVSSt89Yw=
+github.com/stretchr/objx v0.5.0/go.mod h1:Yh+to48EsGEfYuaHDzXPcE3xhTkx73EhmCGUpEOglKo=
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
+github.com/stretchr/testify v1.7.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
+github.com/stretchr/testify v1.8.0/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO+kdMU+MU=
+github.com/stretchr/testify v1.8.1/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
 github.com/stretchr/testify v1.9.0 h1:HtqpIVDClZ4nwg75+f6Lvsy/wHu+3BoSGCbBAcpTsTg=
 github.com/stretchr/testify v1.9.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
 github.com/tidwall/jsonc v0.3.2 h1:ZTKrmejRlAJYdn0kcaFqRAKlxxFIC21pYq8vLa4p2Wc=
