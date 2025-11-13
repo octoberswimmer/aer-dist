@@ -7,6 +7,8 @@ bring up a lightweight Salesforce-compatible runtime on your workstation. It is
 ideal for iterating on Apex logic without deploying to a real org, keeping test
 cycles fast and reproducible.
 
+![Demo](demo.gif)
+
 ## Install
 
 1. Browse to the **Releases** page of this repository and download the archive
