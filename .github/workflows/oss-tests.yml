@@ -322,6 +322,15 @@ jobs:
 
   moxygen:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: [unpackaged, namespaced]
+        include:
+          - scenario: unpackaged
+            namespace: ""
+          - scenario: namespaced
+            namespace: aertest
     steps:
       - name: Checkout action
         uses: actions/checkout@v4
@@ -334,7 +343,9 @@ jobs:
           git config --global --add advice.detachedHead false
           git clone https://github.com/ZackFra/Salesforce-Moxygen.git "${workdir}"
           cd "${workdir}"
-          git checkout 687f30faad095fd65843388dba6cfb5c4fa8235c
+          # Fix for broken test: https://github.com/ZackFra/Salesforce-Moxygen/pull/315
+          git fetch origin pull/315/head
+          git checkout FETCH_HEAD
           echo "MOXYGEN_SOURCE=${workdir}/moxygen" >> "$GITHUB_ENV"
 
       - name: Run aer test (ZackFra/Salesforce-Moxygen commit 687f30f)
@@ -342,8 +353,7 @@ jobs:
         with:
           source: ${{ env.MOXYGEN_SOURCE }}
           version: ${{ env.AER_VERSION }}
-          # Skipping broken test pending fix: https://github.com/ZackFra/Salesforce-Moxygen/pull/315
-          flags: --skip SchemaServiceTest.testGetChildRelationshipFieldName
+          as-namespace: ${{ matrix.namespace }}
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
 
