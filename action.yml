@@ -13,6 +13,10 @@ inputs:
     description: Additional flags appended after the source argument.
     required: false
     default: ""
+  as-namespace:
+    description: Optional namespace passed via `--as-namespace`.
+    required: false
+    default: ""
   version:
     description: Release tag of the AER binary to install (for example `v1.2.3`). Use `latest` to resolve dynamically.
     required: false
@@ -60,6 +64,7 @@ runs:
       env:
         SOURCE: ${{ inputs.source }}
         FLAGS: ${{ inputs.flags }}
+        AS_NAMESPACE: ${{ inputs.as-namespace }}
         GITHUB_TOKEN: ${{ github.token }}
         RUNNER_TEMP: ${{ runner.temp }}
       run: |
@@ -91,12 +96,23 @@ runs:
         # Generate JSON output for GitHub Summary
         json_output="${RUNNER_TEMP}/aer-test-results.json"
 
-        if [[ -z "${FLAGS}" ]]; then
-          aer test "${paths[@]}" --coverage --json "${json_output}"
-        else
-          # shellcheck disable=SC2086
-          aer test "${paths[@]}" ${FLAGS} --coverage --json "${json_output}"
+        ns_args=()
+        if [[ -n "${AS_NAMESPACE}" ]]; then
+          ns_args+=(--as-namespace "${AS_NAMESPACE}")
         fi
+
+        flag_args=()
+        if [[ -n "${FLAGS}" ]]; then
+          # shellcheck disable=SC2206
+          flag_args=(${FLAGS})
+        fi
+
+        aer_cmd=(aer test "${paths[@]}")
+        aer_cmd+=("${ns_args[@]}")
+        aer_cmd+=("${flag_args[@]}")
+        aer_cmd+=(--coverage --json "${json_output}")
+
+        "${aer_cmd[@]}"
 
     - name: Generate Test Summary
       if: always()

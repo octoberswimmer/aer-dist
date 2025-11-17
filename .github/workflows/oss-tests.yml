@@ -13,6 +13,15 @@ env:
 jobs:
   dlrs:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: [unpackaged, namespaced]
+        include:
+          - scenario: unpackaged
+            namespace: ""
+          - scenario: namespaced
+            namespace: aertest
     steps:
       - name: Checkout action
         uses: actions/checkout@v4
@@ -31,11 +40,21 @@ jobs:
         with:
           source: ${{ env.DLRS_SOURCE }}
           version: ${{ env.AER_VERSION }}
+          as-namespace: ${{ matrix.namespace }}
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
 
   fflib-apex-mocks:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: [unpackaged, namespaced]
+        include:
+          - scenario: unpackaged
+            namespace: ""
+          - scenario: namespaced
+            namespace: aertest
     steps:
       - name: Checkout action
         uses: actions/checkout@v4
@@ -56,11 +75,21 @@ jobs:
         with:
           source: ${{ env.FFLIB_MOCKS_SOURCE }}
           version: ${{ env.AER_VERSION }}
+          as-namespace: ${{ matrix.namespace }}
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
 
   fflib-apex-common:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: [unpackaged, namespaced]
+        include:
+          - scenario: unpackaged
+            namespace: ""
+          - scenario: namespaced
+            namespace: aertest
     steps:
       - name: Checkout action
         uses: actions/checkout@v4
@@ -94,11 +123,21 @@ jobs:
             ${{ env.FFLIB_COMMON_SOURCE }}
             ${{ env.FFLIB_MOCKS_SOURCE }}
           version: ${{ env.AER_VERSION }}
+          as-namespace: ${{ matrix.namespace }}
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
 
   trigger-actions-framework:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: [unpackaged, namespaced]
+        include:
+          - scenario: unpackaged
+            namespace: ""
+          - scenario: namespaced
+            namespace: aertest
     steps:
       - name: Checkout action
         uses: actions/checkout@v4
@@ -119,11 +158,21 @@ jobs:
         with:
           source: ${{ env.TAF_SOURCE }}
           version: ${{ env.AER_VERSION }}
+          as-namespace: ${{ matrix.namespace }}
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
 
   jira-sf-integration:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: [unpackaged, namespaced]
+        include:
+          - scenario: unpackaged
+            namespace: ""
+          - scenario: namespaced
+            namespace: aertest
     steps:
       - name: Checkout action
         uses: actions/checkout@v4
@@ -147,11 +196,21 @@ jobs:
             ${{ env.JIRA_SF_CORE }}
             ${{ env.JIRA_SF_AUTH }}
           version: ${{ env.AER_VERSION }}
+          as-namespace: ${{ matrix.namespace }}
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
 
   open-force-jsonparse:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: [unpackaged, namespaced]
+        include:
+          - scenario: unpackaged
+            namespace: ""
+          - scenario: namespaced
+            namespace: aertest
     steps:
       - name: Checkout action
         uses: actions/checkout@v4
@@ -172,6 +231,7 @@ jobs:
         with:
           source: ${{ env.JSONPARSE_SOURCE }}
           version: ${{ env.AER_VERSION }}
+          as-namespace: ${{ matrix.namespace }}
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
 
@@ -202,6 +262,15 @@ jobs:
 
   r-apex:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: [unpackaged, namespaced]
+        include:
+          - scenario: unpackaged
+            namespace: ""
+          - scenario: namespaced
+            namespace: aertest
     steps:
       - name: Checkout action
         uses: actions/checkout@v4
@@ -222,11 +291,21 @@ jobs:
         with:
           source: ${{ env.RAPEX_SOURCE }}
           version: ${{ env.AER_VERSION }}
+          as-namespace: ${{ matrix.namespace }}
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
 
   universalmock:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: [unpackaged, namespaced]
+        include:
+          - scenario: unpackaged
+            namespace: ""
+          - scenario: namespaced
+            namespace: aertest
     steps:
       - name: Checkout action
         uses: actions/checkout@v4
@@ -247,11 +326,21 @@ jobs:
         with:
           source: ${{ env.UNIVERSALMOCK_SOURCE }}
           version: ${{ env.AER_VERSION }}
+          as-namespace: ${{ matrix.namespace }}
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
 
   moxygen:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: [unpackaged, namespaced]
+        include:
+          - scenario: unpackaged
+            namespace: ""
+          - scenario: namespaced
+            namespace: aertest
     steps:
       - name: Checkout action
         uses: actions/checkout@v4
@@ -272,6 +361,7 @@ jobs:
         with:
           source: ${{ env.MOXYGEN_SOURCE }}
           version: ${{ env.AER_VERSION }}
+          as-namespace: ${{ matrix.namespace }}
           # Skipping broken test pending fix: https://github.com/ZackFra/Salesforce-Moxygen/pull/315
           flags: --skip SchemaServiceTest.testGetChildRelationshipFieldName
         env:
