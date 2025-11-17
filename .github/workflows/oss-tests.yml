@@ -164,15 +164,6 @@ jobs:
 
   jira-sf-integration:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        scenario: [unpackaged, namespaced]
-        include:
-          - scenario: unpackaged
-            namespace: ""
-          - scenario: namespaced
-            namespace: aertest
     steps:
       - name: Checkout action
         uses: actions/checkout@v4
@@ -196,7 +187,6 @@ jobs:
             ${{ env.JIRA_SF_CORE }}
             ${{ env.JIRA_SF_AUTH }}
           version: ${{ env.AER_VERSION }}
-          as-namespace: ${{ matrix.namespace }}
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
 
@@ -332,15 +322,6 @@ jobs:
 
   moxygen:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        scenario: [unpackaged, namespaced]
-        include:
-          - scenario: unpackaged
-            namespace: ""
-          - scenario: namespaced
-            namespace: aertest
     steps:
       - name: Checkout action
         uses: actions/checkout@v4
@@ -361,7 +342,6 @@ jobs:
         with:
           source: ${{ env.MOXYGEN_SOURCE }}
           version: ${{ env.AER_VERSION }}
-          as-namespace: ${{ matrix.namespace }}
           # Skipping broken test pending fix: https://github.com/ZackFra/Salesforce-Moxygen/pull/315
           flags: --skip SchemaServiceTest.testGetChildRelationshipFieldName
         env:
