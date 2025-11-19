@@ -62,9 +62,9 @@ jobs:
       - name: Fetch fflib-apex-mocks commit 0cf357a
         run: |
           set -euo pipefail
-          workdir="oss/fflib-apex-mocks"
-          mkdir -p "${workdir}"
-          git config --global --add advice.detachedHead false
+          root="oss/fflib-apex-mocks"
+          mkdir -p "${root}"
+          workdir=$(mktemp -d "${root}/repo.XXXXXX")
           git clone https://github.com/apex-enterprise-patterns/fflib-apex-mocks.git "${workdir}"
           cd "${workdir}"
           git checkout 0cf357ac9d42fb069f2c651573f7c18ba41f1786
@@ -97,9 +97,9 @@ jobs:
       - name: Fetch fflib-apex-common commit ca71952
         run: |
           set -euo pipefail
-          workdir="oss/fflib-apex-common"
-          mkdir -p "${workdir}"
-          git config --global --add advice.detachedHead false
+          root="oss/fflib-apex-common"
+          mkdir -p "${root}"
+          workdir=$(mktemp -d "${root}/repo.XXXXXX")
           git clone https://github.com/apex-enterprise-patterns/fflib-apex-common.git "${workdir}"
           cd "${workdir}"
           git checkout ca71952b3fc3928c06dbb6f57492b820c8167cf4
@@ -108,9 +108,9 @@ jobs:
       - name: Fetch fflib-apex-mocks commit 0cf357a (dependency)
         run: |
           set -euo pipefail
-          workdir="oss/fflib-apex-mocks"
-          mkdir -p "${workdir}"
-          git config --global --add advice.detachedHead false
+          root="oss/fflib-apex-mocks"
+          mkdir -p "${root}"
+          workdir=$(mktemp -d "${root}/repo.XXXXXX")
           git clone https://github.com/apex-enterprise-patterns/fflib-apex-mocks.git "${workdir}"
           cd "${workdir}"
           git checkout 0cf357ac9d42fb069f2c651573f7c18ba41f1786
@@ -145,9 +145,9 @@ jobs:
       - name: Fetch trigger-actions-framework commit cfda671
         run: |
           set -euo pipefail
-          workdir="oss/trigger-actions-framework"
-          mkdir -p "${workdir}"
-          git config --global --add advice.detachedHead false
+          root="oss/trigger-actions-framework"
+          mkdir -p "${root}"
+          workdir=$(mktemp -d "${root}/repo.XXXXXX")
           git clone https://github.com/mitchspano/trigger-actions-framework.git "${workdir}"
           cd "${workdir}"
           git checkout cfda6715c0f4d3977224dcc2619aa30a84e537dd
@@ -171,9 +171,9 @@ jobs:
       - name: Fetch jawills/jira-sf-integration commit 38c27d2
         run: |
           set -euo pipefail
-          workdir="oss/jira-sf-integration"
-          mkdir -p "${workdir}"
-          git config --global --add advice.detachedHead false
+          root="oss/jira-sf-integration"
+          mkdir -p "${root}"
+          workdir=$(mktemp -d "${root}/repo.XXXXXX")
           git clone https://github.com/jawills/jira-sf-integration.git "${workdir}"
           cd "${workdir}"
           git checkout 38c27d2a8353eadd468778a859e09a787f075026
@@ -208,9 +208,9 @@ jobs:
       - name: Fetch open-force/jsonparse commit 69da320
         run: |
           set -euo pipefail
-          workdir="oss/open-force-jsonparse"
-          mkdir -p "${workdir}"
-          git config --global --add advice.detachedHead false
+          root="oss/open-force-jsonparse"
+          mkdir -p "${root}"
+          workdir=$(mktemp -d "${root}/repo.XXXXXX")
           git clone https://github.com/open-force/jsonparse.git "${workdir}"
           cd "${workdir}"
           git checkout 69da320c172da34d4112835509184a31ce500f80
@@ -234,9 +234,9 @@ jobs:
       - name: Fetch codefriar/ApexKit commit a6e8921
         run: |
           set -euo pipefail
-          workdir="oss/codefriar-apexkit"
-          mkdir -p "${workdir}"
-          git config --global --add advice.detachedHead false
+          root="oss/codefriar-apexkit"
+          mkdir -p "${root}"
+          workdir=$(mktemp -d "${root}/repo.XXXXXX")
           git clone https://github.com/codefriar/ApexKit.git "${workdir}"
           cd "${workdir}"
           git checkout 4c1d9cb4d3555ba56956405341679be95c46e66c
@@ -268,9 +268,9 @@ jobs:
       - name: Fetch PropicSignifi/R.apex commit 28f6198
         run: |
           set -euo pipefail
-          workdir="oss/propicsignifi-rapex"
-          mkdir -p "${workdir}"
-          git config --global --add advice.detachedHead false
+          root="oss/propicsignifi-rapex"
+          mkdir -p "${root}"
+          workdir=$(mktemp -d "${root}/repo.XXXXXX")
           git clone https://github.com/PropicSignifi/R.apex.git "${workdir}"
           cd "${workdir}"
           git checkout 28f6198373eec788c0811db0f1089ce8a8b30746
@@ -303,9 +303,9 @@ jobs:
       - name: Fetch surajp/universalmock commit 1e04164
         run: |
           set -euo pipefail
-          workdir="oss/surajp-universalmock"
-          mkdir -p "${workdir}"
-          git config --global --add advice.detachedHead false
+          root="oss/surajp-universalmock"
+          mkdir -p "${root}"
+          workdir=$(mktemp -d "${root}/repo.XXXXXX")
           git clone https://github.com/surajp/universalmock.git "${workdir}"
           cd "${workdir}"
           git checkout 1e04164ca66258b21cc9bab9e614060ca3594b28
@@ -338,9 +338,9 @@ jobs:
       - name: Fetch ZackFra/Salesforce-Moxygen commit 687f30f
         run: |
           set -euo pipefail
-          workdir="oss/salesforce-moxygen"
-          mkdir -p "${workdir}"
-          git config --global --add advice.detachedHead false
+          root="oss/salesforce-moxygen"
+          mkdir -p "${root}"
+          workdir=$(mktemp -d "${root}/repo.XXXXXX")
           git clone https://github.com/ZackFra/Salesforce-Moxygen.git "${workdir}"
           cd "${workdir}"
           # Fix for broken test: https://github.com/ZackFra/Salesforce-Moxygen/pull/315
@@ -366,9 +366,9 @@ jobs:
       - name: Fetch pkozuchowski/Apex-Opensource-Library commit 9110e87
         run: |
           set -euo pipefail
-          workdir="oss/apex-opensource-library"
-          mkdir -p "${workdir}"
-          git config --global --add advice.detachedHead false
+          root="oss/apex-opensource-library"
+          mkdir -p "${root}"
+          workdir=$(mktemp -d "${root}/repo.XXXXXX")
           git clone https://github.com/pkozuchowski/Apex-Opensource-Library.git "${workdir}"
           cd "${workdir}"
           git checkout 9110e8760b4dff82e102af7738044ed69ce54747
