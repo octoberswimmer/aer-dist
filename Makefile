@@ -68,6 +68,7 @@ release: checksum
 		echo "Tag '$(VERSION)' does not exist. Create the tag before running 'make release'."; \
 		exit 1; \
 	fi
+	git push octoberswimmer "$(VERSION)"
 	gh release create "$(VERSION)" --title "aer $(VERSION)" --notes-from-tag --verify-tag $(RELEASE_ASSETS)
 
 tag:
