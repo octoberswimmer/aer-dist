@@ -381,3 +381,28 @@ jobs:
           version: ${{ env.AER_VERSION }}
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
+
+  trailheadapps-apex-recipes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout action
+        uses: actions/checkout@v4
+
+      - name: Fetch trailheadapps/apex-recipes commit 19aba6b
+        run: |
+          set -euo pipefail
+          root="oss/trailheadapps-apex-recipes"
+          mkdir -p "${root}"
+          workdir=$(mktemp -d "${root}/repo.XXXXXX")
+          git clone https://github.com/trailheadapps/apex-recipes.git "${workdir}"
+          cd "${workdir}"
+          git checkout 19aba6b846857516f389d16b8597dd410a6ce904
+          echo "APEX_RECIPES_SOURCE=${workdir}/force-app" >> "$GITHUB_ENV"
+
+      - name: Run aer test (trailheadapps/apex-recipes commit 19aba6b)
+        uses: ./
+        with:
+          source: ${{ env.APEX_RECIPES_SOURCE }}
+          version: ${{ env.AER_VERSION }}
+        env:
+          AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
