@@ -406,3 +406,38 @@ jobs:
           version: ${{ env.AER_VERSION }}
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
+
+  nebulalogger:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: [unpackaged, namespaced]
+        include:
+          - scenario: unpackaged
+            namespace: ""
+          - scenario: namespaced
+            namespace: aertest
+    steps:
+      - name: Checkout action
+        uses: actions/checkout@v4
+
+      - name: Fetch jongpie/NebulaLogger commit 1adf4de
+        run: |
+          set -euo pipefail
+          root="oss/nebulalogger"
+          mkdir -p "${root}"
+          workdir=$(mktemp -d "${root}/repo.XXXXXX")
+          git clone https://github.com/jongpie/NebulaLogger.git "${workdir}"
+          cd "${workdir}"
+          git checkout 1adf4dea79c9583ce91774f7b1f2217d83c7beb1
+          echo "NEBULALOGGER_SOURCE=${workdir}/nebula-logger/core" >> "$GITHUB_ENV"
+
+      - name: Run aer test (jongpie/NebulaLogger commit 1adf4de)
+        uses: ./
+        with:
+          source: ${{ env.NEBULALOGGER_SOURCE }}
+          version: ${{ env.AER_VERSION }}
+          as-namespace: ${{ matrix.namespace }}
+        env:
+          AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
