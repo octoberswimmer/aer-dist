@@ -2,7 +2,7 @@ module aer
 
 go 1.25.3
 
-require github.com/octoberswimmer/aer v0.0.65
+require github.com/octoberswimmer/aer v0.0.66
 
 require (
 	github.com/ForceCLI/force v1.4.3 // indirect
@@ -27,7 +27,7 @@ require (
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/nbio/xml v0.0.0-20251016084110-a619c1115f34 // indirect
 	github.com/ncruces/go-strftime v0.1.9 // indirect
-	github.com/octoberswimmer/apexfmt v0.46.0 // indirect
+	github.com/octoberswimmer/apexfmt v0.47.0 // indirect
 	github.com/octoberswimmer/digger v0.20.0 // indirect
 	github.com/octoberswimmer/sformula v0.4.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
