@@ -2,7 +2,7 @@ module aer
 
 go 1.25.3
 
-require github.com/octoberswimmer/aer v0.0.71
+require github.com/octoberswimmer/aer v0.0.72
 
 require (
 	github.com/ForceCLI/force v1.4.3 // indirect
@@ -24,6 +24,8 @@ require (
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/imdario/mergo v0.3.16 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/lucasbbb/otp v1.0.0 // indirect
+	github.com/lucasbbb/venus v0.0.0-20210302100040-40540571cfac // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/nbio/xml v0.0.0-20251016084110-a619c1115f34 // indirect
 	github.com/ncruces/go-strftime v0.1.9 // indirect
@@ -34,6 +36,7 @@ require (
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
+	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e // indirect
 	github.com/spf13/cobra v1.10.1 // indirect
 	github.com/spf13/pflag v1.0.9 // indirect
 	github.com/tidwall/jsonc v0.3.2 // indirect
