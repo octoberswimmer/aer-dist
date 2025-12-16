@@ -1,0 +1,20 @@
+aer Local Apex Debugger License
+
+Copyright (c) 2025 OctoberSwimmer. All rights reserved.
+
+This software is licensed, not sold. You may use the following features free of charge:
+- Language Server Protocol (LSP) features.
+- The test runner to execute up to 100 tests at a time.
+- The debugger for up to five minutes per debugging session.
+
+Any other use requires an active license, which can be obtained at
+https://www.octoberswimmer.com/tools/aer/subscribe/. You may not bypass or
+exceed the free-use limits without a valid license.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM,
+OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
