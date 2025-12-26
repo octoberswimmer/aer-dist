@@ -225,6 +225,49 @@ jobs:
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
 
+  closinator:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: [unpackaged, namespaced]
+        include:
+          - scenario: unpackaged
+            namespace: ""
+          - scenario: namespaced
+            namespace: aertest
+    steps:
+      - name: Checkout action
+        uses: actions/checkout@v4
+
+      - name: Fetch bhanudas/closinator commit 4412d44
+        run: |
+          set -euo pipefail
+          root="oss/closinator"
+          mkdir -p "${root}"
+          workdir=$(mktemp -d "${root}/repo.XXXXXX")
+          git clone https://github.com/bhanudas/closinator.git "${workdir}"
+          cd "${workdir}"
+          git checkout 4412d44833f8b3f0daf3f6e4167606159c865d47
+          if [ -d "${workdir}/force-app/main/default" ]; then
+            echo "CLOSINATOR_SOURCE=${workdir}/force-app/main/default" >> "$GITHUB_ENV"
+          elif [ -d "${workdir}/force-app" ]; then
+            echo "CLOSINATOR_SOURCE=${workdir}/force-app" >> "$GITHUB_ENV"
+          elif [ -d "${workdir}/src" ]; then
+            echo "CLOSINATOR_SOURCE=${workdir}/src" >> "$GITHUB_ENV"
+          else
+            echo "CLOSINATOR_SOURCE=${workdir}" >> "$GITHUB_ENV"
+          fi
+
+      - name: Run aer test (bhanudas/closinator commit 4412d44)
+        uses: ./
+        with:
+          source: ${{ env.CLOSINATOR_SOURCE }}
+          version: ${{ env.AER_VERSION }}
+          as-namespace: ${{ matrix.namespace }}
+        env:
+          AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
+
   codefriar-apexkit:
     runs-on: ubuntu-latest
     steps:
