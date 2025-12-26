@@ -484,3 +484,38 @@ jobs:
           as-namespace: ${{ matrix.namespace }}
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
+
+  flxbl-apex-api:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: [unpackaged, namespaced]
+        include:
+          - scenario: unpackaged
+            namespace: ""
+          - scenario: namespaced
+            namespace: aertest
+    steps:
+      - name: Checkout action
+        uses: actions/checkout@v4
+
+      - name: Fetch flxbl-io/flxbl-apex-api commit c13b531
+        run: |
+          set -euo pipefail
+          root="oss/flxbl-apex-api"
+          mkdir -p "${root}"
+          workdir=$(mktemp -d "${root}/repo.XXXXXX")
+          git clone https://github.com/flxbl-io/flxbl-apex-api.git "${workdir}"
+          cd "${workdir}"
+          git checkout c13b5310586f639d48339454bd3e925559aa0946
+          echo "FLXBL_APEX_API_SOURCE=${workdir}/apps" >> "$GITHUB_ENV"
+
+      - name: Run aer test (flxbl-io/flxbl-apex-api commit c13b531)
+        uses: ./
+        with:
+          source: ${{ env.FLXBL_APEX_API_SOURCE }}
+          version: ${{ env.AER_VERSION }}
+          as-namespace: ${{ matrix.namespace }}
+        env:
+          AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
