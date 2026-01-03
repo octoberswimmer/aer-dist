@@ -8,7 +8,7 @@ on:
       - main
 
 env:
-  AER_VERSION: v0.0.77
+  AER_VERSION: v0.0.78
 
 jobs:
   dlrs:
