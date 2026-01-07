@@ -36,14 +36,28 @@ $(LINUX_ARM64): go.mod
 
 $(DARWIN_AMD64): go.mod
 	env CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build $(GO_BUILD_FLAGS) -ldflags "$(GO_LDFLAGS)" -o $@
+	rcodesign sign --for-notarization --pem-file <(pass OctoberSwimmer/aer/codesign/combined) $@
 
 $(DARWIN_ARM64): go.mod
 	env CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build $(GO_BUILD_FLAGS) -ldflags "$(GO_LDFLAGS)" -o $@
+	rcodesign sign --for-notarization --pem-file <(pass OctoberSwimmer/aer/codesign/combined) $@
 
 $(basename $(WINDOWS))_$(VERSION).zip: $(WINDOWS)
 	@rm -f $@
 	zip $@ $<
 	7za rn $@ $< $(EXECUTABLE).exe
+
+$(basename $(DARWIN_AMD64))_$(VERSION).zip: $(DARWIN_AMD64)
+	@rm -f $@
+	zip $@ $<
+	7za rn $@ $< $(EXECUTABLE)
+	rcodesign notary-submit --api-key-file <(pass OctoberSwimmer/aer/codesign/api-key) $@
+
+$(basename $(DARWIN_ARM64))_$(VERSION).zip: $(DARWIN_ARM64)
+	@rm -f $@
+	zip $@ $<
+	7za rn $@ $< $(EXECUTABLE)
+	rcodesign notary-submit --api-key-file <(pass OctoberSwimmer/aer/codesign/api-key) $@
 
 %_$(VERSION).zip: %
 	@rm -f $@
