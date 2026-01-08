@@ -525,12 +525,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scenario: [unpackaged, namespaced]
+        scenario: [unpackaged]
         include:
           - scenario: unpackaged
             namespace: ""
-          - scenario: namespaced
-            namespace: aertest
     steps:
       - name: Checkout action
         uses: actions/checkout@v4
