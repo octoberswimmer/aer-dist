@@ -557,12 +557,83 @@ jobs:
           git checkout 3cfa0f945e2e138ab8538b1a04a640aa15d37606
           echo "DML_LIB_SOURCE=${workdir}/force-app" >> "$GITHUB_ENV"
 
+      - name: Fetch beyond-the-cloud-dev/async-lib commit fa4f92e
+        run: |
+          set -euo pipefail
+          root="oss/async-lib"
+          mkdir -p "${root}"
+          workdir=$(mktemp -d "${root}/repo.XXXXXX")
+          git clone https://github.com/beyond-the-cloud-dev/async-lib.git "${workdir}"
+          cd "${workdir}"
+          git checkout fa4f92ea6a3b19938a4db260500b2b8040ccac46
+          echo "ASYNC_LIB_SOURCE=${workdir}/force-app" >> "$GITHUB_ENV"
+
+      - name: Fetch beyond-the-cloud-dev/http-mock-lib commit dd13273
+        run: |
+          set -euo pipefail
+          root="oss/http-mock-lib"
+          mkdir -p "${root}"
+          workdir=$(mktemp -d "${root}/repo.XXXXXX")
+          git clone https://github.com/beyond-the-cloud-dev/http-mock-lib.git "${workdir}"
+          cd "${workdir}"
+          git checkout dd13273f23e304d3492a9991fe15344492c87c0b
+          echo "HTTP_MOCK_LIB_SOURCE=${workdir}/force-app" >> "$GITHUB_ENV"
+
+      - name: Fetch beyond-the-cloud-dev/apex-consts commit 146cd85
+        run: |
+          set -euo pipefail
+          root="oss/apex-consts"
+          mkdir -p "${root}"
+          workdir=$(mktemp -d "${root}/repo.XXXXXX")
+          git clone https://github.com/beyond-the-cloud-dev/apex-consts.git "${workdir}"
+          cd "${workdir}"
+          git checkout 146cd85f3b62a4d55814782cddb59c5844671390
+          echo "APEX_CONSTS_SOURCE=${workdir}/force-app" >> "$GITHUB_ENV"
+
       - name: Run aer test (Apex Fluently)
         uses: ./
         with:
           source: |
             ${{ env.SOQL_LIB_SOURCE }}
             ${{ env.DML_LIB_SOURCE }}
+            ${{ env.ASYNC_LIB_SOURCE }}
+            ${{ env.HTTP_MOCK_LIB_SOURCE }}
+            ${{ env.APEX_CONSTS_SOURCE }}
+          version: ${{ env.AER_VERSION }}
+          as-namespace: ${{ matrix.namespace }}
+        env:
+          AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
+
+  cache-manager:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: [unpackaged, namespaced]
+        include:
+          - scenario: unpackaged
+            namespace: ""
+          - scenario: namespaced
+            namespace: aertest
+    steps:
+      - name: Checkout action
+        uses: actions/checkout@v4
+
+      - name: Fetch beyond-the-cloud-dev/cache-manager commit 2e5e55a
+        run: |
+          set -euo pipefail
+          root="oss/cache-manager"
+          mkdir -p "${root}"
+          workdir=$(mktemp -d "${root}/repo.XXXXXX")
+          git clone https://github.com/beyond-the-cloud-dev/cache-manager.git "${workdir}"
+          cd "${workdir}"
+          git checkout 2e5e55ab2fac099003b5e087ea7d24efe0875897
+          echo "CACHE_MANAGER_SOURCE=${workdir}/force-app" >> "$GITHUB_ENV"
+
+      - name: Run aer test (beyond-the-cloud-dev/cache-manager commit 2e5e55a)
+        uses: ./
+        with:
+          source: ${{ env.CACHE_MANAGER_SOURCE }}
           version: ${{ env.AER_VERSION }}
           as-namespace: ${{ matrix.namespace }}
         env:
