@@ -519,3 +519,51 @@ jobs:
           as-namespace: ${{ matrix.namespace }}
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
+
+  apex-fluently:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: [unpackaged, namespaced]
+        include:
+          - scenario: unpackaged
+            namespace: ""
+          - scenario: namespaced
+            namespace: aertest
+    steps:
+      - name: Checkout action
+        uses: actions/checkout@v4
+
+      - name: Fetch beyond-the-cloud-dev/soql-lib commit 7e4984a
+        run: |
+          set -euo pipefail
+          root="oss/soql-lib"
+          mkdir -p "${root}"
+          workdir=$(mktemp -d "${root}/repo.XXXXXX")
+          git clone https://github.com/beyond-the-cloud-dev/soql-lib.git "${workdir}"
+          cd "${workdir}"
+          git checkout 7e4984aa4701367f5375720d19b14202a51f5223
+          echo "SOQL_LIB_SOURCE=${workdir}/force-app" >> "$GITHUB_ENV"
+
+      - name: Fetch beyond-the-cloud-dev/dml-lib commit 3cfa0f9
+        run: |
+          set -euo pipefail
+          root="oss/dml-lib"
+          mkdir -p "${root}"
+          workdir=$(mktemp -d "${root}/repo.XXXXXX")
+          git clone https://github.com/beyond-the-cloud-dev/dml-lib.git "${workdir}"
+          cd "${workdir}"
+          git checkout 3cfa0f945e2e138ab8538b1a04a640aa15d37606
+          echo "DML_LIB_SOURCE=${workdir}/force-app" >> "$GITHUB_ENV"
+
+      - name: Run aer test (Apex Fluently)
+        uses: ./
+        with:
+          source: |
+            ${{ env.SOQL_LIB_SOURCE }}
+            ${{ env.DML_LIB_SOURCE }}
+          version: ${{ env.AER_VERSION }}
+          as-namespace: ${{ matrix.namespace }}
+        env:
+          AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
