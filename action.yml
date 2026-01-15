@@ -13,8 +13,8 @@ inputs:
     description: Additional flags appended after the source argument.
     required: false
     default: ""
-  as-namespace:
-    description: Optional namespace passed via `--as-namespace`.
+  default-namespace:
+    description: Optional namespace passed via `--default-namespace`.
     required: false
     default: ""
   version:
@@ -64,7 +64,7 @@ runs:
       env:
         SOURCE: ${{ inputs.source }}
         FLAGS: ${{ inputs.flags }}
-        AS_NAMESPACE: ${{ inputs.as-namespace }}
+        DEFAULT_NAMESPACE: ${{ inputs.default-namespace }}
         GITHUB_TOKEN: ${{ github.token }}
         RUNNER_TEMP: ${{ runner.temp }}
       run: |
@@ -97,8 +97,8 @@ runs:
         json_output="${RUNNER_TEMP}/aer-test-results.json"
 
         ns_args=()
-        if [[ -n "${AS_NAMESPACE}" ]]; then
-          ns_args+=(--as-namespace "${AS_NAMESPACE}")
+        if [[ -n "${DEFAULT_NAMESPACE}" ]]; then
+          ns_args+=(--default-namespace "${DEFAULT_NAMESPACE}")
         fi
 
         flag_args=()

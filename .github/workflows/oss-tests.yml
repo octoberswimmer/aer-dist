@@ -40,7 +40,7 @@ jobs:
         with:
           source: ${{ env.DLRS_SOURCE }}
           version: ${{ env.AER_VERSION }}
-          as-namespace: ${{ matrix.namespace }}
+          default-namespace: ${{ matrix.namespace }}
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
 
@@ -75,7 +75,7 @@ jobs:
         with:
           source: ${{ env.FFLIB_MOCKS_SOURCE }}
           version: ${{ env.AER_VERSION }}
-          as-namespace: ${{ matrix.namespace }}
+          default-namespace: ${{ matrix.namespace }}
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
 
@@ -123,7 +123,7 @@ jobs:
             ${{ env.FFLIB_COMMON_SOURCE }}
             ${{ env.FFLIB_MOCKS_SOURCE }}
           version: ${{ env.AER_VERSION }}
-          as-namespace: ${{ matrix.namespace }}
+          default-namespace: ${{ matrix.namespace }}
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
 
@@ -158,7 +158,7 @@ jobs:
         with:
           source: ${{ env.TAF_SOURCE }}
           version: ${{ env.AER_VERSION }}
-          as-namespace: ${{ matrix.namespace }}
+          default-namespace: ${{ matrix.namespace }}
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
 
@@ -221,7 +221,7 @@ jobs:
         with:
           source: ${{ env.JSONPARSE_SOURCE }}
           version: ${{ env.AER_VERSION }}
-          as-namespace: ${{ matrix.namespace }}
+          default-namespace: ${{ matrix.namespace }}
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
 
@@ -264,7 +264,7 @@ jobs:
         with:
           source: ${{ env.CLOSINATOR_SOURCE }}
           version: ${{ env.AER_VERSION }}
-          as-namespace: ${{ matrix.namespace }}
+          default-namespace: ${{ matrix.namespace }}
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
 
@@ -324,7 +324,7 @@ jobs:
         with:
           source: ${{ env.RAPEX_SOURCE }}
           version: ${{ env.AER_VERSION }}
-          as-namespace: ${{ matrix.namespace }}
+          default-namespace: ${{ matrix.namespace }}
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
 
@@ -359,7 +359,7 @@ jobs:
         with:
           source: ${{ env.UNIVERSALMOCK_SOURCE }}
           version: ${{ env.AER_VERSION }}
-          as-namespace: ${{ matrix.namespace }}
+          default-namespace: ${{ matrix.namespace }}
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
 
@@ -396,7 +396,7 @@ jobs:
         with:
           source: ${{ env.MOXYGEN_SOURCE }}
           version: ${{ env.AER_VERSION }}
-          as-namespace: ${{ matrix.namespace }}
+          default-namespace: ${{ matrix.namespace }}
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
 
@@ -481,7 +481,7 @@ jobs:
         with:
           source: ${{ env.NEBULALOGGER_SOURCE }}
           version: ${{ env.AER_VERSION }}
-          as-namespace: ${{ matrix.namespace }}
+          default-namespace: ${{ matrix.namespace }}
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
 
@@ -516,7 +516,7 @@ jobs:
         with:
           source: ${{ env.FLXBL_APEX_API_SOURCE }}
           version: ${{ env.AER_VERSION }}
-          as-namespace: ${{ matrix.namespace }}
+          default-namespace: ${{ matrix.namespace }}
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
 
@@ -598,7 +598,7 @@ jobs:
             ${{ env.HTTP_MOCK_LIB_SOURCE }}
             ${{ env.APEX_CONSTS_SOURCE }}
           version: ${{ env.AER_VERSION }}
-          as-namespace: ${{ matrix.namespace }}
+          default-namespace: ${{ matrix.namespace }}
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
 
@@ -633,6 +633,6 @@ jobs:
         with:
           source: ${{ env.CACHE_MANAGER_SOURCE }}
           version: ${{ env.AER_VERSION }}
-          as-namespace: ${{ matrix.namespace }}
+          default-namespace: ${{ matrix.namespace }}
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}

@@ -49,7 +49,7 @@ Adjust `with.source` for your project's Apex root, and pin the `uses:` clause to
 
 Optional inputs:
 - `flags` lets you append additional CLI arguments (for example `--skip SomeTest`).
-- `as-namespace` mirrors the `--as-namespace` flag to run tests against as if the code is within a package's namespace.
+- `default-namespace` mirrors the `--default-namespace` flag to run tests against as if the code is within a package's namespace.
 
 Set a license key for production use (running more than 100 tests).
 
