@@ -1,0 +1,83 @@
+name: NPPatch Apex Tests
+
+on:
+  workflow_dispatch:
+
+env:
+  AER_VERSION: v0.0.111
+
+jobs:
+  nppatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout action
+        uses: actions/checkout@v4
+
+      - name: Clone nppatch repo
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo_root="${HOME}/git/nppatch"
+          mkdir -p "$(dirname "${repo_root}")"
+          rm -rf "${repo_root}"
+          git clone --depth 1 "git@github.com:Sundae-Shop-Consulting/nppatch.git" "${repo_root}"
+          git -C "${repo_root}" fetch --depth 1 origin "243cee720cd1c30ad86da2ad185940f930c8bfef"
+          git -C "${repo_root}" checkout --detach "243cee720cd1c30ad86da2ad185940f930c8bfef"
+
+      - name: Resolve cci-namespace release tag
+        id: resolve_cci_namespace
+        shell: bash
+        working-directory: ${{ github.action_path }}
+        run: |
+          set -euo pipefail
+          go run ./cmd/actions/resolve \
+            --requested latest \
+            --repo "cwarden/cci-namespace"
+
+      - name: Install cci-namespace
+        shell: bash
+        working-directory: ${{ github.action_path }}
+        env:
+          RUNNER_OS: ${{ runner.os }}
+          RUNNER_ARCH: ${{ runner.arch }}
+          RUNNER_TEMP: ${{ runner.temp }}
+        run: |
+          set -euo pipefail
+          go run ./cmd/actions/install \
+            --repo "${{ steps.resolve_cci_namespace.outputs.repo }}" \
+            --version "${{ steps.resolve_cci_namespace.outputs.version }}" \
+            --runner-os "${RUNNER_OS}" \
+            --runner-arch "${RUNNER_ARCH}" \
+            --dest "${RUNNER_TEMP}/cci-namespace" \
+            --asset-prefix "cci-namespace" \
+            --binary-name "cci-namespace"
+
+      - name: Namespace nppatch source
+        shell: bash
+        run: |
+          set -euo pipefail
+          cci-namespace -path "${HOME}/git/nppatch"
+
+      - name: Set nppatch source paths
+        id: nppatch_paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "source<<EOF"
+            printf '%s\n' \
+              "${HOME}/git/nppatch/force-app/" \
+              "${HOME}/git/nppatch/unpackaged/config/"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Run aer test (nppatch)
+        uses: ./
+        with:
+          source: ${{ steps.nppatch_paths.outputs.source }}
+          version: ${{ env.AER_VERSION }}
+          default-namespace: nppatch
+          flags: >-
+            --skip nppatch.CONV_Account_Conversion_BATCH_TEST.testAccountConversion1to1
+        env:
+          AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}

@@ -149,20 +149,25 @@ tag:
 	tag_message_file="$$tmpdir/message"; \
 	go get "$$module@$$next_version"; \
 	go mod tidy; \
-	workflow=".github/workflows/oss-tests.yml"; \
-	tmp_workflow=$$(mktemp); \
-	if ! sed -e "0,/^\([[:space:]]*AER_VERSION:\) v[0-9][0-9.]*/s//\1 $$next_version/" "$$workflow" > "$$tmp_workflow"; then \
-		rm -f "$$tmp_workflow"; \
-		exit 1; \
-	fi; \
-	if cmp -s "$$workflow" "$$tmp_workflow"; then \
-		rm -f "$$tmp_workflow"; \
-		echo "Failed to update AER_VERSION in $$workflow"; \
-		exit 1; \
-	fi; \
-	mv "$$tmp_workflow" "$$workflow"; \
+	workflows=( \
+		".github/workflows/oss-tests.yml" \
+		".github/workflows/nppatch-tests.yml" \
+	); \
+	for workflow in "$${workflows[@]}"; do \
+		tmp_workflow=$$(mktemp); \
+		if ! sed -e "0,/^\([[:space:]]*AER_VERSION:\) v[0-9][0-9.]*/s//\1 $$next_version/" "$$workflow" > "$$tmp_workflow"; then \
+			rm -f "$$tmp_workflow"; \
+			exit 1; \
+		fi; \
+		if cmp -s "$$workflow" "$$tmp_workflow"; then \
+			rm -f "$$tmp_workflow"; \
+			echo "Failed to update AER_VERSION in $$workflow"; \
+			exit 1; \
+		fi; \
+		mv "$$tmp_workflow" "$$workflow"; \
+	done; \
 	$(MAKE) VERSION="$$next_version" dist; \
-	git add go.mod go.sum .github/workflows/oss-tests.yml; \
+	git add go.mod go.sum .github/workflows/oss-tests.yml .github/workflows/nppatch-tests.yml; \
 	if git diff --cached --quiet; then \
 		echo "No changes produced by the tag workflow."; \
 		exit 1; \

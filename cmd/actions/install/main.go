@@ -19,12 +19,16 @@ func main() {
 	var runnerOS string
 	var runnerArch string
 	var dest string
+	var assetPrefix string
+	var binaryBase string
 
 	flag.StringVar(&repo, "repo", "", "repository that hosts the release assets")
 	flag.StringVar(&version, "version", "", "release tag to download")
 	flag.StringVar(&runnerOS, "runner-os", "", "runner operating system")
 	flag.StringVar(&runnerArch, "runner-arch", "", "runner architecture")
-	flag.StringVar(&dest, "dest", "", "destination directory for the aer binary")
+	flag.StringVar(&dest, "dest", "", "destination directory for the downloaded binary")
+	flag.StringVar(&assetPrefix, "asset-prefix", "aer", "release asset name prefix")
+	flag.StringVar(&binaryBase, "binary-name", "aer", "binary name inside the release archive (without .exe)")
 	flag.Parse()
 
 	if repo == "" || version == "" {
@@ -51,18 +55,22 @@ func main() {
 		log.Fatal(err)
 	}
 
-	var archiveName string
 	var binaryName string
-	if platformKey == "windows" {
-		archiveName = fmt.Sprintf("aer_windows_amd64_%s.zip", version)
-		binaryName = "aer.exe"
-	} else {
-		archiveName = fmt.Sprintf("aer_%s_%s_%s.zip", platformKey, cpuKey, version)
+	archiveName := fmt.Sprintf("%s_%s_%s_%s.zip", assetPrefix, platformKey, cpuKey, version)
+	binaryName = strings.TrimSpace(binaryBase)
+	if binaryName == "" {
 		binaryName = "aer"
+	}
+	if platformKey == "windows" {
+		if !strings.HasSuffix(strings.ToLower(binaryName), ".exe") {
+			binaryName += ".exe"
+		}
+	} else {
+		binaryName = strings.TrimSuffix(binaryName, ".exe")
 	}
 
 	if dest == "" {
-		log.Fatal("--dest must point to a writable directory (e.g. $RUNNER_TEMP/aer)")
+		log.Fatal("--dest must point to a writable directory (e.g. $RUNNER_TEMP/bin)")
 	}
 	if err := os.MkdirAll(dest, 0o755); err != nil {
 		log.Fatalf("create dest directory: %v", err)
