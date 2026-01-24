@@ -636,3 +636,53 @@ jobs:
           default-namespace: ${{ matrix.namespace }}
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
+
+  salesforce-google-client:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout action
+        uses: actions/checkout@v4
+
+      - name: Fetch jongpie/NebulaLogger commit 1adf4de (dependency)
+        run: |
+          set -euo pipefail
+          root="oss/nebulalogger"
+          mkdir -p "${root}"
+          workdir=$(mktemp -d "${root}/repo.XXXXXX")
+          git clone https://github.com/jongpie/NebulaLogger.git "${workdir}"
+          cd "${workdir}"
+          git checkout 1adf4dea79c9583ce91774f7b1f2217d83c7beb1
+          echo "NEBULALOGGER_SOURCE=${workdir}/nebula-logger/core" >> "$GITHUB_ENV"
+
+      - name: Fetch sandriiy/salesforce-google-drive-library commit 1a1b9f3 (dependency)
+        run: |
+          set -euo pipefail
+          root="oss/salesforce-google-drive-library"
+          mkdir -p "${root}"
+          workdir=$(mktemp -d "${root}/repo.XXXXXX")
+          git clone https://github.com/sandriiy/salesforce-google-drive-library.git "${workdir}"
+          cd "${workdir}"
+          git checkout 1a1b9f33e5a4440dea02af89839c9519e9a127e5
+          echo "GOOGLE_DRIVE_LIB_SOURCE=${workdir}" >> "$GITHUB_ENV"
+
+      - name: Fetch sandriiy/salesforce-google-client commit 5f49723
+        run: |
+          set -euo pipefail
+          root="oss/salesforce-google-client"
+          mkdir -p "${root}"
+          workdir=$(mktemp -d "${root}/repo.XXXXXX")
+          git clone https://github.com/sandriiy/salesforce-google-client.git "${workdir}"
+          cd "${workdir}"
+          git checkout 5f497233b2cef7315d6e5ce22b590686e6856a97
+          echo "GOOGLE_CLIENT_SOURCE=${workdir}/force-app" >> "$GITHUB_ENV"
+
+      - name: Run aer test (sandriiy/salesforce-google-client commit 5f49723)
+        uses: ./
+        with:
+          source: |
+            ${{ env.NEBULALOGGER_SOURCE }}
+            ${{ env.GOOGLE_DRIVE_LIB_SOURCE }}
+            ${{ env.GOOGLE_CLIENT_SOURCE }}
+          version: ${{ env.AER_VERSION }}
+        env:
+          AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
