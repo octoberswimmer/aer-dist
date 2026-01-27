@@ -84,13 +84,6 @@ would in Salesforce.
 - [Documentation](https://www.octoberswimmer.com/tools/aer/docs/)
 - [Subscribe](https://www.octoberswimmer.com/tools/aer/subscribe/)
 
-## Working With Salesforce Projects
-
-- **Metadata imports**: Use `aer schema import` to pull metadata from a project
-  repo, then run tests against that schema.
-- **CI usage**: Add this repo's GitHub action to fail builds on
-  Apex regressions without waiting for a scratch org or sandbox deploy.
-
 ## Troubleshooting
 
 - Install errors such as `cannot execute binary file`: confirm you downloaded
