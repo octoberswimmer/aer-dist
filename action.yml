@@ -93,8 +93,9 @@ runs:
           exit 1
         fi
 
-        # Generate JSON output for GitHub Summary
-        json_output="${RUNNER_TEMP}/aer-test-results.json"
+        # Separate files for test results (JUnit XML) and coverage (JSON)
+        junit_results="${RUNNER_TEMP}/aer-test-results.xml"
+        coverage_results="${RUNNER_TEMP}/aer-coverage.json"
 
         ns_args=()
         if [[ -n "${DEFAULT_NAMESPACE}" ]]; then
@@ -110,7 +111,7 @@ runs:
         aer_cmd=(aer test "${paths[@]}")
         aer_cmd+=("${ns_args[@]}")
         aer_cmd+=("${flag_args[@]}")
-        aer_cmd+=(--coverage --json "${json_output}")
+        aer_cmd+=("--junit=${junit_results}" "--coverage=${coverage_results}")
 
         "${aer_cmd[@]}"
 
@@ -121,9 +122,17 @@ runs:
       env:
         RUNNER_TEMP: ${{ runner.temp }}
       run: |
-        json_file="${RUNNER_TEMP}/aer-test-results.json"
-        if [[ -f "${json_file}" ]]; then
-          go run ./cmd/actions/summary "${json_file}"
+        junit_file="${RUNNER_TEMP}/aer-test-results.xml"
+        coverage_file="${RUNNER_TEMP}/aer-coverage.json"
+        args=()
+        if [[ -f "${junit_file}" ]]; then
+          args+=("--junit" "${junit_file}")
+        fi
+        if [[ -f "${coverage_file}" ]]; then
+          args+=("--coverage" "${coverage_file}")
+        fi
+        if [[ ${#args[@]} -gt 0 ]]; then
+          go run ./cmd/actions/summary "${args[@]}"
         else
           echo "⚠️ No test results found" >> $GITHUB_STEP_SUMMARY
         fi

@@ -3,15 +3,17 @@ package main
 import (
 	"strings"
 	"testing"
-	"time"
 )
 
 func TestGenerateSummaryIncludesCoverageDetails(t *testing.T) {
 	results := &TestResults{
-		Summary: TestSummary{
-			Total:  3,
-			Passed: 3,
-			Failed: 0,
+		Suite: junitTestSuite{
+			Tests:    3,
+			Failures: 0,
+			Time:     1.0,
+			TestCases: []junitTestCase{
+				{Name: "testOne", Classname: "Alpha", Time: 0.1},
+			},
 		},
 		Coverage: CoverageSummary{
 			OverallCoverage: 75.0,
@@ -45,11 +47,6 @@ func TestGenerateSummaryIncludesCoverageDetails(t *testing.T) {
 				},
 			},
 		},
-		Tests: []TestMethodResult{
-			{TestName: "Alpha.testOne", ClassName: "Alpha", MethodName: "testOne", Passed: true, DurationMs: 100},
-		},
-		StartTime: time.Now().Add(-time.Second),
-		EndTime:   time.Now(),
 	}
 
 	summary := generateSummary(results)
@@ -79,15 +76,20 @@ func TestGenerateSummaryIncludesCoverageDetails(t *testing.T) {
 
 func TestGenerateSummaryShowsFailedTests(t *testing.T) {
 	results := &TestResults{
-		Summary: TestSummary{
-			Total:  2,
-			Passed: 1,
-			Failed: 1,
+		Suite: junitTestSuite{
+			Tests:    2,
+			Failures: 1,
+			Time:     0.2,
+			TestCases: []junitTestCase{
+				{
+					Name:      "testOne",
+					Classname: "Beta",
+					Time:      0.2,
+					Failures:  []junitFailure{{Message: "boom", Type: "AssertionError"}},
+				},
+			},
 		},
 		Coverage: CoverageSummary{},
-		Tests: []TestMethodResult{
-			{TestName: "Beta.testOne", ClassName: "Beta", MethodName: "testOne", Passed: false, DurationMs: 200, ErrorMessage: "boom"},
-		},
 	}
 
 	summary := generateSummary(results)
@@ -105,10 +107,9 @@ func TestGenerateSummaryShowsFailedTests(t *testing.T) {
 
 func TestGenerateSummaryIncludesClassesWhenTopLevelUnknown(t *testing.T) {
 	results := &TestResults{
-		Summary: TestSummary{
-			Total:  1,
-			Passed: 1,
-			Failed: 0,
+		Suite: junitTestSuite{
+			Tests: 1,
+			Time:  0.1,
 		},
 		Coverage: CoverageSummary{
 			OverallCoverage: 10,

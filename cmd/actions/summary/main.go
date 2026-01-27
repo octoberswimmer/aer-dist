@@ -2,28 +2,36 @@ package main
 
 import (
 	"encoding/json"
+	"encoding/xml"
+	"flag"
 	"fmt"
 	"math"
 	"os"
 	"sort"
 	"strings"
-	"time"
 )
 
-type TestMethodResult struct {
-	TestName     string        `json:"testName"`
-	ClassName    string        `json:"className"`
-	MethodName   string        `json:"methodName"`
-	Passed       bool          `json:"passed"`
-	Duration     time.Duration `json:"duration"`
-	DurationMs   float64       `json:"durationMs"`
-	ErrorMessage string        `json:"errorMessage,omitempty"`
+// JUnit XML types for parsing test results
+type junitTestSuite struct {
+	XMLName   xml.Name        `xml:"testsuite"`
+	Name      string          `xml:"name,attr"`
+	Tests     int             `xml:"tests,attr"`
+	Failures  int             `xml:"failures,attr"`
+	Time      float64         `xml:"time,attr"`
+	TestCases []junitTestCase `xml:"testcase"`
 }
 
-type TestSummary struct {
-	Total  int `json:"total"`
-	Passed int `json:"passed"`
-	Failed int `json:"failed"`
+type junitTestCase struct {
+	Name      string         `xml:"name,attr"`
+	Classname string         `xml:"classname,attr"`
+	Time      float64        `xml:"time,attr"`
+	Failures  []junitFailure `xml:"failure"`
+}
+
+type junitFailure struct {
+	Message string `xml:"message,attr"`
+	Type    string `xml:"type,attr"`
+	Body    string `xml:",chardata"`
 }
 
 type ClassCoverageInfo struct {
@@ -46,32 +54,38 @@ type CoverageSummary struct {
 }
 
 type TestResults struct {
-	Tests           []TestMethodResult `json:"tests"`
-	Summary         TestSummary        `json:"summary"`
-	Coverage        CoverageSummary    `json:"coverage"`
-	StartTime       time.Time          `json:"startTime"`
-	EndTime         time.Time          `json:"endTime"`
-	TotalDuration   time.Duration      `json:"totalDuration"`
-	TotalDurationMs float64            `json:"totalDurationMs"`
+	Suite    junitTestSuite
+	Coverage CoverageSummary
 }
 
 func main() {
-	if len(os.Args) < 2 {
-		fmt.Fprintf(os.Stderr, "Usage: summary <results.json>\n")
-		os.Exit(1)
-	}
+	junitFile := flag.String("junit", "", "JUnit XML file with test results")
+	coverageFile := flag.String("coverage", "", "JSON file with coverage data")
+	flag.Parse()
 
-	resultsFile := os.Args[1]
-	data, err := os.ReadFile(resultsFile)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error reading results file: %v\n", err)
+	if *junitFile == "" && *coverageFile == "" {
+		fmt.Fprintf(os.Stderr, "Usage: summary --junit <results.xml> [--coverage <coverage.json>]\n")
 		os.Exit(1)
 	}
 
 	var results TestResults
-	if err := json.Unmarshal(data, &results); err != nil {
-		fmt.Fprintf(os.Stderr, "Error parsing JSON: %v\n", err)
-		os.Exit(1)
+
+	if *junitFile != "" {
+		suite, err := readJUnitXML(*junitFile)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error reading JUnit results: %v\n", err)
+			os.Exit(1)
+		}
+		results.Suite = suite
+	}
+
+	if *coverageFile != "" {
+		cov, err := readCoverageJSON(*coverageFile)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error reading coverage data: %v\n", err)
+			os.Exit(1)
+		}
+		results.Coverage = cov
 	}
 
 	summary := generateSummary(&results)
@@ -96,11 +110,37 @@ func main() {
 	}
 }
 
+func readJUnitXML(filename string) (junitTestSuite, error) {
+	data, err := os.ReadFile(filename)
+	if err != nil {
+		return junitTestSuite{}, err
+	}
+	var suite junitTestSuite
+	if err := xml.Unmarshal(data, &suite); err != nil {
+		return junitTestSuite{}, err
+	}
+	return suite, nil
+}
+
+func readCoverageJSON(filename string) (CoverageSummary, error) {
+	data, err := os.ReadFile(filename)
+	if err != nil {
+		return CoverageSummary{}, err
+	}
+	var cov CoverageSummary
+	if err := json.Unmarshal(data, &cov); err != nil {
+		return CoverageSummary{}, err
+	}
+	return cov, nil
+}
+
 func generateSummary(results *TestResults) string {
 	var sb strings.Builder
 
+	suite := results.Suite
+
 	// Header with emoji and overall status
-	allPassed := results.Summary.Failed == 0
+	allPassed := suite.Failures == 0
 	statusEmoji := "✅"
 	statusText := "All Tests Passed"
 	if !allPassed {
@@ -111,25 +151,29 @@ func generateSummary(results *TestResults) string {
 	sb.WriteString(fmt.Sprintf("# %s Apex Test Results: %s\n\n", statusEmoji, statusText))
 
 	// Test Summary Statistics
-	sb.WriteString("## 📊 Test Summary\n\n")
-	sb.WriteString("| Metric | Value |\n")
-	sb.WriteString("|--------|-------|\n")
-	sb.WriteString(fmt.Sprintf("| Total Tests | **%d** |\n", results.Summary.Total))
-	sb.WriteString(fmt.Sprintf("| ✅ Passed | **%d** |\n", results.Summary.Passed))
-	sb.WriteString(fmt.Sprintf("| ❌ Failed | **%d** |\n", results.Summary.Failed))
-	sb.WriteString(fmt.Sprintf("| ⏱️ Duration | **%s** |\n", formatDuration(results.TotalDurationMs)))
+	if suite.Tests > 0 {
+		passed := suite.Tests - suite.Failures
 
-	// Coverage Summary
-	if results.Coverage.TotalLines > 0 {
-		coverage := results.Coverage.OverallCoverage
-		coverageEmoji := getCoverageEmoji(coverage)
+		sb.WriteString("## 📊 Test Summary\n\n")
+		sb.WriteString("| Metric | Value |\n")
+		sb.WriteString("|--------|-------|\n")
+		sb.WriteString(fmt.Sprintf("| Total Tests | **%d** |\n", suite.Tests))
+		sb.WriteString(fmt.Sprintf("| ✅ Passed | **%d** |\n", passed))
+		sb.WriteString(fmt.Sprintf("| ❌ Failed | **%d** |\n", suite.Failures))
+		sb.WriteString(fmt.Sprintf("| ⏱️ Duration | **%s** |\n", formatDurationSeconds(suite.Time)))
 
-		sb.WriteString(fmt.Sprintf("| %s Code Coverage | **%.2f%%** |\n", coverageEmoji, coverage))
-		sb.WriteString(fmt.Sprintf("| Lines Covered | **%d** / **%d** |\n",
-			results.Coverage.CoveredLines, results.Coverage.TotalLines))
+		// Coverage Summary (inline in test summary table)
+		if results.Coverage.TotalLines > 0 {
+			coverage := results.Coverage.OverallCoverage
+			coverageEmoji := getCoverageEmoji(coverage)
+
+			sb.WriteString(fmt.Sprintf("| %s Code Coverage | **%.2f%%** |\n", coverageEmoji, coverage))
+			sb.WriteString(fmt.Sprintf("| Lines Covered | **%d** / **%d** |\n",
+				results.Coverage.CoveredLines, results.Coverage.TotalLines))
+		}
+
+		sb.WriteString("\n")
 	}
-
-	sb.WriteString("\n")
 
 	// Coverage visualization
 	if results.Coverage.TotalLines > 0 {
@@ -166,27 +210,33 @@ func generateSummary(results *TestResults) string {
 	}
 
 	// Failed tests details
-	if results.Summary.Failed > 0 {
+	if suite.Failures > 0 {
 		sb.WriteString("## ❌ Failed Tests\n\n")
-		for _, test := range results.Tests {
-			if !test.Passed {
-				sb.WriteString(fmt.Sprintf("### %s.%s\n\n", test.ClassName, test.MethodName))
-				if test.ErrorMessage != "" {
-					sb.WriteString(fmt.Sprintf("```\n%s\n```\n\n", test.ErrorMessage))
+		for _, tc := range suite.TestCases {
+			if len(tc.Failures) > 0 {
+				sb.WriteString(fmt.Sprintf("### %s.%s\n\n", tc.Classname, tc.Name))
+				for _, f := range tc.Failures {
+					msg := f.Message
+					if msg == "" {
+						msg = f.Body
+					}
+					if msg != "" {
+						sb.WriteString(fmt.Sprintf("```\n%s\n```\n\n", msg))
+					}
 				}
 			}
 		}
 	}
 
 	// Test timing details
-	if len(results.Tests) > 0 {
+	if len(suite.TestCases) > 0 {
 		sb.WriteString("## ⏱️ Test Performance\n\n")
 
 		// Slowest tests
-		sortedByDuration := make([]TestMethodResult, len(results.Tests))
-		copy(sortedByDuration, results.Tests)
+		sortedByDuration := make([]junitTestCase, len(suite.TestCases))
+		copy(sortedByDuration, suite.TestCases)
 		sort.Slice(sortedByDuration, func(i, j int) bool {
-			return sortedByDuration[i].DurationMs > sortedByDuration[j].DurationMs
+			return sortedByDuration[i].Time > sortedByDuration[j].Time
 		})
 
 		maxSlowest := 10
@@ -200,33 +250,33 @@ func generateSummary(results *TestResults) string {
 		sb.WriteString("|------|----------|\n")
 
 		for i := 0; i < maxSlowest; i++ {
-			test := sortedByDuration[i]
+			tc := sortedByDuration[i]
 			statusEmoji := "✅"
-			if !test.Passed {
+			if len(tc.Failures) > 0 {
 				statusEmoji = "❌"
 			}
 			sb.WriteString(fmt.Sprintf("| %s `%s.%s` | %s |\n",
-				statusEmoji, test.ClassName, test.MethodName, formatDuration(test.DurationMs)))
+				statusEmoji, tc.Classname, tc.Name, formatDurationSeconds(tc.Time)))
 		}
 
 		sb.WriteString("\n</details>\n\n")
 	}
 
 	// All tests (collapsible)
-	if len(results.Tests) > 0 {
+	if len(suite.TestCases) > 0 {
 		sb.WriteString("## 📋 All Tests\n\n")
 		sb.WriteString("<details>\n")
-		sb.WriteString(fmt.Sprintf("<summary>View all %d tests</summary>\n\n", len(results.Tests)))
+		sb.WriteString(fmt.Sprintf("<summary>View all %d tests</summary>\n\n", len(suite.TestCases)))
 		sb.WriteString("| Status | Test | Duration |\n")
 		sb.WriteString("|--------|------|----------|\n")
 
-		for _, test := range results.Tests {
+		for _, tc := range suite.TestCases {
 			statusEmoji := "✅"
-			if !test.Passed {
+			if len(tc.Failures) > 0 {
 				statusEmoji = "❌"
 			}
 			sb.WriteString(fmt.Sprintf("| %s | `%s.%s` | %s |\n",
-				statusEmoji, test.ClassName, test.MethodName, formatDuration(test.DurationMs)))
+				statusEmoji, tc.Classname, tc.Name, formatDurationSeconds(tc.Time)))
 		}
 
 		sb.WriteString("\n</details>\n\n")
@@ -235,15 +285,16 @@ func generateSummary(results *TestResults) string {
 	return sb.String()
 }
 
-func formatDuration(ms float64) string {
+func formatDurationSeconds(seconds float64) string {
+	ms := seconds * 1000
 	if ms < 1000 {
 		return fmt.Sprintf("%.0fms", ms)
 	} else if ms < 60000 {
-		return fmt.Sprintf("%.2fs", ms/1000)
+		return fmt.Sprintf("%.2fs", seconds)
 	} else {
-		minutes := int(ms / 60000)
-		seconds := (ms - float64(minutes*60000)) / 1000
-		return fmt.Sprintf("%dm %.1fs", minutes, seconds)
+		minutes := int(seconds / 60)
+		secs := seconds - float64(minutes*60)
+		return fmt.Sprintf("%dm %.1fs", minutes, secs)
 	}
 }
 
