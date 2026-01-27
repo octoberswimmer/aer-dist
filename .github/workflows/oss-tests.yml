@@ -122,6 +122,7 @@ jobs:
           source: |
             ${{ env.FFLIB_COMMON_SOURCE }}
             ${{ env.FFLIB_MOCKS_SOURCE }}
+          flags: --filter-path ${{ env.FFLIB_COMMON_SOURCE }}
           version: ${{ env.AER_VERSION }}
           default-namespace: ${{ matrix.namespace }}
         env:
@@ -684,5 +685,6 @@ jobs:
             ${{ env.GOOGLE_DRIVE_LIB_SOURCE }}
             ${{ env.GOOGLE_CLIENT_SOURCE }}
           version: ${{ env.AER_VERSION }}
+          flags: --filter-path ${{ env.GOOGLE_CLIENT_SOURCE }}
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
