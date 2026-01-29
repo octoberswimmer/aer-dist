@@ -1,0 +1,25 @@
+name: Schedule Issues
+
+on:
+  issues:
+    types: [opened, edited, closed, reopened, assigned, unassigned, labeled, unlabeled]
+  workflow_dispatch:
+    inputs:
+      github-url:
+        description: 'GitHub URL to schedule (issue, repo, or project URL)'
+        required: false
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  schedule:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Schedule project
+        uses: octoberswimmer/p2-github-scheduler@main
+        with:
+          token-broker-url: https://penny-pusher.octoberswimmer.com/token
+          github-url: ${{ inputs.github-url }}
