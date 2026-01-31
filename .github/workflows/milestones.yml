@@ -1,0 +1,15 @@
+name: Create Milestones
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  create-milestones:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: octoberswimmer/milestone-creator@main
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          upcoming-milestones: '2'
+          version-increment: 'patch'
