@@ -4,7 +4,8 @@ on:
   issues:
     types: [opened, edited, closed, reopened, assigned, unassigned]
   schedule:
-    - cron: '0 6 * * *'  # Run daily at 6am UTC
+    - cron: '5 10 * * *'  # Run daily at 10:05am UTC
+    - cron: '35 1 * * *'  # Run daily at 1:35am UTC
   workflow_dispatch:
     inputs:
       github-url:
