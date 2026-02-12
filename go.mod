@@ -121,6 +121,6 @@ require (
 	modernc.org/sqlite v1.44.3 // indirect
 )
 
-replace modernc.org/memory => github.com/octoberswimmer/memory v1.11.0-octoberswimmer.1
+replace modernc.org/memory => github.com/octoberswimmer/memory v1.11.0-octoberswimmer.2
 
-replace modernc.org/libc => github.com/octoberswimmer/libc v1.67.7-octoberswimmer.1
+replace modernc.org/libc => github.com/octoberswimmer/libc v1.67.7-octoberswimmer.2

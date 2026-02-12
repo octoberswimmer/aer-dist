@@ -335,10 +335,10 @@ github.com/octoberswimmer/apexfmt v0.47.0 h1:5x5bxOO9NyOs6t5A7ia1kUZ3/Da3sUkL/iy
 github.com/octoberswimmer/apexfmt v0.47.0/go.mod h1:+ZcL3jpPbdw9B6eYfqSch8HxMxlu4B9vtVKuLO8gZHU=
 github.com/octoberswimmer/digger v0.20.0 h1:lISy66ngcQIxQh5eObQW4i0cxDCKo79lpl+g75uADww=
 github.com/octoberswimmer/digger v0.20.0/go.mod h1:AA7cTaYg5XVrxtEefW2ikTqkChsLfHF29Nw830aj9w0=
-github.com/octoberswimmer/libc v1.67.7-octoberswimmer.1 h1:ju2Wj3Cvt2O+hq+Ek1S49aCNeW3DLl+LGJjMp0dvCDM=
-github.com/octoberswimmer/libc v1.67.7-octoberswimmer.1/go.mod h1:2FV2mLx5Li1SUdH0t8LsSlKOs357pykyPBL02wf61ws=
-github.com/octoberswimmer/memory v1.11.0-octoberswimmer.1 h1:6jRPTE2O2yGxDJiwxQcv4R2XibSgFzrqFPiNMZj4oKg=
-github.com/octoberswimmer/memory v1.11.0-octoberswimmer.1/go.mod h1:qAxvZaeFZnTB98TgFzMYVAawXSSXNHRdgf8fSS47svc=
+github.com/octoberswimmer/libc v1.67.7-octoberswimmer.2 h1:tY/ldZ83hQRCEuotJJ2y6Vkt3SdpVFyDEzz3pZl7C1s=
+github.com/octoberswimmer/libc v1.67.7-octoberswimmer.2/go.mod h1:KKi0kRliKcmUl3fdvuambuZjWB+R3Te9uT8z7kRUfhE=
+github.com/octoberswimmer/memory v1.11.0-octoberswimmer.2 h1:7rV+Mn5nPe6TWuq1fi6Gha3KBVnMRrOk39G7Q8LfSb4=
+github.com/octoberswimmer/memory v1.11.0-octoberswimmer.2/go.mod h1:qAxvZaeFZnTB98TgFzMYVAawXSSXNHRdgf8fSS47svc=
 github.com/octoberswimmer/sformula v0.6.0 h1:BXHJmtkw6M6zthvqBgEKqCDKyqz0jzfueT0rDckPelA=
 github.com/octoberswimmer/sformula v0.6.0/go.mod h1:isuBo3KPKaHf+TzZ9fNVl0MSmH2z35uLixmjfXmjp+Q=
 github.com/onsi/ginkgo v1.6.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
