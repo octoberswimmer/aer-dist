@@ -7,12 +7,16 @@ LINUX := $(EXECUTABLE)_linux_amd64
 LINUX_ARM64 := $(EXECUTABLE)_linux_arm64
 DARWIN_AMD64 := $(EXECUTABLE)_darwin_amd64
 DARWIN_ARM64 := $(EXECUTABLE)_darwin_arm64
+WASM := aer.wasm
+WASM_EXEC := wasm_exec.js
+WASM_ZIP := aer_web_wasm_$(VERSION).zip
 ALL := $(WINDOWS) $(LINUX) $(LINUX_ARM64) $(DARWIN_AMD64) $(DARWIN_ARM64)
-VERSIONED_ZIPS := $(addsuffix _$(VERSION).zip,$(basename $(ALL)))
+VERSIONED_ZIPS := $(addsuffix _$(VERSION).zip,$(basename $(ALL))) $(WASM_ZIP)
 RELEASE_ASSETS := $(VERSIONED_ZIPS) SHA256SUMS-$(VERSION)
 
 GO_BUILD_FLAGS := -trimpath
 GO_LDFLAGS := -X main.version=$(VERSION)
+GO_LDFLAGS_WASM := -X main.wasmRuntimeVersion=$(VERSION)
 
 .PHONY: default install install-debug dist clean checksum release tag
 
@@ -41,6 +45,25 @@ $(DARWIN_AMD64): go.mod
 $(DARWIN_ARM64): go.mod
 	env CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build $(GO_BUILD_FLAGS) -ldflags "$(GO_LDFLAGS)" -o $@
 	rcodesign sign --for-notarization --pem-file <(pass OctoberSwimmer/aer/codesign/combined) $@
+
+$(WASM): go.mod
+	env CGO_ENABLED=0 GOOS=js GOARCH=wasm go build $(GO_BUILD_FLAGS) -ldflags "$(GO_LDFLAGS_WASM)" -o $@ github.com/octoberswimmer/aer/wasm
+
+$(WASM_EXEC):
+	@set -euo pipefail; \
+	goroot="$$(go env GOROOT)"; \
+	if [ -f "$$goroot/lib/wasm/wasm_exec.js" ]; then \
+		cp "$$goroot/lib/wasm/wasm_exec.js" "$@"; \
+	elif [ -f "$$goroot/misc/wasm/wasm_exec.js" ]; then \
+		cp "$$goroot/misc/wasm/wasm_exec.js" "$@"; \
+	else \
+		echo "Unable to locate wasm_exec.js under $$goroot"; \
+		exit 1; \
+	fi
+
+$(WASM_ZIP): $(WASM) $(WASM_EXEC)
+	@rm -f $@
+	zip $@ $(WASM) $(WASM_EXEC)
 
 $(basename $(WINDOWS))_$(VERSION).zip: $(WINDOWS)
 	@rm -f $@
@@ -158,4 +181,4 @@ test:
 	ghproxy --repo octoberswimmer/aer-dist -- act
 
 clean:
-	-rm -f $(EXECUTABLE) $(EXECUTABLE).exe $(EXECUTABLE)_* *.zip SHA256SUMS-*
+	-rm -f $(EXECUTABLE) $(EXECUTABLE).exe $(EXECUTABLE)_* $(WASM) $(WASM_EXEC) *.zip SHA256SUMS-*
