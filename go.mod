@@ -2,7 +2,7 @@ module aer
 
 go 1.25.3
 
-require github.com/octoberswimmer/aer v0.0.111
+require github.com/octoberswimmer/aer v0.0.112
 
 require (
 	buf.build/gen/go/bufbuild/bufplugin/protocolbuffers/go v1.36.11-20250718181942-e35f9b667443.1 // indirect
@@ -94,12 +94,13 @@ require (
 	github.com/morikuni/aec v1.1.0 // indirect
 	github.com/mwitkow/go-proto-validators v0.0.0-20180403085117-0950a7990007 // indirect
 	github.com/nbio/xml v0.0.0-20251016084110-a619c1115f34 // indirect
-	github.com/ncruces/go-sqlite3 v0.30.3 // indirect
 	github.com/ncruces/go-strftime v1.0.0 // indirect
-	github.com/ncruces/julianday v1.0.0 // indirect
 	github.com/octoberswimmer/apexfmt v0.47.0 // indirect
-	github.com/octoberswimmer/digger v0.20.0 // indirect
+	github.com/octoberswimmer/digger v0.21.0 // indirect
+	github.com/octoberswimmer/libc v1.67.7-octoberswimmer.5 // indirect
+	github.com/octoberswimmer/memory v1.11.0-octoberswimmer.4 // indirect
 	github.com/octoberswimmer/sformula v0.6.0 // indirect
+	github.com/octoberswimmer/sqlite v1.46.1-octoberswimmer.2 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/petermattis/goid v0.0.0-20260113132338-7c7de50cc741 // indirect
@@ -151,10 +152,7 @@ require (
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/fsnotify.v1 v1.4.7 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	modernc.org/libc v1.67.6 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
-	modernc.org/memory v1.11.0 // indirect
-	modernc.org/sqlite v1.44.3 // indirect
 	mvdan.cc/xurls/v2 v2.6.0 // indirect
 	pluginrpc.com/pluginrpc v0.5.0 // indirect
 )
