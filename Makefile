@@ -11,8 +11,10 @@ DARWIN_ARM64 := $(EXECUTABLE)_darwin_arm64
 WASM := aer.wasm
 WASM_EXEC := wasm_exec.js
 WASM_ZIP := aer_web_wasm_$(VERSION).zip
+WASI_WASM := aer_wasi.wasm
+WASI_WASM_ZIP := aer_wasi_wasm_$(VERSION).zip
 ALL := $(WINDOWS) $(WINDOWS_ARM64) $(LINUX) $(LINUX_ARM64) $(DARWIN_AMD64) $(DARWIN_ARM64)
-VERSIONED_ZIPS := $(addsuffix _$(VERSION).zip,$(basename $(ALL))) $(WASM_ZIP)
+VERSIONED_ZIPS := $(addsuffix _$(VERSION).zip,$(basename $(ALL))) $(WASM_ZIP) $(WASI_WASM_ZIP)
 RELEASE_ASSETS := $(VERSIONED_ZIPS) SHA256SUMS-$(VERSION)
 
 GO_BUILD_FLAGS := -trimpath
@@ -53,6 +55,9 @@ $(DARWIN_ARM64): go.mod
 $(WASM): go.mod
 	env CGO_ENABLED=0 GOOS=js GOARCH=wasm go build $(GO_BUILD_FLAGS) -ldflags "$(GO_LDFLAGS_WASM)" -o $@ github.com/octoberswimmer/aer/wasm
 
+$(WASI_WASM): go.mod
+	env CGO_ENABLED=0 GOOS=wasip1 GOARCH=wasm go build $(GO_BUILD_FLAGS) -ldflags "$(GO_LDFLAGS)" -o $@
+
 $(WASM_EXEC):
 	@set -euo pipefail; \
 	goroot="$$(go env GOROOT)"; \
@@ -68,6 +73,10 @@ $(WASM_EXEC):
 $(WASM_ZIP): $(WASM) $(WASM_EXEC)
 	@rm -f $@
 	zip $@ $(WASM) $(WASM_EXEC)
+
+$(WASI_WASM_ZIP): $(WASI_WASM)
+	@rm -f $@
+	zip $@ $(WASI_WASM)
 
 $(basename $(WINDOWS))_$(VERSION).zip: $(WINDOWS)
 	@rm -f $@
@@ -195,4 +204,4 @@ test:
 	ghproxy --repo octoberswimmer/aer-dist -- act
 
 clean:
-	-rm -f $(EXECUTABLE) $(EXECUTABLE).exe $(EXECUTABLE)_* $(WASM) $(WASM_EXEC) *.zip SHA256SUMS-*
+	-rm -f $(EXECUTABLE) $(EXECUTABLE).exe $(EXECUTABLE)_* $(WASM) $(WASM_EXEC) $(WASI_WASM) *.zip SHA256SUMS-*
