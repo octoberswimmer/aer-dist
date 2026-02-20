@@ -159,6 +159,4 @@ require (
 	pluginrpc.com/pluginrpc v0.5.0 // indirect
 )
 
-replace modernc.org/memory => github.com/octoberswimmer/memory v1.11.0-octoberswimmer.2
-
-replace modernc.org/libc => github.com/octoberswimmer/libc v1.67.7-octoberswimmer.2
+replace github.com/antlr4-go/antlr/v4 => github.com/octoberswimmer/antlr/v4 v4.13.1-octoberswimmer.2
