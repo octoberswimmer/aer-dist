@@ -690,7 +690,7 @@ jobs:
           git checkout 1adf4dea79c9583ce91774f7b1f2217d83c7beb1
           echo "NEBULALOGGER_SOURCE=${workdir}/nebula-logger/core" >> "$GITHUB_ENV"
 
-      - name: Fetch sandriiy/salesforce-google-drive-library commit 1a1b9f3 (dependency)
+      - name: Fetch sandriiy/salesforce-google-drive-library commit 43f6e66 (dependency)
         run: |
           set -euo pipefail
           root="oss/salesforce-google-drive-library"
@@ -698,7 +698,7 @@ jobs:
           workdir=$(mktemp -d "${root}/repo.XXXXXX")
           git clone https://github.com/sandriiy/salesforce-google-drive-library.git "${workdir}"
           cd "${workdir}"
-          git checkout 1a1b9f33e5a4440dea02af89839c9519e9a127e5
+          git checkout 43f6e66f96b99b1810c954b4b21404e9203e5f2a
           echo "GOOGLE_DRIVE_LIB_SOURCE=${workdir}" >> "$GITHUB_ENV"
 
       - name: Fetch sandriiy/salesforce-google-client commit 5f49723
