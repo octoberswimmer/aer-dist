@@ -14,15 +14,15 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Clone nppatch repo
-        shell: bash
         run: |
           set -euo pipefail
-          repo_root="${HOME}/git/nppatch"
-          mkdir -p "$(dirname "${repo_root}")"
-          rm -rf "${repo_root}"
-          git clone --depth 1 "git@github.com:Sundae-Shop-Consulting/nppatch.git" "${repo_root}"
-          git -C "${repo_root}" fetch --depth 1 origin "243cee720cd1c30ad86da2ad185940f930c8bfef"
-          git -C "${repo_root}" checkout --detach "243cee720cd1c30ad86da2ad185940f930c8bfef"
+          root="oss/nppatch"
+          mkdir -p "${root}"
+          workdir=$(mktemp -d "${root}/repo.XXXXXX")
+          git clone https://github.com/Sundae-Shop-Consulting/nppatch.git "${workdir}"
+          cd "${workdir}"
+          git checkout 243cee720cd1c30ad86da2ad185940f930c8bfef
+          echo "NPPATCH_ROOT=${workdir}" >> "$GITHUB_ENV"
 
       - name: Resolve cci-namespace release tag
         id: resolve_cci_namespace
@@ -53,21 +53,19 @@ jobs:
             --binary-name "cci-namespace"
 
       - name: Namespace nppatch source
-        shell: bash
         run: |
           set -euo pipefail
-          cci-namespace -path "${HOME}/git/nppatch"
+          cci-namespace -path "${NPPATCH_ROOT}"
 
       - name: Set nppatch source paths
         id: nppatch_paths
-        shell: bash
         run: |
           set -euo pipefail
           {
             echo "source<<EOF"
             printf '%s\n' \
-              "${HOME}/git/nppatch/force-app/" \
-              "${HOME}/git/nppatch/unpackaged/config/"
+              "${NPPATCH_ROOT}/force-app/" \
+              "${NPPATCH_ROOT}/unpackaged/config/"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
