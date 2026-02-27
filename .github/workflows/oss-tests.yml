@@ -673,6 +673,41 @@ jobs:
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
 
+  apex-dml-mocking:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: [unpackaged, namespaced]
+        include:
+          - scenario: unpackaged
+            namespace: ""
+          - scenario: namespaced
+            namespace: aertest
+    steps:
+      - name: Checkout action
+        uses: actions/checkout@v4
+
+      - name: Fetch jamessimone/apex-dml-mocking commit 9bd4984
+        run: |
+          set -euo pipefail
+          root="oss/apex-dml-mocking"
+          mkdir -p "${root}"
+          workdir=$(mktemp -d "${root}/repo.XXXXXX")
+          git clone https://github.com/jamessimone/apex-dml-mocking.git "${workdir}"
+          cd "${workdir}"
+          git checkout 9bd498440e82f7484e33e396bd2e891a64ddb4c1
+          echo "APEX_DML_MOCKING_SOURCE=${workdir}/force-app" >> "$GITHUB_ENV"
+
+      - name: Run aer test (jamessimone/apex-dml-mocking commit 9bd4984)
+        uses: ./
+        with:
+          source: ${{ env.APEX_DML_MOCKING_SOURCE }}
+          version: ${{ env.AER_VERSION }}
+          default-namespace: ${{ matrix.namespace }}
+        env:
+          AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
+
   salesforce-google-client:
     runs-on: ubuntu-latest
     steps:
