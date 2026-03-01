@@ -14,6 +14,7 @@ WASM_ZIP := aer_web_wasm_$(VERSION).zip
 WASI_WASM := aer_wasi.wasm
 WASI_WASM_ZIP := aer_wasi_wasm_$(VERSION).zip
 ALL := $(WINDOWS) $(WINDOWS_ARM64) $(LINUX) $(LINUX_ARM64) $(DARWIN_AMD64) $(DARWIN_ARM64)
+LICENSES := LICENSE third-party-licenses.txt
 VERSIONED_ZIPS := $(addsuffix _$(VERSION).zip,$(basename $(ALL))) $(WASM_ZIP) $(WASI_WASM_ZIP)
 RELEASE_ASSETS := $(VERSIONED_ZIPS) SHA256SUMS-$(VERSION)
 
@@ -70,39 +71,39 @@ $(WASM_EXEC):
 		exit 1; \
 	fi
 
-$(WASM_ZIP): $(WASM) $(WASM_EXEC)
+$(WASM_ZIP): $(WASM) $(WASM_EXEC) $(LICENSES)
 	@rm -f $@
-	zip $@ $(WASM) $(WASM_EXEC)
+	zip $@ $(WASM) $(WASM_EXEC) $(LICENSES)
 
-$(WASI_WASM_ZIP): $(WASI_WASM)
+$(WASI_WASM_ZIP): $(WASI_WASM) $(LICENSES)
 	@rm -f $@
-	zip $@ $(WASI_WASM)
+	zip $@ $(WASI_WASM) $(LICENSES)
 
-$(basename $(WINDOWS))_$(VERSION).zip: $(WINDOWS)
+$(basename $(WINDOWS))_$(VERSION).zip: $(WINDOWS) $(LICENSES)
 	@rm -f $@
-	zip $@ $<
+	zip $@ $< $(LICENSES)
 	7za rn $@ $< $(EXECUTABLE).exe
 
-$(basename $(WINDOWS_ARM64))_$(VERSION).zip: $(WINDOWS_ARM64)
+$(basename $(WINDOWS_ARM64))_$(VERSION).zip: $(WINDOWS_ARM64) $(LICENSES)
 	@rm -f $@
-	zip $@ $<
+	zip $@ $< $(LICENSES)
 	7za rn $@ $< $(EXECUTABLE).exe
 
-$(basename $(DARWIN_AMD64))_$(VERSION).zip: $(DARWIN_AMD64)
+$(basename $(DARWIN_AMD64))_$(VERSION).zip: $(DARWIN_AMD64) $(LICENSES)
 	@rm -f $@
-	zip $@ $<
+	zip $@ $< $(LICENSES)
 	7za rn $@ $< $(EXECUTABLE)
 	rcodesign notary-submit --api-key-file <(pass OctoberSwimmer/aer/codesign/api-key) $@
 
-$(basename $(DARWIN_ARM64))_$(VERSION).zip: $(DARWIN_ARM64)
+$(basename $(DARWIN_ARM64))_$(VERSION).zip: $(DARWIN_ARM64) $(LICENSES)
 	@rm -f $@
-	zip $@ $<
+	zip $@ $< $(LICENSES)
 	7za rn $@ $< $(EXECUTABLE)
 	rcodesign notary-submit --api-key-file <(pass OctoberSwimmer/aer/codesign/api-key) $@
 
-%_$(VERSION).zip: %
+%_$(VERSION).zip: % $(LICENSES)
 	@rm -f $@
-	zip $@ $<
+	zip $@ $< $(LICENSES)
 	7za rn $@ $< $(EXECUTABLE)
 
 dist: $(VERSIONED_ZIPS)
@@ -185,7 +186,7 @@ tag:
 		mv "$$tmp_workflow" "$$workflow"; \
 	done; \
 	$(MAKE) VERSION="$$next_version" dist; \
-	git add go.mod go.sum .github/workflows/oss-tests.yml .github/workflows/nppatch-tests.yml; \
+	git add go.mod go.sum .github/workflows/oss-tests.yml .github/workflows/nppatch-tests.yml third-party-licenses.txt; \
 	if git diff --cached --quiet; then \
 		echo "No changes produced by the tag workflow."; \
 		exit 1; \
@@ -199,6 +200,9 @@ tag:
 	git tag -s "$$next_version" -F "$$tag_message_file"; \
 	trap - EXIT; \
 	rm -rf "$$tmpdir"
+
+third-party-licenses.txt: go.mod licenses.tpl
+	go tool go-licenses report ./... --ignore github.com/octoberswimmer --template licenses.tpl > $@
 
 test:
 	ghproxy --repo octoberswimmer/aer-dist -- act
