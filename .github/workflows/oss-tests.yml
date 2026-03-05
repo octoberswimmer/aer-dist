@@ -758,3 +758,38 @@ jobs:
           flags: --filter-path ${{ env.GOOGLE_CLIENT_SOURCE }}
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
+
+  amoss:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: [unpackaged, namespaced]
+        include:
+          - scenario: unpackaged
+            namespace: ""
+          - scenario: namespaced
+            namespace: aertest
+    steps:
+      - name: Checkout action
+        uses: actions/checkout@v4
+
+      - name: Fetch bobalicious/amoss commit 3c054ed
+        run: |
+          set -euo pipefail
+          root="oss/amoss"
+          mkdir -p "${root}"
+          workdir=$(mktemp -d "${root}/repo.XXXXXX")
+          git clone https://github.com/bobalicious/amoss.git "${workdir}"
+          cd "${workdir}"
+          git checkout 3c054ed3aad90109805f838b12855961aafba86c
+          echo "AMOSS_SOURCE=${workdir}/force-app" >> "$GITHUB_ENV"
+
+      - name: Run aer test (bobalicious/amoss commit 3c054ed)
+        uses: ./
+        with:
+          source: ${{ env.AMOSS_SOURCE }}
+          version: ${{ env.AER_VERSION }}
+          default-namespace: ${{ matrix.namespace }}
+        env:
+          AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
