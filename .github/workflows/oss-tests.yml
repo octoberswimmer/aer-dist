@@ -793,3 +793,38 @@ jobs:
           default-namespace: ${{ matrix.namespace }}
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
+
+  apex-fuzzy-finder:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: [unpackaged, namespaced]
+        include:
+          - scenario: unpackaged
+            namespace: ""
+          - scenario: namespaced
+            namespace: aertest
+    steps:
+      - name: Checkout action
+        uses: actions/checkout@v4
+
+      - name: Fetch jonathanmorris180/apex-fuzzy-finder commit a2212f2
+        run: |
+          set -euo pipefail
+          root="oss/apex-fuzzy-finder"
+          mkdir -p "${root}"
+          workdir=$(mktemp -d "${root}/repo.XXXXXX")
+          git clone https://github.com/jonathanmorris180/apex-fuzzy-finder.git "${workdir}"
+          cd "${workdir}"
+          git checkout a2212f205bc30c3a5a636ec7ec49dc6fcbb7a67b
+          echo "APEX_FUZZY_FINDER_SOURCE=${workdir}/force-app" >> "$GITHUB_ENV"
+
+      - name: Run aer test (jonathanmorris180/apex-fuzzy-finder commit a2212f2)
+        uses: ./
+        with:
+          source: ${{ env.APEX_FUZZY_FINDER_SOURCE }}
+          version: ${{ env.AER_VERSION }}
+          default-namespace: ${{ matrix.namespace }}
+        env:
+          AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
