@@ -866,3 +866,38 @@ jobs:
           default-namespace: ${{ matrix.namespace }}
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
+
+  sirono:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: [unpackaged, namespaced]
+        include:
+          - scenario: unpackaged
+            namespace: ""
+          - scenario: namespaced
+            namespace: aertest
+    steps:
+      - name: Checkout action
+        uses: actions/checkout@v4
+
+      - name: Fetch SCWells72/sirono commit 021eef3
+        run: |
+          set -euo pipefail
+          root="oss/sirono"
+          mkdir -p "${root}"
+          workdir=$(mktemp -d "${root}/repo.XXXXXX")
+          git clone https://github.com/SCWells72/sirono-common.git "${workdir}"
+          cd "${workdir}"
+          git checkout 021eef3ff0d08f15fd7e4fdfc6bf6be6036f4789
+          echo "SIRONO_SOURCE=${workdir}/force-app" >> "$GITHUB_ENV"
+
+      - name: Run aer test (SCWells72/sirono commit 021eef3)
+        uses: ./
+        with:
+          source: ${{ env.SIRONO_SOURCE }}
+          version: ${{ env.AER_VERSION }}
+          default-namespace: ${{ matrix.namespace }}
+        env:
+          AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
