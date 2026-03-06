@@ -828,3 +828,41 @@ jobs:
           default-namespace: ${{ matrix.namespace }}
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
+
+  apex-mockery:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: [unpackaged, namespaced]
+        include:
+          - scenario: unpackaged
+            namespace: ""
+          - scenario: namespaced
+            namespace: aertest
+    steps:
+      - name: Checkout action
+        uses: actions/checkout@v4
+
+      - name: Fetch salesforce/apex-mockery commit 320d3a7
+        run: |
+          set -euo pipefail
+          root="oss/apex-mockery"
+          mkdir -p "${root}"
+          workdir=$(mktemp -d "${root}/repo.XXXXXX")
+          git clone https://github.com/salesforce/apex-mockery.git "${workdir}"
+          cd "${workdir}"
+          git checkout 320d3a731fad390bdcbb815cc17cb0cc8ad5cb63
+          echo "APEX_MOCKERY_SRC=${workdir}/force-app/src/classes" >> "$GITHUB_ENV"
+          echo "APEX_MOCKERY_TEST=${workdir}/force-app/test/package/classes" >> "$GITHUB_ENV"
+
+      - name: Run aer test (salesforce/apex-mockery commit 320d3a7)
+        uses: ./
+        with:
+          source: |
+            ${{ env.APEX_MOCKERY_SRC }}
+            ${{ env.APEX_MOCKERY_TEST }}
+          version: ${{ env.AER_VERSION }}
+          default-namespace: ${{ matrix.namespace }}
+        env:
+          AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
