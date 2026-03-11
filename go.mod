@@ -2,7 +2,7 @@ module aer
 
 go 1.25.3
 
-require github.com/octoberswimmer/aer v0.0.119
+require github.com/octoberswimmer/aer v0.0.120
 
 require (
 	buf.build/gen/go/bufbuild/bufplugin/protocolbuffers/go v1.36.11-20250718181942-e35f9b667443.1 // indirect
@@ -60,6 +60,7 @@ require (
 	github.com/emirpasic/gods v1.12.0 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.3.0 // indirect
 	github.com/esiqveland/notify v0.13.3 // indirect
+	github.com/evanw/esbuild v0.27.3 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/gen2brain/beeep v0.11.2 // indirect
 	github.com/getsentry/sentry-go v0.12.0 // indirect
@@ -106,10 +107,10 @@ require (
 	github.com/nbio/xml v0.0.0-20251016084110-a619c1115f34 // indirect
 	github.com/ncruces/go-strftime v1.0.0 // indirect
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 // indirect
-	github.com/octoberswimmer/apexfmt v0.49.0 // indirect
-	github.com/octoberswimmer/digger v0.21.0 // indirect
-	github.com/octoberswimmer/libc v1.67.7-octoberswimmer.5 // indirect
-	github.com/octoberswimmer/memory v1.11.0-octoberswimmer.4 // indirect
+	github.com/octoberswimmer/apexfmt v0.50.0 // indirect
+	github.com/octoberswimmer/digger v0.24.0 // indirect
+	github.com/octoberswimmer/libc v1.67.7-octoberswimmer.6 // indirect
+	github.com/octoberswimmer/memory v1.11.0-octoberswimmer.5 // indirect
 	github.com/octoberswimmer/sformula v0.11.0 // indirect
 	github.com/octoberswimmer/sqlite v1.46.1-octoberswimmer.2 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
@@ -150,7 +151,7 @@ require (
 	go.lsp.dev/pkg v0.0.0-20210717090340-384b27a52fb2 // indirect
 	go.lsp.dev/protocol v0.12.0 // indirect
 	go.lsp.dev/uri v0.3.0 // indirect
-	go.opencensus.io v0.23.0 // indirect
+	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.64.0 // indirect
 	go.opentelemetry.io/otel v1.39.0 // indirect
@@ -169,7 +170,8 @@ require (
 	golang.org/x/term v0.40.0 // indirect
 	golang.org/x/text v0.34.0 // indirect
 	golang.org/x/tools v0.41.0 // indirect
-	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20260209200024-4cfbd4190f57 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260217215200-42d3e9bedb6d // indirect
 	google.golang.org/grpc v1.79.1 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/fsnotify.v1 v1.4.7 // indirect
