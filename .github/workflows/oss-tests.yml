@@ -901,3 +901,29 @@ jobs:
           default-namespace: ${{ matrix.namespace }}
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
+
+  agent-script-recipes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout action
+        uses: actions/checkout@v4
+
+      - name: Fetch trailheadapps/agent-script-recipes commit 9c90176
+        run: |
+          set -euo pipefail
+          root="oss/agent-script-recipes"
+          mkdir -p "${root}"
+          workdir=$(mktemp -d "${root}/repo.XXXXXX")
+          git clone https://github.com/trailheadapps/agent-script-recipes.git "${workdir}"
+          cd "${workdir}"
+          git checkout 9c9017691db4a90bc73189371d7d540e1d9f077c
+          echo "AGENT_SCRIPT_RECIPES_SOURCE=${workdir}/force-app/main" >> "$GITHUB_ENV"
+
+      - name: Run aer test (trailheadapps/agent-script-recipes commit 9c90176)
+        uses: ./
+        with:
+          source: ${{ env.AGENT_SCRIPT_RECIPES_SOURCE }}
+          flags: --assign-perms Agent_Script_Recipes_Data
+          version: ${{ env.AER_VERSION }}
+        env:
+          AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
