@@ -927,3 +927,28 @@ jobs:
           version: ${{ env.AER_VERSION }}
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
+
+  salesforcedocgen:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout action
+        uses: actions/checkout@v4
+
+      - name: Fetch DaveMoudy/SalesforceDocGen commit 4fa5457
+        run: |
+          set -euo pipefail
+          root="oss/salesforcedocgen"
+          mkdir -p "${root}"
+          workdir=$(mktemp -d "${root}/repo.XXXXXX")
+          git clone https://github.com/DaveMoudy/SalesforceDocGen.git "${workdir}"
+          cd "${workdir}"
+          git checkout 4fa5457e5a4a317c7802388ed2fdf0a9538a1492
+          echo "SALESFORCEDOCGEN_SOURCE=${workdir}/force-app/main" >> "$GITHUB_ENV"
+
+      - name: Run aer test (DaveMoudy/SalesforceDocGen commit 4fa5457)
+        uses: ./
+        with:
+          source: ${{ env.SALESFORCEDOCGEN_SOURCE }}
+          version: ${{ env.AER_VERSION }}
+        env:
+          AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
