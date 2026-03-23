@@ -2,7 +2,7 @@ module aer
 
 go 1.25.3
 
-require github.com/octoberswimmer/aer v0.0.129
+require github.com/octoberswimmer/aer v0.0.130
 
 require (
 	buf.build/gen/go/bufbuild/bufplugin/protocolbuffers/go v1.36.11-20250718181942-e35f9b667443.1 // indirect
@@ -25,7 +25,7 @@ require (
 	git.sr.ht/~jackmordaunt/go-toast v1.1.2 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20250102033503-faa5f7b0171c // indirect
 	github.com/ForceCLI/force v1.8.0 // indirect
-	github.com/ForceCLI/force-md v0.35.0 // indirect
+	github.com/ForceCLI/force-md v0.36.0 // indirect
 	github.com/ForceCLI/inflect v0.0.0-20130829110746-cc00b5ad7a6a // indirect
 	github.com/Masterminds/semver v1.4.2 // indirect
 	github.com/Masterminds/sprig v2.15.0+incompatible // indirect
