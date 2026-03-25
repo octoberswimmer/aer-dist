@@ -2,7 +2,7 @@ module aer
 
 go 1.25.3
 
-require github.com/octoberswimmer/aer v0.0.131
+require github.com/octoberswimmer/aer v0.0.132
 
 require (
 	buf.build/gen/go/bufbuild/bufplugin/protocolbuffers/go v1.36.11-20250718181942-e35f9b667443.1 // indirect
@@ -112,8 +112,8 @@ require (
 	github.com/octoberswimmer/libc v1.67.7-octoberswimmer.6 // indirect
 	github.com/octoberswimmer/memory v1.11.0-octoberswimmer.5 // indirect
 	github.com/octoberswimmer/sformula v0.12.0 // indirect
-	github.com/octoberswimmer/skyfire v0.4.0 // indirect
-	github.com/octoberswimmer/sqlite v1.46.1-octoberswimmer.2 // indirect
+	github.com/octoberswimmer/skyfire v0.5.0 // indirect
+	github.com/octoberswimmer/sqlite v1.46.1-octoberswimmer.3 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/otiai10/copy v1.6.0 // indirect
