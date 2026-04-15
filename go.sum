@@ -953,8 +953,8 @@ github.com/nightlyone/lockfile v1.0.0 h1:RHep2cFKK4PonZJDdEl4GmkabuhbsRMgk/k3uAm
 github.com/nightlyone/lockfile v1.0.0/go.mod h1:rywoIealpdNse2r832aiD9jRk8ErCatROs6LzC841CI=
 github.com/nxadm/tail v1.4.4 h1:DQuhQpB1tVlglWS2hLQ5OV6B5r8aGxSrPc5Qo6uTN78=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
-github.com/octoberswimmer/aer v0.0.153 h1:hjnQSSk9ppvafjJM+HrlIruVEaLq84Ccub+CsH4hBFY=
-github.com/octoberswimmer/aer v0.0.153/go.mod h1:zDj40VDydPr48zynHWfKLrE13etvH1B/mgf0CZBfse0=
+github.com/octoberswimmer/aer v0.0.154 h1:GMexkK/zzIuc9VXU/dtKE4yVEG/zOX26QSH93AeIt0s=
+github.com/octoberswimmer/aer v0.0.154/go.mod h1:0ZDu5RzVYXo2fR9kAvNlU6qZNTmTTSQwmBvSDTLk+Oc=
 github.com/octoberswimmer/antlr/v4 v4.13.1-octoberswimmer.2 h1:rpDkgKKK6P88RfMDuRhbpdV3miYbuXykNy/fGEMmmjA=
 github.com/octoberswimmer/antlr/v4 v4.13.1-octoberswimmer.2/go.mod h1:r0JDJcPLkuzJ/NPwHZYpNBJoCXYSWHbFSr9F1R1FWYQ=
 github.com/octoberswimmer/apexfmt v0.52.0 h1:Ar4ghkMpt+uTfmywzxiRhuSpYQSPW/O5cz3spY+/Nv0=
@@ -969,8 +969,8 @@ github.com/octoberswimmer/sformula v0.12.0 h1:k3xW1xzzBt/Dj9kWL7fuv8Wqews+f+v9sH
 github.com/octoberswimmer/sformula v0.12.0/go.mod h1:jj/jQdckA8mXgz9vOT8B1vfF5Jf9MrPuSQVAjLUr8Yo=
 github.com/octoberswimmer/skyfire v0.5.0 h1:nRObPfSCWDO3m1wS9QEYk4Icxjhr0DqbbwbgL1jwPZE=
 github.com/octoberswimmer/skyfire v0.5.0/go.mod h1:BTuqcnV0bbGxl1DjKVtiLiY9nZAVYPDsAmHcSGysrjk=
-github.com/octoberswimmer/sqlite v1.46.1-octoberswimmer.3 h1:J27tCmDFoE8bmUQjMK2wG5oQGmnMvFLOhVP9p3bosyI=
-github.com/octoberswimmer/sqlite v1.46.1-octoberswimmer.3/go.mod h1:xanvWR/GJ7R/uRgud1cStxqtxBxxKEWfHJeHQA3rp+M=
+github.com/octoberswimmer/sqlite v1.46.1-octoberswimmer.4 h1:6nK9f63JXsBzbgVdszr6BTls08f+Khix7fwZ1zp4HVE=
+github.com/octoberswimmer/sqlite v1.46.1-octoberswimmer.4/go.mod h1:xanvWR/GJ7R/uRgud1cStxqtxBxxKEWfHJeHQA3rp+M=
 github.com/onsi/ginkgo v1.6.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
 github.com/onsi/ginkgo v1.10.3/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
 github.com/onsi/ginkgo v1.12.1/go.mod h1:zj2OWP4+oCPe1qIXoGWkgMRwljMUYCdkwsT2108oapk=
