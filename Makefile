@@ -19,7 +19,7 @@ VERSIONED_ZIPS := $(addsuffix _$(VERSION).zip,$(basename $(ALL))) $(WASM_ZIP) $(
 RELEASE_ASSETS := $(VERSIONED_ZIPS) SHA256SUMS-$(VERSION)
 
 GO_BUILD_FLAGS := -trimpath
-GO_LDFLAGS := -X main.version=$(VERSION)
+GO_LDFLAGS := -X main.version=$(VERSION) -s -w
 GO_LDFLAGS_WASM := -X main.wasmRuntimeVersion=$(VERSION)
 
 .PHONY: default install install-debug dist clean checksum release tag
