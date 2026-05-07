@@ -22,7 +22,7 @@ GO_BUILD_FLAGS := -trimpath
 GO_LDFLAGS := -X main.version=$(VERSION) -s -w
 GO_LDFLAGS_WASM := -X main.wasmRuntimeVersion=$(VERSION)
 
-.PHONY: default install install-debug dist clean checksum release tag
+.PHONY: default install install-debug dist clean checksum release pre-release tag
 
 default:
 	go build $(GO_BUILD_FLAGS) -ldflags "$(GO_LDFLAGS)"
@@ -111,21 +111,23 @@ dist: $(VERSIONED_ZIPS)
 checksum: dist
 	shasum -a 256 $(VERSIONED_ZIPS) > SHA256SUMS-$(VERSION)
 
-release: checksum
+release: PRERELEASE_FLAG :=
+pre-release: PRERELEASE_FLAG := --prerelease
+release pre-release: checksum
 	@if ! command -v gh >/dev/null 2>&1; then \
-		echo "gh CLI is required for 'make release'."; \
+		echo "gh CLI is required for 'make $@'."; \
 		exit 1; \
 	fi
 	@if [ "$(VERSION)" = "dev" ] || printf "%s" "$(VERSION)" | grep -q "dirty"; then \
-		echo "VERSION '$(VERSION)' is not a clean tag. Tag the commit or invoke 'make release VERSION=vX.Y.Z' with a published tag."; \
+		echo "VERSION '$(VERSION)' is not a clean tag. Tag the commit or invoke 'make $@ VERSION=vX.Y.Z' with a published tag."; \
 		exit 1; \
 	fi
 	@if ! git rev-parse --verify "refs/tags/$(VERSION)" >/dev/null 2>&1; then \
-		echo "Tag '$(VERSION)' does not exist. Create the tag before running 'make release'."; \
+		echo "Tag '$(VERSION)' does not exist. Create the tag before running 'make $@'."; \
 		exit 1; \
 	fi
 	git push octoberswimmer "$(VERSION)"
-	gh release create "$(VERSION)" --title "aer $(VERSION)" --notes-from-tag --verify-tag $(RELEASE_ASSETS)
+	gh release create "$(VERSION)" --title "aer $(VERSION)" --notes-from-tag --verify-tag $(PRERELEASE_FLAG) $(RELEASE_ASSETS)
 
 tag:
 	@set -euo pipefail; \
@@ -156,6 +158,17 @@ tag:
 		echo "Already on the latest aer tag."; \
 		exit 1; \
 	fi; \
+	$(MAKE) "tag-$$next_version"
+
+tag-%:
+	@set -euo pipefail; \
+	next_version="$*"; \
+	if ! git diff --quiet || ! git diff --cached --quiet; then \
+		echo "Working tree must be clean before running 'make tag-$$next_version'."; \
+		exit 1; \
+	fi; \
+	module="github.com/octoberswimmer/aer"; \
+	current_version=$$(go list -m -f '{{.Version}}' "$$module"); \
 	echo "Updating $$module from $$current_version to $$next_version"; \
 	tmpdir=$$(mktemp -d); \
 	trap 'rm -rf "$$tmpdir"' EXIT; \
@@ -174,7 +187,7 @@ tag:
 	); \
 	for workflow in "$${workflows[@]}"; do \
 		tmp_workflow=$$(mktemp); \
-		if ! sed -e "0,/^\([[:space:]]*AER_VERSION:\) v[0-9][0-9.]*/s//\1 $$next_version/" "$$workflow" > "$$tmp_workflow"; then \
+		if ! sed -e "0,/^\([[:space:]]*AER_VERSION:\) v[0-9][0-9A-Za-z.+-]*/s//\1 $$next_version/" "$$workflow" > "$$tmp_workflow"; then \
 			rm -f "$$tmp_workflow"; \
 			exit 1; \
 		fi; \
