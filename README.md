@@ -42,7 +42,7 @@ jobs:
       - name: Run Apex Tests
         uses: octoberswimmer/aer-dist@main
         with:
-          source: sfdx
+          source: force-app
 ```
 
 Adjust `with.source` for your project's Apex root, and pin the `uses:` clause to the latest released tag (for example `@v0.1.0`).
@@ -57,7 +57,7 @@ Set a license key for production use (running more than 100 tests).
       - name: Run Apex Tests
         uses: octoberswimmer/aer-dist@main
         with:
-          source: sfdx
+          source: force-app
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
 ```
@@ -66,15 +66,15 @@ Set a license key for production use (running more than 100 tests).
 ## Quick Start
 
 1. Initialize your project directory with the Apex source you want to run or
-   test (for example an `sfdx` folder from an SFDX project).
-2. Execute your test suite with `aer test sfdx` (add `-f NamePattern`
+   test (for example an `force-app` folder from an SFDX project).
+2. Execute your test suite with `aer test force-app` (add `-f NamePattern`
    to focus on specific test classes).
-3. Run individual code paths with `aer run ClassName.methodName --path sfdx`.
+3. Run individual code paths with `aer exec "ClassName.methodName();" --path force-app`.
 4. Use the interactive debugger to step through code, inspect variables, and
    troubleshoot issues within VS Code with `aer test --debug` or `aer exec
    --debug`.
 
-`aer` reads SObject metadata alongside your source so tests behave like they
+`aer` reads metadata alongside your source so tests behave like they
 would in Salesforce.
 
 **Learn more:**
