@@ -9,6 +9,12 @@ cycles fast and reproducible.
 
 ![Demo](demo.gif)
 
+## Try it in your browser
+
+Run `aer` without installing anything: the [VS Code Web Demo](https://www.octoberswimmer.com/aer-demo/)
+launches a preconfigured editor with sample Apex source so you can execute tests
+and step through code in the interactive debugger from your browser.
+
 ## Install
 
 1. Browse to the **Releases** page of this repository and download the archive
