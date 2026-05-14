@@ -17,6 +17,14 @@ and step through code in the interactive debugger from your browser.
 
 ## Install
 
+On macOS or Linux with [Homebrew](https://brew.sh):
+
+```sh
+brew install octoberswimmer/tap/aer
+```
+
+Otherwise:
+
 1. Browse to the **Releases** page of this repository and download the archive
    for your platform:
    - `aer_<platform>.zip` for macOS and Linux
