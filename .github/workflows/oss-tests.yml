@@ -24,7 +24,7 @@ jobs:
             namespace: aertest
     steps:
       - name: Checkout action
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Fetch dlrs release/2.23 sources
         run: |
@@ -57,7 +57,7 @@ jobs:
             namespace: aertest
     steps:
       - name: Checkout action
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Fetch fflib-apex-mocks commit 0cf357a
         run: |
@@ -92,7 +92,7 @@ jobs:
             namespace: aertest
     steps:
       - name: Checkout action
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Fetch fflib-apex-common commit ca71952
         run: |
@@ -141,7 +141,7 @@ jobs:
             namespace: aertest
     steps:
       - name: Checkout action
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Fetch trigger-actions-framework commit cfda671
         run: |
@@ -167,7 +167,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout action
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Fetch jawills/jira-sf-integration commit 38c27d2
         run: |
@@ -204,7 +204,7 @@ jobs:
             namespace: aertest
     steps:
       - name: Checkout action
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Fetch open-force/jsonparse commit 69da320
         run: |
@@ -239,7 +239,7 @@ jobs:
             namespace: aertest
     steps:
       - name: Checkout action
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Fetch bhanudas/closinator commit 4412d44
         run: |
@@ -273,7 +273,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout action
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Fetch codefriar/ApexKit commit a6e8921
         run: |
@@ -307,7 +307,7 @@ jobs:
             namespace: aertest
     steps:
       - name: Checkout action
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Fetch PropicSignifi/R.apex commit 28f6198
         run: |
@@ -342,7 +342,7 @@ jobs:
             namespace: aertest
     steps:
       - name: Checkout action
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Fetch surajp/universalmock commit 1e04164
         run: |
@@ -377,7 +377,7 @@ jobs:
             namespace: aertest
     steps:
       - name: Checkout action
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Fetch ZackFra/Salesforce-Moxygen commit 687f30f
         run: |
@@ -405,7 +405,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout action
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Fetch pkozuchowski/Apex-Opensource-Library commit 9110e87
         run: |
@@ -430,7 +430,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout action
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Fetch trailheadapps/apex-recipes commit 19aba6b
         run: |
@@ -464,7 +464,7 @@ jobs:
             namespace: aertest
     steps:
       - name: Checkout action
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Fetch jongpie/NebulaLogger commit 1adf4de
         run: |
@@ -499,7 +499,7 @@ jobs:
             namespace: aertest
     steps:
       - name: Checkout action
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Fetch flxbl-io/flxbl-apex-api commit c13b531
         run: |
@@ -532,7 +532,7 @@ jobs:
             namespace: ""
     steps:
       - name: Checkout action
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Fetch beyond-the-cloud-dev/soql-lib commit 7e4984a
         run: |
@@ -616,7 +616,7 @@ jobs:
             namespace: aertest
     steps:
       - name: Checkout action
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Fetch beyond-the-cloud-dev/cache-manager commit 2e5e55a
         run: |
@@ -651,7 +651,7 @@ jobs:
             namespace: aertest
     steps:
       - name: Checkout action
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Fetch benahm/TestDataFactory commit 22487c8
         run: |
@@ -686,7 +686,7 @@ jobs:
             namespace: aertest
     steps:
       - name: Checkout action
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Fetch jamessimone/apex-dml-mocking commit 9bd4984
         run: |
@@ -712,7 +712,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout action
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Fetch jongpie/NebulaLogger commit 1adf4de (dependency)
         run: |
@@ -772,7 +772,7 @@ jobs:
             namespace: aertest
     steps:
       - name: Checkout action
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Fetch bobalicious/amoss commit 3c054ed
         run: |
@@ -807,7 +807,7 @@ jobs:
             namespace: aertest
     steps:
       - name: Checkout action
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Fetch jonathanmorris180/apex-fuzzy-finder commit a2212f2
         run: |
@@ -842,7 +842,7 @@ jobs:
             namespace: aertest
     steps:
       - name: Checkout action
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Fetch salesforce/apex-mockery commit 320d3a7
         run: |
@@ -880,7 +880,7 @@ jobs:
             namespace: aertest
     steps:
       - name: Checkout action
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Fetch SCWells72/sirono commit 021eef3
         run: |
@@ -906,7 +906,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout action
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Fetch trailheadapps/agent-script-recipes commit 9c90176
         run: |
@@ -932,7 +932,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout action
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Fetch DaveMoudy/SalesforceDocGen commit 4fa5457
         run: |
