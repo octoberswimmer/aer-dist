@@ -138,8 +138,11 @@ tag:
 	fi; \
 	module="github.com/octoberswimmer/aer"; \
 	current_version=$$(go list -m -f '{{.Version}}' "$$module"); \
-	tags=$$(git ls-remote --tags --refs --sort=v:refname https://github.com/octoberswimmer/aer.git \
-		| awk '/refs\/tags\/v/{gsub("refs/tags/","",$$2); print $$2}'); \
+	tags=$$(git ls-remote --tags --refs https://github.com/octoberswimmer/aer.git \
+		| awk '/refs\/tags\/v/{gsub("refs/tags/","",$$2); print $$2}' \
+		| sed '/^v[0-9]*\.[0-9]*\.[0-9]*$$/s/$$/-zzz/' \
+		| sort -V \
+		| sed 's/-zzz$$//'); \
 	next_version=""; \
 	found_state=0; \
 	for tag in $$tags; do \
