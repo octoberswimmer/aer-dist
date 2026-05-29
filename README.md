@@ -23,6 +23,15 @@ On macOS or Linux with [Homebrew](https://brew.sh):
 brew install octoberswimmer/tap/aer
 ```
 
+You can also install `aer` as a [Salesforce CLI plugin](https://www.npmjs.com/package/@octoberswimmer/aer-sf-plugin):
+
+```sh
+sf plugins install @octoberswimmer/aer-sf-plugin
+```
+
+Or install the [VS Code extension](https://marketplace.visualstudio.com/items?itemName=OctoberSwimmer.aer-dap-client),
+which installs `aer` for you and integrates the interactive debugger.
+
 Otherwise:
 
 1. Browse to the **Releases** page of this repository and download the archive
