@@ -68,7 +68,7 @@ jobs:
           source: force-app
 ```
 
-Adjust `with.source` for your project's Apex root, and pin the `uses:` clause to the latest released tag (for example `@v0.1.0`).
+Adjust `with.source` for your project's Apex root, and pin the `uses:` clause to the latest released tag (for example `@v1.0.0`).
 
 Optional inputs:
 - `flags` lets you append additional CLI arguments (for example `--skip SomeTest`).
