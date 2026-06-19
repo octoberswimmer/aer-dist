@@ -62,7 +62,11 @@ Changes in the v1.1.x pre-release builds that are not part of the v1.0.x patch l
 - **`aer test` workspace auto-detection.** When type checking a file fails to
   resolve references and the file lives inside an `sfdx-project.json` or
   `package.xml` workspace, aer loads the surrounding workspace and retries once,
-  while keeping test selection scoped to the files you named.
+  while keeping test selection scoped to the files you named. The retry preserves
+  explicitly-passed source paths that fall outside the workspace's package
+  directories, honors a user-supplied `--filter-path` instead of widening it, and
+  works under `--watch` (a lone file argument is watched through its parent
+  directory, and the auto-loaded dependency sources are watched too).
 - **`--runs N`.** Repeat each selected test method N times to surface flaky tests;
   each PASS/FAIL line is tagged with its run number.
 - **`--integration-tests`.** Discover and run `@IntegrationTest` classes and
@@ -99,7 +103,12 @@ Changes in the v1.1.x pre-release builds that are not part of the v1.0.x patch l
   decoupled from describe flags (every field is settable when building a test
   event except auto-number, calculated, formula, and rollup fields), the field
   set matches Salesforce, and `EventBus.publish()` of a constructed change event
-  raises the uncatchable "External Object Error".
+  raises the uncatchable "External Object Error" only when Change Data Capture is
+  disabled. Once a test calls `Test.enableChangeDataCapture()`, publishing a
+  constructed change event succeeds (assigning an `EventUuid` and in-memory
+  `ReplayId`) without counting against the DML limits, and
+  `Test.getEventBus().deliver()` / `Test.stopTest()` fire the change event's
+  after-insert trigger.
 - **SOQL string literals** of 4000 or more characters now raise a `QueryException`,
   matching Salesforce.
 - **Unified schema loading.** The `test`, `exec`, and `server` commands all load
@@ -110,6 +119,50 @@ Changes in the v1.1.x pre-release builds that are not part of the v1.0.x patch l
   managed-package code are prefixed with the controlling namespace (for example
   `myns:Too many SOQL queries: 201`), and governor limits are always enforced
   during test execution on the server.
+
+## v1.0.13 — 2026-06-18
+
+- Subscriber (unmanaged) custom fields authored on a managed-package object keep
+  their bare, unprefixed name instead of getting a synthesized namespaced alias.
+  This removes phantom duplicate columns and fixes several downstream failures: a
+  bare subscriber lookup relationship on a namespaced object resolves instead of
+  failing "relationship not found"; a bare subscriber formula field used in a SOQL
+  `WHERE`, `IN`, `ORDER BY`, or aggregate clause no longer fails with
+  "AER_DEC128_UNPACK: expected BLOB, got float64"; and selecting an unmanaged field
+  through a managed relationship resolves against the related object's namespace
+  rather than the base object's.
+- Field references inside a child subquery (for example
+  `SELECT (SELECT … FROM Journal_Entries__r)`) are canonicalized against the
+  subquery's related object, so a managed formula field referenced bare in a
+  subquery no longer reaches SQL generation un-namespaced and fails with a doubled
+  `AER_DEC128_UNPACK`.
+- A cross-object Number/Currency formula that reads an integer-typed field on a
+  related object (for example `Contract.ContractTerm` through a lookup) now reads
+  the column directly instead of failing with "AER_DEC128_UNPACK: expected BLOB,
+  got int64".
+- A custom permission granted to the running user at runtime is honored inside
+  `System.runAs(self)` when its `SetupEntityAccess` link was created in the current
+  transaction, matching how Salesforce re-derives a user's effective custom
+  permissions at the `runAs` boundary for `FeatureManagement.checkPermission` and
+  `$Permission`; a link that pre-existed the transaction (loaded from metadata or
+  created in `@TestSetup`) is not.
+- `Security.stripInaccessible` field security now matches a real org in both
+  directions: a top-level `stripInaccessible(READABLE)` no longer keeps fields based
+  on a permission set the running user self-granted at runtime (those permissions
+  are frozen at the top level and only re-derived inside `System.runAs`), and
+  `UPDATABLE` no longer strips a user's own editable personal fields such as
+  `Title` and `CompanyName`.
+- SOQL `ORDER BY` over a custom metadata type breaks ties by `DeveloperName`,
+  matching the canonical order of `<Type>.getAll().values()`, instead of returning
+  tied rows in load order.
+- Deleting the `CampaignMemberStatus` whose `IsDefault` is true is rejected (a
+  failed `DeleteResult` under `allOrNone = false`, a thrown exception otherwise),
+  matching Salesforce; deleting the parent Campaign still cascades through its
+  statuses.
+- A modified clone compares equal to an otherwise-identical record under `==`,
+  `assertEquals`, and in `Set`/`Map`/`List` operations: the synthetic clone-tracking
+  markers behind `isClone()`/`getCloneSourceId()` are excluded from SObject equality
+  and hashing.
 
 ## v1.0.12 — 2026-06-16
 
