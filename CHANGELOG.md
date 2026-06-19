@@ -80,6 +80,13 @@ Changes in the v1.1.x pre-release builds that are not part of the v1.0.x patch l
   copy of the schema and copy-on-write only the objects a test mutates, cutting
   resident memory substantially on large suites. The wasm build keeps its SQLite
   template on disk to fit the 4 GiB linear-memory cap.
+- **`System.EventBus.publishWithAccessLevel`.** Platform events can be published
+  under an explicit `AccessLevel` (single event or list, with an optional publish
+  callback). `USER_MODE` enforces only object-level Create access, not
+  field-level security, matching sfapex, and a null `AccessLevel` raises a
+  `NullPointerException`. `EventBus.publish` now runs in `USER_MODE` for
+  callers on API version 67.0 or later and `SYSTEM_MODE` for earlier versions,
+  matching the Summer '26 change.
 - **Schema build caching.** Assembled schemas are fingerprinted from the metadata
   source directories and cached between runs. An age-based garbage collector
   reaps stale cache entries, configurable through `AER_CACHE_MAX_AGE`,
@@ -119,6 +126,29 @@ Changes in the v1.1.x pre-release builds that are not part of the v1.0.x patch l
   managed-package code are prefixed with the controlling namespace (for example
   `myns:Too many SOQL queries: 201`), and governor limits are always enforced
   during test execution on the server.
+
+## v1.0.14 — 2026-06-19
+
+- `Security.stripInaccessible(AccessType.READABLE, …)` now recurses into related
+  records instead of stripping only top-level fields. Fields reached through a
+  parent lookup (`record.Rel__r.Secret__c`) or a child subquery were previously
+  copied verbatim, exposing data the running user cannot read; they are now
+  removed at every depth, reported under their own object type in
+  `getRemovedFields()`, and the parent's dotted queried paths are pruned so
+  navigating to the relationship later does not re-mark a stripped field as
+  queried.
+- A `__r` token that names both a parent relationship and a child relationship
+  now resolves the way sfapex does. The type checker and runtime
+  resolve the child relationship first for such collisions, so an invalid deep
+  parent traversal is rejected, while a scalar field read through a parent that
+  was populated explicitly (via `putSObject` or a parent-traversal query)
+  returns the parent record instead of throwing "List has no rows for
+  assignment to SObject".
+- Querying a fully-readable parent relationship and stripping the result no
+  longer reports a false read-access violation. The internal `__rowid` join
+  column SOQL attaches to nested relationship records is treated as a system
+  field during the strip, so it is never surfaced in `getRemovedFields()` as a
+  removed field with an empty name (previously printed as `{Object__c={}}`).
 
 ## v1.0.13 — 2026-06-18
 
