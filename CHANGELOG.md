@@ -127,6 +127,11 @@ Changes in the v1.1.x pre-release builds that are not part of the v1.0.x patch l
   `myns:Too many SOQL queries: 201`), and governor limits are always enforced
   during test execution on the server.
 
+## v1.0.15 — 2026-06-20
+
+- `DescribeSObjectResult.getKeyPrefix()` returns null for virtual or derived
+  objects that are never addressable by a real Id prefix.
+
 ## v1.0.14 — 2026-06-19
 
 - `Security.stripInaccessible(AccessType.READABLE, …)` now recurses into related
