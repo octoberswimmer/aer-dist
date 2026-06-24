@@ -1,8 +1,8 @@
 # Changelog
 
-## v1.2 (in development)
+## v1.2.0
 
-Changes in the v1.1.x pre-release builds that are not part of the v1.0.x patch line.
+Changes in v1.2.0 that are not part of the v1.0.x patch line.
 
 ### New SObject and feature support
 
