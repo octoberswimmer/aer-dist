@@ -1,5 +1,41 @@
 # Changelog
 
+## v1.2.1 — 2026-06-25
+
+- **Custom report types with joined child relationships.** `.reportType`
+  metadata is parsed into report type definitions, and a report that references
+  a custom report type by developer name resolves its base SObject. Joined child
+  columns are selected as relationship subqueries and flattened into one detail
+  row per child record, with an outer join keeping base records that have no
+  children. Report permissions are enforced in user mode (`Run Reports`, and
+  read access to filter columns).
+- **Text block delimiters require a line terminator.** The opening `'''` of a
+  triple-quoted text block must be immediately followed by a line feed, matching
+  sfapex, which rejects the single-line `'''hello'''` form.
+- **Deterministic package-merged child relationships.** Reverse child
+  relationships are now built in canonical sorted order, so a name collision
+  resolves the same way every run and the schema fingerprint (and the on-disk
+  storage-template cache) stays stable instead of rebuilding each run. Report
+  type definitions are carried through the schema merge and re-registered when a
+  schema loads from the cache, fixing custom report types on a cache hit.
+- **Opportunity probability derived from stage.** `Opportunity.Probability` is
+  populated from the matched `OpportunityStage.DefaultProbability` on insert, and
+  on update only when `StageName` is explicitly changed, leaving a
+  user-customized probability untouched otherwise. Stage Won, Probability, and
+  ForecastCategory attributes now flow through the standardValueSet import
+  pipeline so custom org stages work end to end.
+- **Visualforce rendering in `PageReference.getContent()`.**
+  `getContent()` / `getContentAsPDF()` now render a page that has a custom
+  controller, instantiating the controller and evaluating `{!...}` expressions
+  with strict, save-time semantics so aer catches expression errors Salesforce
+  rejects at save.
+- **Faster server cold start.** The server's named in-memory database is now
+  hydrated from the storage-template cache instead of running a full schema
+  migration on every startup, substantially reducing cold start time.
+- **Bare ampersands in picklist metadata.** Metadata containing bare `&`
+  characters in picklist values or labels (for example `R&D`) now deploys
+  instead of being silently dropped.
+
 ## v1.2.0
 
 Changes in v1.2.0 that are not part of the v1.0.x patch line.
