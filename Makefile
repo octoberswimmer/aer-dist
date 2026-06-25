@@ -22,7 +22,10 @@ GO_BUILD_FLAGS := -trimpath
 GO_LDFLAGS := -X main.version=$(VERSION) -s -w
 GO_LDFLAGS_WASM := -X main.wasmRuntimeVersion=$(VERSION)
 
-.PHONY: default install install-debug dist clean checksum release pre-release tag
+.PHONY: default install install-debug dist clean checksum release tag
+
+# Releases with an odd minor version are published as pre-releases.
+PRERELEASE_FLAG = $(shell case "$(VERSION)" in (v*.*.*) minor=$$(printf "%s" "$(VERSION)" | cut -d. -f2); [ "$$((minor % 2))" -eq 1 ] && echo --prerelease;; esac)
 
 default:
 	go build $(GO_BUILD_FLAGS) -ldflags "$(GO_LDFLAGS)"
@@ -111,9 +114,7 @@ dist: $(VERSIONED_ZIPS)
 checksum: dist
 	shasum -a 256 $(VERSIONED_ZIPS) > SHA256SUMS-$(VERSION)
 
-release: PRERELEASE_FLAG :=
-pre-release: PRERELEASE_FLAG := --prerelease
-release pre-release: checksum
+release: checksum
 	@if ! command -v gh >/dev/null 2>&1; then \
 		echo "gh CLI is required for 'make $@'."; \
 		exit 1; \
