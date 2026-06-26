@@ -1,5 +1,31 @@
 # Changelog
 
+## v1.4 (in development)
+
+### New capabilities
+
+- **Server landing page redesigned as an endpoint browser.** The authenticated
+  landing page is now a self-contained dark/light single-page endpoint browser. A
+  sidebar groups the development tools and API surface into categories with live
+  filtered counts, a search box (focusable with `/`, clearable with Escape)
+  filters endpoints by path or description, each path can be copied to the
+  clipboard, and a theme toggle persists across reloads. Endpoint data is built
+  server-side from the live routes, including dynamic Apex REST discovery. The
+  status indicator polls a cheap, auth-free endpoint and flips from a green
+  'Running' dot to a red 'Stopped' dot when the server stops responding, pausing
+  while the tab is hidden. The default Salesforce API version the server exposes
+  is raised from 60.0 to 67.0 across the `--api-version` default, the core
+  fallback, and the SOAP and Bulk v2 fallbacks.
+- **`.aerrc` config files for default flags.** Default flags can be set in
+  `.aerrc` files so they need not be repeated on every invocation. Files are
+  consulted in increasing precedence: `$XDG_CONFIG_HOME/aer/aerrc`, `~/.aerrc`,
+  then `./.aerrc`. Flags are injected after the resolved subcommand and before
+  the user's own arguments, so an explicit command-line flag wins; a flag not
+  defined on the invoked command is dropped, so one file can hold defaults for
+  several commands. Blank lines, comments, and lines not starting with a dash are
+  ignored, environment variables are expanded, and `AER_NO_RC` skips all config
+  files. A new global `--help-aerrc` flag explains how the config file works.
+
 ## v1.2.1 — 2026-06-25
 
 - **Custom report types with joined child relationships.** `.reportType`
