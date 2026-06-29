@@ -26,6 +26,37 @@
   ignored, environment variables are expanded, and `AER_NO_RC` skips all config
   files. A new global `--help-aerrc` flag explains how the config file works.
 
+## v1.2.2 — 2026-06-29
+
+- **RecordTypes on objects with long qualified API names.**
+  `RecordType.SobjectType` no longer rejects RecordTypes belonging to
+  managed-package objects whose qualified API name exceeds 40 characters.
+  sfapex reports the picklist length as 40 but accepts longer qualified
+  names, so the field now keeps a describe-reported length of 40 while
+  bypassing strict insert-time length validation, fixing a `STRING_TOO_LONG`
+  failure during VM pool template creation.
+- **`String.valueOf` truncates large collections.** `String.valueOf` and
+  `toString` of a collection now render at most the first ten elements, followed
+  by a `, ...` marker when the collection holds more than ten, matching
+  sfapex. Object rendering folds the synthetic property backing field into
+  the property's declared name so each property appears once.
+- **"Regex too complicated" limit enforced with per-operation thresholds.**
+  Regex-backed `String`/`Pattern` methods now throw the uncatchable
+  `System.LimitException: Regex too complicated` past a character-based
+  input-size limits: 500,000 chars for `split` / `split(rx, limit)`
+  / `replaceFirst`, 1,000,000 chars for `replaceAll` / `Pattern.matches`
+  / `Matcher` methods. `replaceAll` / `replaceFirst` backtracking is also
+  bounded by a match timeout so a catastrophic pattern aborts instead of
+  hanging.
+- **CPU charged for string concatenation by result length.** The `+` operator is
+  now billed proportional to the result length. A large string build that
+  previously stayed cheap under the CPU limit in aer while exceeding it on
+  sfapex now fails in aer.
+- **License file written atomically.** Registering a license key now writes to a
+  temporary file and renames it into place, so a concurrent aer process can no
+  longer read the file in a truncated, zero-length state and report "license key
+  not provided".
+
 ## v1.2.1 — 2026-06-25
 
 - **Custom report types with joined child relationships.** `.reportType`
