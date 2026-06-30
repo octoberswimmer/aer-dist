@@ -26,6 +26,25 @@
   ignored, environment variables are expanded, and `AER_NO_RC` skips all config
   files. A new global `--help-aerrc` flag explains how the config file works.
 
+## v1.2.3 — 2026-06-30
+
+- **Flows publish platform events they create.** A Flow "Create Records" element
+  targeting a platform event now publishes the event through `EventBus.publish`
+  instead of compiling to a keyword `insert event;`, which threw at runtime
+  ("Argument must be of internal sObject type") and silently dropped the event.
+- **Flow stack traces point at the offending statement.** Flow-generated AST
+  statements are stamped with their output line number while each class's source
+  is generated, so an exception inside a generated Queueable now reports the real
+  line instead of the default "line 1, column 1".
+- **Time-based flow scheduled paths skip test execution.** Only time-based
+  scheduled paths, which Salesforce defers to a future time and never runs during
+  a test, are now skipped in the `@TestSetup` async flush; async-after-commit
+  paths still run like ordinary async jobs, matching Salesforce.
+- **VS Code extension adds downloaded aer to the terminal PATH.** When the
+  extension downloads aer, its directory is appended to the integrated terminal's
+  PATH (so a user-installed aer still wins) at both process creation and via shell
+  integration, so it survives rc files that rebuild PATH.
+
 ## v1.2.2 — 2026-06-29
 
 - **RecordTypes on objects with long qualified API names.**
