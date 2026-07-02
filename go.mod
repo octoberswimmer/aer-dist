@@ -2,7 +2,7 @@ module aer
 
 go 1.25.3
 
-require github.com/octoberswimmer/aer v1.3.0
+require github.com/octoberswimmer/aer v1.3.1
 
 require (
 	buf.build/gen/go/bufbuild/bufplugin/protocolbuffers/go v1.36.11-20250718181942-e35f9b667443.1 // indirect
@@ -110,7 +110,7 @@ require (
 	github.com/ncruces/go-strftime v1.0.0 // indirect
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 // indirect
 	github.com/octoberswimmer/apexfmt v0.56.1 // indirect
-	github.com/octoberswimmer/digger v0.24.0 // indirect
+	github.com/octoberswimmer/digger v0.25.0 // indirect
 	github.com/octoberswimmer/libc v1.67.7-octoberswimmer.7 // indirect
 	github.com/octoberswimmer/memory v1.11.0-octoberswimmer.6 // indirect
 	github.com/octoberswimmer/sformula v0.12.0 // indirect
