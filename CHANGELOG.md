@@ -26,6 +26,15 @@
   ignored, environment variables are expanded, and `AER_NO_RC` skips all config
   files. A new global `--help-aerrc` flag explains how the config file works.
 
+## v1.2.5 — 2026-07-01
+
+- **DataWeave `reduce` with a default accumulator.** DataWeave scripts using
+  `reduce` with a default value on the accumulator parameter — e.g. `reduce
+  ((item, acc = {}) -> ...)` — now parse and evaluate instead of failing with
+  "no viable alternative at input 'reduce'". Lambda parameters may carry default
+  values, and `reduce` seeds from the accumulator default, folding over every
+  element and returning the default for an empty array.
+
 ## v1.2.4 — 2026-07-01
 
 - **`Map.put` returns the previous value.** `Map.put(key, value)` now returns
