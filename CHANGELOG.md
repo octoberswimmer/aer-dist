@@ -26,6 +26,48 @@
   ignored, environment variables are expanded, and `AER_NO_RC` skips all config
   files. A new global `--help-aerrc` flag explains how the config file works.
 
+## v1.2.4 — 2026-07-01
+
+- **`Map.put` returns the previous value.** `Map.put(key, value)` now returns
+  the value previously associated with the key (or `null` when the key was
+  absent), matching sfapex. Assigning its result previously reported "Illegal
+  assignment from void to ..." at compile time and produced no value at runtime.
+- **`Trigger.new` is typed so it coalesces as a list.** The typechecker now
+  gives the implicit `Trigger` context variable static types (`new`/`old` as
+  `List<SObject>`, `newMap`/`oldMap` as `Map<Id, SObject>`, the context flags as
+  `Boolean`, `size` as `Integer`, `operationType` as `System.TriggerOperation`).
+  Without a type for `Trigger.new`, the null-coalescing operator collapsed
+  `list ?? Trigger.new` to a singular `SObject` and raised a spurious "Illegal
+  assignment from SObject to List<SObject>" error.
+- **Custom setting fields are exempt from FLS in `USER_MODE` queries.** Once the
+  running user can read a custom setting object, all of its own fields are
+  readable under `USER_MODE` regardless of field-level security. A `WITH
+  USER_MODE` / `Database.query(..., USER_MODE)` read of a custom-setting field
+  previously failed with "No such column '<field>'". The object-level read
+  check still gates access, and regular objects, relationship traversals, and
+  the describe path are unchanged.
+- **Trigger exception locations survive DML failures.** When an exception thrown
+  inside a trigger surfaces from DML, the failure's `getMessage()` now carries
+  the "caused by" chain — the System-qualified cause type and message followed
+  by the originating `Trigger.<name>: line N` frame — so callers can tell which
+  query failed. This is applied across the full DML matrix
+  (insert/update/delete/undelete, DML statements and `Database` methods,
+  `allOrNone` true/false); `Database.delete`/`undelete` and
+  `Database.update(allOrNone=false)` are also corrected to wrap or report the
+  error consistently instead of leaking the raw exception.
+- **Inline SOQL in flow-generated triggers is namespaced.** Immediate
+  record-triggered flows emit their Get Records / inline SOQL directly into the
+  trigger body, so a bare custom object reference (e.g. `Queue__c`) previously
+  survived un-namespaced and leaked into the object name reported by a
+  `QueryException`. The default namespace is now applied to a trigger body's
+  inline SOQL and local classes, mirroring the class path.
+- **`aer exec` retains non-namespaced interfaces and enums.** When any source
+  file carried a package namespace (a single packaged trigger is enough), exec's
+  namespace-grouping dropped every unrelated non-namespaced interface and enum,
+  so a class implementing such an interface failed with "unresolved interface".
+  Non-namespaced interfaces and enums are now retained alongside classes and
+  triggers.
+
 ## v1.2.3 — 2026-06-30
 
 - **Flows publish platform events they create.** A Flow "Create Records" element
