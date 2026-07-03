@@ -26,6 +26,24 @@
   ignored, environment variables are expanded, and `AER_NO_RC` skips all config
   files. A new global `--help-aerrc` flag explains how the config file works.
 
+## v1.2.7 — 2026-07-03
+
+- **Static member access through a class name shadowed by a local variable is
+  rejected.** Apex identifiers are case-insensitive, so a local variable or
+  parameter named like a class (e.g. a `List<Account> statuses` parameter next
+  to a `Statuses` class) shadows the class, and `Statuses.SOME_CONSTANT`
+  resolves against the variable's type. aer previously fell back to the
+  class's static member and compiled code that sfapex rejects; it now reports
+  the same "Variable does not exist: <member>" error (reference-verified).
+  Members that do exist on the variable's type, including inherited ones,
+  still resolve through the variable.
+- **Unknown methods on `List`, `Set`, and `Map` are compile errors.** A method
+  call on a collection type that isn't in the collection's built-in method set
+  previously passed type checking and failed at runtime with "method not
+  found". It is now rejected.  This also covers static method calls through
+  a shadowed class name when the method is missing from the shadowing
+  variable's type.
+
 ## v1.2.6 — 2026-07-03
 
 - **`Schema.SObjectType.<Object>` describe properties are typed as their real
