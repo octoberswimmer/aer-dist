@@ -26,6 +26,57 @@
   ignored, environment variables are expanded, and `AER_NO_RC` skips all config
   files. A new global `--help-aerrc` flag explains how the config file works.
 
+## v1.2.6 — 2026-07-03
+
+- **`Schema.SObjectType.<Object>` describe properties are typed as their real
+  types.** Property access on the describe result (`name`, `label`,
+  `keyPrefix`, `custom`, `childRelationships`, ...) previously left the whole
+  chain typed as `Schema.DescribeSObjectResult`, so comparing
+  `Schema.SObjectType.Contact.name` to a `String`, concatenating it, or calling
+  String methods on it raised spurious "Comparison arguments must be compatible
+  types" / "Method does not exist" errors, and
+  `List<Schema.ChildRelationship> rels = Schema.SObjectType.My_Object__c.childRelationships;`
+  failed with an illegal-assignment error. Properties now carry the
+  String/Boolean/collection types from the describe result.
+- **Describe record-type-info properties return real data.** The
+  `recordTypeInfos`, `recordTypeInfosById`, `recordTypeInfosByName`, and
+  `recordTypeInfosByDeveloperName` property forms on a describe result returned
+  an empty placeholder while the equivalent `getRecordTypeInfos*()` methods
+  returned the real data; both forms now share the same builders. The synthetic
+  Master record type is also reported consistently by all four accessors —
+  alongside custom record types, as sfapex does, where previously only
+  `getRecordTypeInfosByDeveloperName()` included it.
+- **Namespaced custom-SObject type arguments match in generic assignability.**
+  In a managed-package context, assigning a class implementing
+  `Database.Batchable<Custom_Object__c>` to a variable of that same type was
+  rejected ("Illegal assignment from ns.MyBatch to
+  Database.Batchable<ns__Custom_Object__c>") because the declared type argument
+  was namespace-normalized while the implements-clause argument stayed bare.
+  Two generic specs now unify when their SObject type arguments resolve to the
+  same canonical name; `instanceof` "always true" detection is namespace-aware
+  the same way.
+- **Public override of a global abstract method is accepted.** A top-level
+  global class overriding a global abstract method with a `public` method is
+  valid (reference-org verified); aer wrongly rejected it with "Cannot reduce
+  the visibility of method". `protected`/`private` overrides are still
+  rejected.
+- **Null-argument constructor overloads resolve by most-specific non-null
+  position.** A constructor call with a null argument, such as
+  `new Duration(123.1, null)`, was flagged "Ambiguous method signature"
+  whenever two or more constructors were applicable. Matching sfapex, a
+  null literal matches any reference type equally and cannot discriminate
+  between overloads; the call is ambiguous only when no single constructor is
+  strictly more specific than every other applicable one.
+- **Array-literal elements are not treated as constructor arguments.** An
+  array-literal initializer with a null element, such as
+  `new Token[] { null }`, was resolved as the constructor call
+  `new Token(null)` and reported "Constructor not defined" for a valid
+  literal.
+- **NUL bytes lex as whitespace.** Spurious NUL bytes (for example
+  editor-introduced trailing padding) previously raised "token recognition
+  error". sfapex treats NUL as a token separator, so the lexer now accepts
+  it as whitespace.
+
 ## v1.2.5 — 2026-07-01
 
 - **DataWeave `reduce` with a default accumulator.** DataWeave scripts using
