@@ -26,6 +26,31 @@
   ignored, environment variables are expanded, and `AER_NO_RC` skips all config
   files. A new global `--help-aerrc` flag explains how the config file works.
 
+## v1.2.8 — 2026-07-04
+
+- **A method call resolves to a method, not a constructor sharing the class
+  name.** Apex lets a method share its class's name as long as it declares
+  a return type. The typechecker matched method-call candidates by lowercase
+  name alone, so such a call resolved to the constructor, whose empty return
+  type was reported as `void` — producing errors like "Illegal assignment from
+  void to Map<String, Object>" when the method's result was assigned.
+  Constructors are now excluded from method-call lookups, and a same-named
+  method is no longer treated as a constructor overload for `new` expressions.
+- **Builtin maps and sets preserve insertion order so every entry is
+  visible.** Several builtins wrote keyed entries without recording their
+  order, so `size()` counted them but `values()`, `keySet()`, for-each, and
+  `toString` never visited them. Fixed across six sites:
+  `OrgLimits.getMap()`/`getAll()`, the `Auth.AuthToken`, `Auth.JWT`, and
+  `Auth.SessionManagement` maps, `Approval.isLocked(List<Id>)`,
+  `Slack.ViewReference.setParameter`, and `QueryException` inaccessible-field
+  sets.
+- **`WITH SECURITY_ENFORCED` failures report an empty inaccessible-field
+  map.** A `QueryException` from `WITH SECURITY_ENFORCED` now has a non-null
+  but empty `getInaccessibleFields()`; only `USER_MODE` failures carry the
+  populated object-to-fields map.
+- **`Auth.SessionManagement.getQrCode()` returns documented keys.** The
+  result now uses the documented `qrCodeUrl` and `secret` keys.
+
 ## v1.2.7 — 2026-07-03
 
 - **Static member access through a class name shadowed by a local variable is
