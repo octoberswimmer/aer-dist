@@ -25,6 +25,33 @@
   several commands. Blank lines, comments, and lines not starting with a dash are
   ignored, environment variables are expanded, and `AER_NO_RC` skips all config
   files. A new global `--help-aerrc` flag explains how the config file works.
+- **`--allow-email` delivers `Messaging.sendEmail` over real SMTP.** By default
+  `Messaging.sendEmail` is mocked — addresses and bodies are validated the way
+  sfapex does, but no message leaves the process. A new `--allow-email` flag
+  on `exec` and `server` delivers real email over SMTP, configured by
+  `AER_SMTP_HOST`, `AER_SMTP_PORT`, `AER_SMTP_USER`, and `AER_SMTP_PASSWORD`
+  (defaulting to a local MTA on `localhost:25` with no authentication).
+  Recipients come from the To/Cc/Bcc lists, record-Id and `targetObjectId`
+  recipients resolve to their Email field, and the From is resolved from the
+  org-wide email address or the running user. The outcome is logged to stderr
+  either way, and Apex still observes a successful `SendEmailResult` when email
+  is discarded because the flag is not set.
+- **VS Code extension derives source paths, namespace, and replacements from
+  `sfdx-project.json`.** A new `aer.useSfdxProject` setting (on by default)
+  derives source paths from `packageDirectories`, the default namespace from
+  `namespace`, and applies `replacements` by staging source into a temp
+  directory before running, mirroring the aer sf plugin. Explicit
+  `aer.sourcePaths` and `aer.defaultNamespace` settings still take precedence.
+  This is wired through the language server, test runner, watch mode, and
+  debugger; staging maps failure locations back to the real files and watch mode
+  mirrors edits into the staging directory.
+- **VS Code extension honors `unpackagedMetadata` and `apexTestAccess` from
+  `sfdx-project.json`.** When `aer.useSfdxProject` is enabled, each package
+  directory's `unpackagedMetadata.path` is loaded alongside the packaged source
+  and staged with it when replacements apply, so tests compile and run against
+  that metadata across the language server, test runner, watch mode, and
+  debugger. `apexTestAccess.permissionSets` are passed to aer as
+  `--assign-perms`, combined with the `aer.assignPermissionSets` setting.
 
 ## v1.2.8 — 2026-07-04
 
