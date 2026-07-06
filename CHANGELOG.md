@@ -53,6 +53,64 @@
   debugger. `apexTestAccess.permissionSets` are passed to aer as
   `--assign-perms`, combined with the `aer.assignPermissionSets` setting.
 
+## v1.2.9 — 2026-07-05
+
+- **Record-triggered flows survive multi-row lookups again.** Several fixes to
+  the flow converter and trigger optimizer that together broke record-triggered
+  flows once multi-row lookup results were declared:
+  - A Get Records element in collection mode that matches no records now sets its
+    output to `null` (matching Salesforce, where an `IsNull` decision on the
+    result takes the true branch) rather than an empty list. An Assignment that
+    adds a `null` collection value appends a single `null` element, so a
+    subsequent count yields 1, and Loop collections wrapped so a `null`
+    collection iterates zero times.
+  - The SOQL-in-loop bulkification kept only the first record per key even for
+    collection-typed lookups, so a parent with several children silently lost
+    every child after the first. Collection lookups keyed by a non-Id field now
+    build a grouped `Map<Id, List<T>>` so every row is retained; Id-keyed parent
+    traversals keep the single-record map.
+  - A query filtering on a loop-variable equality plus another loop-variable
+    comparison (e.g. `WHERE AccountId = :record.AccountId AND Id != :record.Id`)
+    was hoisted before the loop with the second bind left referencing the vanished
+    loop variable, failing with a bind-resolution error. Such queries now stay
+    per-record inside the loop.
+- **Flow interviews pause at Wait elements.** An autolaunched flow reaching a
+  Wait element previously failed with "Unknown flow element". Elements before the
+  Wait are now committed, control returns to the caller without an exception, and
+  the wait-event connectors do not run during a test.
+- **Rolled-back async jobs are skipped and aborted `AsyncApexJob` rows are
+  kept.** A queueable enqueued after `Database.setSavepoint()` and then rolled
+  back is now discarded entirely instead of failing the `Test.stopTest` drain
+  with "AsyncApexJob not found". `System.abortJob` marks the `AsyncApexJob` row
+  `Status=Aborted` and skips execution instead of deleting the row, and
+  re-aborting an already-aborted queueable is a no-op.
+- **A profile with no default record type falls back to the Master record
+  type.** Inserting a record without a RecordTypeId no longer errors when the
+  object has multiple active record types and the running user's profile has no
+  registered default; the insert succeeds with a null RecordTypeId, matching
+  sfapex.
+- **Feature parameter names resolve against the executing namespace.**
+  `FeatureManagement.checkPackage*Value` matched parameter names by exact string,
+  so a namespaced package run threw `NoDataFoundException` for a
+  namespace-qualified name seeded under its bare authored name. Names now match
+  case-insensitively, a bare name resolves against the calling package's
+  namespace, and a name qualified with a foreign namespace still throws.
+- **`SetupEntityAccess.SetupEntityId` is polymorphic.** `SELECT
+  SetupEntity.Name FROM SetupEntityAccess` failed with "No such column 'Name' on
+  entity 'CustomPermission'". The field now declares its nine referents
+  (ApexClass, ApexPage, ConnectedApplication, CustomPermission,
+  ExternalClientApplication, ExternalDataSource, MessagingChannel,
+  NamedCredential, OrgWideEmailAddress), so `SetupEntity.Name` resolves through
+  the targets that have a Name field and returns null for CustomPermission rows.
+- **User-mode DML field-access failures throw a catchable `DmlException`.**
+  User-mode DML (`Database.insert`/`update` with `AccessLevel.USER_MODE`) that
+  writes a field the running user lacks FLS on previously returned an
+  uncatchable raw error and failed the whole call. It now throws a `DmlException`
+  with status code `CANNOT_INSERT_UPDATE_ACTIVATE_ENTITY` listing all
+  inaccessible fields in set order; with `allOrNone=false` the failing row
+  becomes a failed `SaveResult` while the rest save, and object-level denial
+  still throws `SecurityException`.
+
 ## v1.2.8 — 2026-07-04
 
 - **A method call resolves to a method, not a constructor sharing the class
