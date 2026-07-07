@@ -53,6 +53,116 @@
   debugger. `apexTestAccess.permissionSets` are passed to aer as
   `--assign-perms`, combined with the `aer.assignPermissionSets` setting.
 
+## v1.2.10 — 2026-07-07
+
+- **`Matcher.find()` advances past zero-length matches.** A find loop over a
+  boundary pattern like `\b` or an empty-capable pattern like `x?` returned the
+  same empty match forever instead of yielding successive positions.
+  A zero-length match now advances the continuation point by one, and
+  continuation matches run against the full region with a start offset instead
+  of a byte slice, so boundary and lookbehind constructs see the real left
+  context. Group extraction now distinguishes an empty capture (empty string)
+  from a group that did not participate in the match (null with -1 indices),
+  matching sfapex.
+- **Standard-field stubs in retrieved source resolve against builtin
+  definitions.** Source retrievals include standard-field stubs (a bare
+  `<fullName>` or a detail-less `<type>`), and the importer fabricated a text
+  type for any stub it could not resolve. Stubs now fill from the builtin
+  template.
+- **Lowercase `label.X` custom-label references survive an inner class named
+  `Label`.** An inner class named `Label` anywhere in the org hijacked the
+  fallback resolution of lowercase `label` identifiers, failing unrelated
+  classes with 'identifier "label" not found in binding'. An unbound `label`
+  identifier now resolves deterministically to the custom-labels global; a
+  `Label` type lexically in scope still shadows it, matching sfapex. This
+  also fixes wrong-case label names returning a placeholder object instead of
+  the label value.
+- **`SingleEmailMessage.isUserMail()` derives from the target object type.** It
+  was backed by a field nothing populated and always returned false, so code
+  branching on it to read `getToAddresses()` hit a NullPointerException. It now
+  returns true when `targetObjectId` is a User; Contact and Lead targets and
+  messages addressed only via `setToAddresses` remain external.
+- **Identity casts and `instanceof` work for builtin runtime values.** Casting
+  a `TimeZone` held in an `Object` back to `TimeZone` threw "Invalid conversion
+  from runtime type TimeZone to TimeZone"; the same affected `Url`, `Pattern`,
+  `Matcher`, `UUID`, `Version`, `Location`, and `Type`. A cast is now accepted
+  when the value's canonical runtime type equals the target type, `instanceof`
+  matches builtin values (including `Schema.SObjectType` references) against
+  their canonical type name, `Assert.isInstanceOfType` works for these types,
+  and assert failure messages report the Apex type name instead of an internal
+  Go type name.
+- **Indexing a method-call result no longer leaks SOQL count semantics into the
+  target.** `evalIndexExpression` set its evaluation context around the whole
+  target, so a `COUNT()` query compared inside a method used as an index target
+  (e.g. `pick_by_count()[0]`) failed with "invalid operands for >". The context
+  now applies only when the target is a directly-nested SOQL literal; the
+  direct `[SOQL][index]` behaviors are unchanged.
+- **Custom metadata and custom setting accessor arguments bind to the right
+  overload.** The resolver could not type the platform accessors
+  (`getInstance`, `getOrgDefaults`, `getValues`, `getAll`) on custom metadata
+  and custom setting types, so a call like
+  `myMethod(Setting__mdt.getInstance(name))` treated the argument as a wildcard
+  and bound to the first candidate — such as `myMethod(String)`, making the
+  method call itself until the resolution limit reported infinite recursion.
+  The accessor return types are now recorded and SObject-typed arguments are
+  matched by canonical object name during overload selection.
+- **Queueable chaining limits are enforced in tests.** `System.enqueueJob` from
+  inside an executing queueable now throws `System.AsyncException` ("Maximum
+  stack depth has been reached.") during a test unless the chain was started
+  with an explicit `AsyncOptions.MaximumQueueableStackDepth`, and configuring a
+  depth while a queueable is executing throws "Cannot reset Maximum Queueable
+  Stack Depth in a queueable" — both reference-verified. The extra chained
+  executions previously inflated `AsyncApexJob` counts and ran chain logic
+  sfapex never executes in tests.
+- **Non-formula picklist defaults are treated as literal values.** A package
+  picklist defaulting to `"0.00"` parsed as a formula number, so records stored
+  the numeric zero instead of the API value `0.00`. A picklist or multipicklist
+  default whose formula evaluation yields a non-string is now taken as the
+  literal API value.
+- **Metadata-loaded permission set groups default to Status `Updated`.**
+  Authored metadata normally omits `<status>`, so the record's Status was null
+  and inserting a `PermissionSetAssignment` against the group failed with
+  INVALID_CROSS_REFERENCE_KEY. Both importers now default Status to `Updated`
+  (an explicit `<status>` still wins), matching a reference org at rest.
+- **Custom sharing reasons are sorted in Share object `RowCause` picklists.**
+  Map-iteration order made the schema differ from run to run, so the schema
+  fingerprint keying the on-disk database template cache silently missed on
+  warm runs and paid full template repopulation.
+- **`ApexPages.Severity` constants declare in platform order.** aer used the
+  alphabetized stub order, but the platform declares severity-descending:
+  FATAL, ERROR, WARNING, INFO, CONFIRM (reference-verified). `values()`
+  indexing and `ordinal()` threshold checks now return the right constants.
+- **RunAs self-grants are suppressed at the top level of test methods.** A
+  `PermissionSetAssignment` granting the running user a permission set inside a
+  `System.runAs` block (commonly in `@TestSetup`) is honored on sfapex only
+  inside a `System.runAs` block. aer honored it everywhere, so tests passing
+  under aer failed on a real org. Such grants are now excluded at the
+  synchronous top level of a test while remaining honored inside `runAs`
+  blocks, in async job execution, and after `Test.startTest()`.
+- **DataWeave collections written into Map-typed Apex fields are rejected.** An
+  `application/apex` script writing an array into a `Map<String, Object>` field
+  stored the list unvalidated, surfacing later as "method not found: List.put".
+  It now throws `System.DataWeaveScriptException` ("cannot assign a collection
+  to a field of type Map<String,ANY>").
+- **`DescribeFieldResult.getReferenceTo()` reports targets for built-in
+  polymorphic fields.** 31 reference fields, including `Attachment.ParentId`,
+  `Note.ParentId`, `ContentDocumentLink.LinkedEntityId`, and
+  `TopicAssignment.EntityId`, described an empty target list, so selectors that
+  resolve relationship segments with `getReferenceTo()[0]` failed with
+  a list-index error sfapex never produces. Polymorphic lists are now derived
+  from the schema's child relationships and fixed-target lookups declare their
+  verified targets.
+- **MiddleName and Suffix auto-enable from Apex references.** References like
+  `Lead.MiddleName` or `new Contact(Suffix = ...)` failed type checking with
+  "Variable does not exist" unless NameSettings metadata was loaded. A
+  compilation-unit scan now enables the matching setting when the field is
+  referenced in an object context; an explicit `false` in a loaded NameSettings
+  file is never overridden.
+- **Short Text Area fields can be sorted in SOQL.** A custom `TextArea` field
+  with no explicit length was rejected from ORDER BY (and `isSortable()`
+  returned false) even though sfapex only forbids sorting Long and Rich
+  Text Areas. Short text areas now sort; long text areas remain rejected.
+
 ## v1.2.9 — 2026-07-05
 
 - **Record-triggered flows survive multi-row lookups again.** Several fixes to
