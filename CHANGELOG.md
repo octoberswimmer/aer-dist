@@ -53,6 +53,67 @@
   debugger. `apexTestAccess.permissionSets` are passed to aer as
   `--assign-perms`, combined with the `aer.assignPermissionSets` setting.
 
+## v1.2.11 — 2026-07-09
+
+- **Date and DateTime roll-up summaries read back as the right type.** A
+  min/max roll-up summary is assigned a placeholder type before its summarized
+  field is known, so a roll-up over a `Date` or `DateTime` field was not
+  materialized as an Apex `Date`/`Datetime` when read from storage. Field
+  conversion now follows a roll-up summary to its summarized field and wraps the
+  stored value with the effective type, so a max-over-`Date` roll-up is
+  recognized as a `Date`.
+- **Report, dashboard, document, and email-template folders are queryable.**
+  Email-template folders shipped as metadata keep the `accessType` declared in
+  their `.emailFolder-meta.xml` instead of defaulting to Hidden, so a query for
+  a public folder returns it, and a `Folder.Type LIKE 'Email template'` filter
+  matches the stored `Email`/`EmailTemplate` types. Report, dashboard, and
+  document folder metadata is reconciled into queryable `Folder` rows carrying
+  the folder Type.
+- **`TimeZoneSidKey` is a restricted picklist.** sfapex rejects timezone
+  keys outside its catalog with `INVALID_OR_NULL_FOR_RESTRICTED_PICKLIST`, but
+  aer silently accepted invalid values like `"UTC"`. `User.TimeZoneSidKey` is
+  now restricted, and the `Etc/GMT` offsets sfapex accepts but omits from
+  describe (`Etc/GMT+1`..`+12`, `Etc/GMT-1`..`-14`, `Etc/UTC`) are honored.
+- **`Flow.Interview.createInterview` for a missing flow reports `Invalid
+  type`.** A flow that does not exist now throws a `TypeException` with the
+  message `Invalid type: <namespace>.<name>` (dot-separated, and just `<name>`
+  when no namespace is supplied), matching sfapex instead of the former
+  "the flow is inactive or does not exist" wording.
+- **Text-formula concatenation of lookup fields concatenates their Ids.** A
+  reference operand was not treated as string-like, so `lookup + lookup`
+  compiled to numeric addition and produced a silent zero. Reference operands
+  in the `+` and `&` operators now concatenate as their 15-character record Id
+  (`CASESAFEID` results stay 18), blank operands are treated as empty text.
+- **Possessive quantifiers compile and match.** aer
+  rejected `X*+`, `X++`, `X?+`, and `X{n,m}+` at `Pattern.compile`.
+- **Builtin calls with the wrong argument count are rejected at compile time,
+  and null arguments throw catchable exceptions.** The type checker previously
+  validated only that a builtin method name existed, so calls like
+  `Datetime.newInstanceGmt(2010, 1, 1, 14)` or `String.lastIndexOf()` failed
+  only at runtime; declared overload arities are now enforced with the
+  sfapex error format. A null `Integer` reaching a builtin argument
+  conversion now throws a catchable `NullPointerException("Argument cannot be
+  null.")` across the `Datetime`/`Date`/`Time` constructors, `add*` methods,
+  and many other call sites instead of an uncatchable internal error, an NPE
+  raised while evaluating a method argument is no longer swallowed except for
+  the null-SObject-field-access quirk, and null list-index semantics
+  (`get(null)`, null subscript writes/reads, `add(null, e)`) match sfapex.
+- **Flow-generated queueables are transparent to the Apex async model.**
+- **`Metadata.Operations.retrieve` supports `CustomMetadata`.** Requests for
+  `Metadata.MetadataType.CustomMetadata` fell through to a default branch and
+  returned an empty list, so code that indexed `[0]` into the result threw a
+  List index exception..
+- **`Schema.ChildRelationship.field` returns an `SObjectField`.** The lookup
+  field was kept as a raw string, so direct property access
+  (`relationship.field`) returned the string and `relationship.field.get`
+  `Describe()` failed with "getDescribe() called on non-SObjectField instance".
+- **Namespace-qualified builtin receivers keep their disambiguation.** The type
+  checker resolved a method-call receiver twice, and the second pass discarded
+  the `Schema.` qualifier — so inside a class declaring a nested type also named
+  `AggregateResult`, a `Schema.AggregateResult` receiver collapsed onto the
+  nested type and builtin methods like `getPopulatedFieldsAsMap` were reported
+  nonexistent.
+
 ## v1.2.10 — 2026-07-07
 
 - **`Matcher.find()` advances past zero-length matches.** A find loop over a
