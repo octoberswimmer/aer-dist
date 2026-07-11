@@ -53,6 +53,81 @@
   debugger. `apexTestAccess.permissionSets` are passed to aer as
   `--assign-perms`, combined with the `aer.assignPermissionSets` setting.
 
+## v1.2.13 — 2026-07-11
+
+- **Keyword DML in system-mode contexts skips user-mode permission checks.**
+  Platform event triggers run as the Automated Process user in system mode,
+  but bare `insert`/`update` statements in an API 67+ class threw
+  `SecurityException` "Access to entity denied" where sfapex permits the
+  operation. The `Database.*` builtins, SOQL `USER_MODE`, and
+  `EventBus.publish` already skipped checks in system mode; keyword DML now
+  does the same.
+- **`EntityParticle` and `FieldDefinition` carry the values sfapex returns.**
+  `Name` holds the `QualifiedApiName`, `ValueTypeId`/`ServiceDataTypeId` map
+  field types to SOAP primitive names, `ByteLength` is computed per type,
+  `ExtraTypeInfo` reports plain/rich text areas, `RelationshipName` is
+  populated for lookups, and the boolean describe flags are computed from the
+  schema with a verified table for standard system-field quirks. Custom
+  entities get deterministic durable ids, `FieldDefinition.Id` equals the
+  `DurableId`, `MetadataRelationship` joins switch to `QualifiedApiName`, an
+  object without record types emits no `RecordTypeId` particle, and
+  `USER_MODE` `EntityParticle` queries filter to readable entities.
+- **Platform events describe like sfapex.** A platform event now carries
+  only `ReplayId`, `EventUuid`, `CreatedDate`, and `CreatedById` plus its
+  custom fields instead of the record system-field baseline, with no
+  synthetic Master record type. `isCustom()` reports true for all
+  custom-suffixed entities, publish-only flags (`isUpdateable()`,
+  `isDeletable()`, `isUndeletable()`, `isQueryable()`) report false, and
+  describe property access routes through the same logic as the getter
+  methods so the two surfaces agree as permissions change.
+  `DescribeSObjectResult.getFields()` is a compile error, matching sfapex:
+  only the `fields` property exists.
+- **Wrong-type lookup ids throw `FIELD_INTEGRITY_EXCEPTION`.** Assigning, for
+  example, a User Id to `Contact.AccountId` surfaced as an
+  `UNKNOWN_EXCEPTION` with a bare storage message; it now raises the
+  sfapex-shaped error ("Account ID: id value of incorrect type: 005…:
+  [AccountId]") on insert and update, for keyword DML and `Database` methods
+  alike.
+- **`Database.emptyRecycleBin`, savepoints, and `convertLead` match sfapex
+  errors.** `emptyRecycleBin` supports only the real overloads, rejects a
+  `List<String>` and an Id-less SObject with
+  `InvalidParameterValueException`, fails per record with `INVALID_ID_FIELD`
+  for ids not in the recycle bin, and throws the uncatchable
+  `MISSING_ARGUMENT` exception for an empty batch. `Database.rollback(null)`
+  throws an NPE, and rolling back to or releasing a released savepoint throws
+  `TypeException` "Savepoint does not exist in this context". `convertLead`
+  without a leadId or convertedStatus throws the specific `DmlException`s.
+  `addError` maps a component field to its compound parent only for the
+  `SObjectField` and field-name forms; DML results report compound-mapped
+  errors with an empty field list while `getErrors()` keeps the compound
+  name.
+- **`TIMEVALUE` parses text arguments.** Text is parsed as
+  `<hour>:<minute>:<second>.<millisecond>` integer components the way sfapex
+  does (the fraction is a millisecond count, so `.1` is 1ms), empty or null
+  returns null, invalid text throws `HandledException` "Invalid time format",
+  and a formula field whose expression fails at runtime stores null instead
+  of failing the operation.
+- **JSON deserialization tightens to sfapex behavior.** Lenient
+  `JSON.deserialize` rejects a float literal for an `Integer` target with a
+  catchable `JSONException` (no lenient coercion exists),
+  `@JsonAccess(…='samePackage')` denies access from code deployed as source,
+  serializing a `JSONParser`/`JSONGenerator` reports the `common.apex.json.*`
+  internal type names, and parent-relationship alias keys built from schema
+  tokens carry the org namespace so qualified `__r` keys deserialize in lenient
+  and strict modes.
+- **`String.format` number patterns throw, and empty padding pads with
+  spaces.** Arguments are stringified before formatting, so a `{N,number…}`
+  element always throws `StringException` "Cannot format given Object as a
+  Number" regardless of argument type, and `leftPad`/`rightPad`/`center` with
+  an empty padding string pad with spaces instead of returning the input
+  unchanged.
+- **Expired monthly CI licenses renew automatically.** License validation
+  renews an expired organization key against the renewal endpoint before
+  failing, persisting the refreshed key when it is stored in the license file
+  (an `AER_LICENSE_KEY` value is renewed for the current run only), and
+  proactive background renewal now covers CI licenses as well as developer
+  licenses.
+
 ## v1.2.12 — 2026-07-10
 
 - **Updates and upserts write back all populated fields of a queried record.**
