@@ -53,6 +53,80 @@
   debugger. `apexTestAccess.permissionSets` are passed to aer as
   `--assign-perms`, combined with the `aer.assignPermissionSets` setting.
 
+## v1.2.12 — 2026-07-10
+
+- **Updates and upserts write back all populated fields of a queried record.**
+  sfapex persists every populated field of a record loaded from a query —
+  fields queried with a non-null value or assigned in code (even to null) — not
+  only the fields assigned since the query, so a queried non-null field
+  overwrites a concurrent change made after the query. aer wrote only assigned
+  fields. A field queried as null, or never queried nor assigned, is still not
+  written, so a concurrent change to it survives.
+- **Queried datetimes are whole seconds in subquery and parent paths.** Storage
+  keeps sub-second precision for deterministic ordering, and the top-level
+  query path truncated to seconds, but subquery children and parent
+  relationship traversals returned sub-second values. The populated-field
+  write-back then made `Trigger.new` differ from `Trigger.old` on datetime
+  fields the code never assigned, creating phantom changes.
+- **`SObjectType.newSObject(recordTypeId, true)` loads default values.** The
+  `loadDefaults` flag was ignored. It now applies literal and formula
+  defaults, sets non-calculated checkboxes to false, applies record-type-aware
+  picklist defaults, and assigns the running user as `OwnerId`.
+- **`DescribeFieldResult.isDefaultedOnCreate()` matches Apex describes.**
+- **`DescribeFieldResult` property access covers every getter.** Properties
+  like `unique`, `byteLength`, `calculatedFormula`, `localName`, `autoNumber`,
+  and `externalId` returned null because the property-to-getter mapping listed
+  only a subset of getters; every registered getter is now mapped.
+- **`Messaging.renderEmailTemplate` resolves merge fields.** Body strings were
+  returned verbatim; `{!Account.Name}`-style expressions now render against
+  `whatId`, and `{!Contact.X}`/`{!recipient.X}` against `whoId`, using the same
+  resolver as stored templates.
+- **Unique and external ID fields match by case sensitivity and type.**
+  Case-sensitive unique text fields were enforced case-insensitively on
+  insert; their unique indexes now compare binary.
+- **Timezone handling is consistent end to end.** The default timezone maps
+  `UTC` to `GMT` so users insert in UTC environments now that `TimeZoneSidKey`
+  is restricted, `exec --timezone` is applied before the default user is
+  created and reflected by `UserInfo.getTimeZone()`, and a `TimeZone` prints as
+  its zone ID instead of a Go handle.
+- **After undelete triggers see `IsDeleted` = false.** Trigger records were
+  read from the recycle bin with `IsDeleted` still true.
+- **`addError()` state does not affect record equality.** The synthetic error
+  markers leaked into `==`, `equals()`, `System.assertEquals`, and Set/Map
+  hashing, so a record carrying an error compared unequal to an
+  otherwise-identical record.
+- **A custom object's Text Name field describes as nillable and defaulted on
+  create.**
+- **`Test.createStubQueryRow` supports child relationships and enforces
+  read-only rows.** A key naming a child relationship stores the supplied List
+  as a subquery result (readable via `getSObjects()`, static access, and JSON,
+  with explicit empty lists preserved), and any non-List value throws
+  `TypeException`. Stub rows are read-only — assignment and `put()` throw
+  `SObjectException` "Record is read-only" — and `addError` outside a test
+  throws the uncatchable `FinalException`, matching sfapex.
+- **`Test.enqueueBatchJobs` inserts placeholder jobs.** It was a no-op, so
+  `Test.getFlexQueueOrder()` stayed empty and fill-the-queue helpers looped
+  until the CPU limit. The first five placeholders fill the batch queue and
+  the rest hold in the flex queue; `System.scheduleBatch` also moves over-limit
+  jobs to the flex queue instead of ignoring a capacity-check error.
+- **Typed `JSON.deserialize` rejects `Object` targets.** A bare `Object` field,
+  list element, or top-level target now throws
+  `JSONException("Apex Type unsupported in JSON: Object")` for any non-null
+  value instead of silently producing an untyped Map; explicit null is
+  accepted.
+- **A script-thrown `DmlException` reports the throw line.** The
+  enclosing-try-line adjustment that applies to DML-raised exceptions was also
+  applied to explicit `throw` statements, so `getStackTraceString()`
+  disagreed with `getLineNumber()`.
+- **Over-limit `String.repeat` throws the uncatchable `LimitException`.**
+  sfapex rejects a repeat whose result would exceed the 6,000,000-character
+  maximum up front with `LimitException("String is too long.")`, which a catch
+  block cannot intercept; incremental concatenation keeps throwing the
+  catchable `StringException`.
+- **`Database.undelete` errors bind as `List<Database.Error>`.** The `errors`
+  property on a failed `UndeleteResult` (and merge failures) held a raw value
+  that could not be passed where a `List<Database.Error>` was expected.
+
 ## v1.2.11 — 2026-07-09
 
 - **Date and DateTime roll-up summaries read back as the right type.** A
