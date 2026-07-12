@@ -53,6 +53,29 @@
   debugger. `apexTestAccess.permissionSets` are passed to aer as
   `--assign-perms`, combined with the `aer.assignPermissionSets` setting.
 
+## v1.2.14 — 2026-07-12
+
+- **`Date.format` and `Date.parse` follow the running user's locale for every
+  supported `LocaleSidKey`.**
+- **`Datetime.valueOfGmt` and `valueOf` parse leniently, and `formatLong`
+  renders CLDR zone names.** Out-of-range components roll over
+  (`'2018-13-45 25:99:99'` becomes 2019-02-15 02:40:39 GMT) and structurally
+  invalid strings throw `TypeException`. `formatLong` converts to the user's
+  time zone and renders the short date with seconds and the CLDR short zone
+  name: United States metazones keep abbreviations like PST while other zones
+  render offsets like GMT+9.
+- **Clones keep their query-row provenance.** `SObject.clone()` and
+  `List.deepClone()` previously dropped queried-field tracking, so clones of
+  SOQL rows stopped throwing `System.SObjectException` for unqueried field
+  access, and clones of stub query rows lost their read-only enforcement.
+- **The cache sweep can no longer delete the license key.** On Windows the
+  default cache root shared its directory with `license.key`, so the
+  opportunistic sweep deleted the license once it aged past
+  `AER_CACHE_MAX_AGE`, and `aer cache clean` removed it outright. The cache
+  root moves to a dedicated `aer/cache` subdirectory, the sweep never removes
+  files directly at the cache root (protecting shared `AER_CACHE_DIR`
+  directories too), and entries at the legacy root are migrated.
+
 ## v1.2.13 — 2026-07-11
 
 - **Keyword DML in system-mode contexts skips user-mode permission checks.**
