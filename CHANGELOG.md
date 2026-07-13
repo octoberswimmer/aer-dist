@@ -4,6 +4,19 @@
 
 ### New capabilities
 
+- **PostgreSQL storage backend.** The `exec`, `test`, and `server` commands
+  accept `--db postgres://…` (or `postgresql://…`) to run against a PostgreSQL
+  database instead of the embedded SQLite store, and `--db postgresqltest://`
+  starts a private, disposable PostgreSQL server for the run (a local
+  PostgreSQL installation is required). The schema is created with identity
+  columns and PL/pgSQL triggers, the formula and SOQL function surface
+  (`DATEVALUE_TZ`, `ADDMONTHS`, format and distance functions, Id prefix
+  lookups) is installed at bootstrap, and text comparison uses a collation
+  matching sfapex.  On the server, each pooled VM opens its own connections and
+  transaction so concurrent requests run in parallel instead of serializing on
+  one storage handle, and `SELECT … FOR UPDATE` takes real row locks scoped to
+  the queried object's table, bounded by a lock timeout that surfaces as
+  a `QueryException` with `UNABLE_TO_LOCK_ROW`, matching sfapex.
 - **Server landing page redesigned as an endpoint browser.** The authenticated
   landing page is now a self-contained dark/light single-page endpoint browser. A
   sidebar groups the development tools and API surface into categories with live
@@ -52,6 +65,22 @@
   that metadata across the language server, test runner, watch mode, and
   debugger. `apexTestAccess.permissionSets` are passed to aer as
   `--assign-perms`, combined with the `aer.assignPermissionSets` setting.
+- **`SIGUSR1` prints live test-run status.** Sending `SIGUSR1` to a running
+  `aer test` process (`kill -USR1 <pid>`) prints a one-line status summary to
+  stderr without waiting for the periodic progress output. During setup it
+  reports the current phase (schema and package loading, VM pool
+  initialization) and elapsed time; once execution starts it reports test
+  counts.
+
+### Fixes and performance
+
+- **The async job worker only wakes when async work was enqueued.** Every
+  `executeAnonymous` request signaled the async job worker, which ran three
+  full `AsyncApexJob` table scans per wake even for workloads that never
+  enqueue async work, keeping database connections busy under high
+  throughput. The worker is now signaled only when the execution actually
+  persisted a deferred async job, and each wake performs a single scan with
+  the queued-status filtering done in SQL.
 
 ## v1.2.14 — 2026-07-12
 
