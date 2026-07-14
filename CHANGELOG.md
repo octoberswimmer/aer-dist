@@ -82,6 +82,148 @@
   persisted a deferred async job, and each wake performs a single scan with
   the queued-status filtering done in SQL.
 
+## v1.2.15 — 2026-07-14
+
+- **Java regex property classes, whitespace, and class-set constructs.** Apex
+  regular expressions use the `java.util.regex.Pattern` engine, and its
+  `\p{...}`/`\P{...}` property names are now translated before compilation:
+  POSIX names, `java.lang.Character` classes, Unicode general categories,
+  scripts, blocks, and binary properties all resolve with Java's meaning
+  instead of being rejected as "Illegal character range" or matched with the
+  wrong definition. A bare script name such as `\p{Latin}` reproduces
+  sfapex's `PatternSyntaxException`. The translation also covers `\h`,
+  `\H`, `\v`, `\V`, and `\R`; a dot that excludes every Java line terminator
+  and honors `(?s)`; Java-style octal escapes; character-class union,
+  intersection, and subtraction (`[a-z&&[^aeiou]]`); the `(?U)` flag; and a
+  default `\s` that includes the vertical tab. Two defects surfaced by the
+  work are fixed: non-ASCII literals were corrupted by possessive-quantifier
+  conversion (`Pattern.matches('café', 'café')` returned false), and full
+  matches compared rune length against byte length, so some patterns failed to
+  fully match multi-byte input.
+- **Method definitions in anonymous Apex.** Anonymous blocks can define
+  methods alongside classes, interfaces, and enums. Methods are static whether
+  or not the keyword is written and are callable before their textual
+  definition; top-level variable declarations hoist into shared static fields
+  while declarations in nested blocks stay local; and stack frames format as
+  `AnonymousBlock: line N, column 1`. `this` in a static context is rejected
+  at compile time, and initializer blocks, field initializers, and property
+  accessor bodies now receive the full statement checks.
+- **`EntityDefinition` rows for associated entities.** Base objects have
+  their boolean flags, sharing models, `PublisherId`, `DeploymentStatus`,
+  URLs, `DefaultCompactLayoutId`, and durable id updated to match sfapex, and
+  each emits rows for the associated History, Share, ChangeEvent, and Feed
+  entities sfapex supports. Share records now use their real key prefix, and
+  share tables without a dedicated prefix generate ids beginning with `02c`;
+  because that prefix is shared, deleting a share by raw id throws
+  a `TypeException`, matching sfapex, while typed DML and `getSObjectType()`
+  still resolve. `SObjectType` gains `EnableSearch` and `DeploymentStatus`.
+- **Flex queue rules for `Database.executeBatch`, with queryable
+  `FlexQueueItem` rows.** Batch jobs report `Queued` until five occupy the
+  batch queue and `Holding` after that, the rule now shared by
+  `Database.executeBatch`, `System.scheduleBatch`, and
+  `Test.enqueueBatchJobs`. `FlexQueueItem` rows are materialized for held jobs
+  and reconciled as jobs are held, reordered, aborted, or start running, so
+  SOQL observes the flex queue and `JobPosition` matches
+  `Test.getFlexQueueOrder()`. Jobs held inside `startTest()`/`stopTest()`
+  execute at `stopTest`.
+- **Restrict delete constraints on lookup relationships.** Deleting a record
+  still referenced through a lookup with `deleteConstraint=Restrict` fails
+  with `DELETE_FAILED`, matching sfapex's message. The check runs in all
+  delete paths after before-delete triggers and validates rows in
+  statement order. `ChildRelationship.isRestrictedDelete()` now reports true
+  for Restrict lookups loaded from explicit source paths, self-lookups with
+  Restrict or Cascade are rejected at import, and field and object parse
+  errors fail the load instead of silently dropping metadata.
+- **`String.join` accepts any `Iterable`.** Joining a user-defined `Iterable`
+  previously failed with "String.join() called with non-list argument".
+- **License key and website links in CLI help and errors.** `aer --help`
+  points to the main website, and the `license show` error and
+  `license register --help` explain where to retrieve a key or start a trial.
+- **Exceptions escaping a trigger carry the cause's full stack.** A
+  `DmlException` raised by a trigger now embeds every frame from the throw
+  site down to the trigger frame in `getMessage()`, instead of only the
+  originating frame, and no longer leaks internal "Stack trace:" blocks or
+  `file:line` prefixes. Trigger frames render as `Trigger.<ns>.<name>`,
+  namespace-qualified in a namespaced org, and a trace captured while a
+  trigger is on the stack stops at the trigger frame rather than descending
+  into the code that performed the DML. Caller frames report the line of the
+  call statement even inside a `try` block.
+- **`Trigger.new` and `Trigger.old` expose no relationship data.** A parent
+  relationship reads as null even when the DML'd record was queried with it,
+  the null parent is traversable without throwing, and child relationships
+  resolve as empty lists; the caller's own record keeps its data. Formula
+  fields are still computed on `Trigger.new`, recalculated from pending values
+  in before update. Workflow field-update and criteria formulas resolve
+  spanning references such as `Parent__r.Field__c` against these records by
+  hydrating the parent from the lookup id, evaluating to blank when the lookup
+  is null instead of aborting the DML with a `DmlException`.
+- **`Trigger.newMap` is null in before insert and `Trigger.oldMap` is null in
+  after undelete**, in both Apex and flow trigger dispatch; aer exposed empty
+  maps.
+- **SObject collection conversion rules match sfapex.** Maps convert
+  implicitly only from specific to generic, sets are invariant in both
+  directions, and list elements keep the Id/String interchange. Casting a
+  generic SObject map to a specific map, or a list to a list of a different
+  SObject type, throws a `TypeException`; storing a mismatched SObject into a
+  specific-element list or map throws a collection store exception. The `List`
+  copy constructor requires an exactly matching element type, and
+  `getSObjectType()` compiles only on SObject lists and SObject-valued maps.
+- **`Database.QueryLocator` iterator dispatch.** Assigning a `QueryLocator` to
+  `Iterable<SObject>` compiles, but dispatching `iterator()` through the
+  `Iterable` interface, an enhanced for loop over a `QueryLocator`, or an
+  `iterator()` call on an `Iterable<SObject>`-typed receiver, now raises the
+  uncatchable "Internal Salesforce Error" sfapex raises, where the for
+  loop previously iterated zero rows silently. Only the concrete
+  `Database.QueryLocator.iterator()` binding works.
+- **`Map<Object,V>` switches to identity lookup after enumeration.** Calling
+  `keySet()`, `values()`, or `toString()` permanently switches an
+  object-keyed map from `hashCode`/`equals` lookup to reference identity, so
+  equivalent keys no longer match `get`, `containsKey`, or `remove` and an
+  equivalent key creates a second entry. `size()` and `isEmpty()` do not
+  trigger the switch, and maps with a concrete key type are unaffected.
+- **List membership is type-strict for numeric values.** `List.contains` and
+  `List.indexOf` compared elements with the lenient numeric equality used for
+  Set and Map keys, so `new List<Long>{1}.contains(1)` wrongly returned true.
+  Set and Map-key membership keep the lenient behavior. Map values are now
+  coerced to the map's declared value type on literal construction and `put`,
+  so `values()` membership checks compare the right runtime type.
+- **Numeric `List` arguments bind to user-defined methods.** Passing
+  `List<Integer>` or `List<Double>` to a `List<Decimal>` parameter was wrongly
+  reported as "Method does not exist or incorrect signature"; sfapex
+  accepts these. Set invariance and map value covariance are unchanged.
+- **Built-in describe properties return what their getters return.** Property
+  access on `Schema.ChildRelationship` returned null for
+  `deprecatedAndHidden`, `junctionIdListNames`, and `junctionReferenceTo`, and
+  `Schema.RecordTypeInfo` returned null for `active`, `available`, and
+  `master`, because property access fell through to the raw runtime fields map.
+  All fifteen built-in Schema describe types now route property access through
+  the registered getter.
+- **`AggregateResult.getPopulatedFieldsAsMap` includes null fields.** The map
+  now holds a key for every selected expression, in alphabetical order,
+  including group-by fields that are null for the row. `AggregateResult.get`
+  of an expression that was not selected throws `System.SObjectException`
+  instead of returning null.
+- **A custom object's text Name field defaults to the 15-character Id.** aer
+  stored the 18-character Id when the field was unset or null on insert, and
+  persisted null when an update explicitly set it to null.
+- **Invalid assignments and bare namespaced builtin references are rejected**,
+  matching sfapex compile errors: assignments between incompatible final
+  primitive types, assigning the result of a void builtin ("Illegal assignment
+  from void"), a bare type or namespace name used as an assignment value
+  ("Variable does not exist"), and bare stdlib namespace names used as
+  variable types ("Invalid type").
+- **The simulated CPU time limit applies only when governor limits are
+  enforced.** The wall-clock deadline that simulates the CPU governor was
+  applied to every execution, so execution overhead, including tracing,
+  could abort a legitimately long-running script with "Apex CPU time limit
+  exceeded" without `--enforce-governor-limits`. An explicit `--timeout` and
+  the longer test-execution timeout are still honored, and per-query timeouts
+  are unchanged.
+- **Builtin trace spans exclude argument evaluation.** `l.add(slow())` showed
+  `List.add` running for as long as `slow()`, because builtins evaluate their
+  arguments lazily inside the traced function. Arguments are now evaluated
+  before the span opens, exactly once, left to right.
+
 ## v1.2.14 — 2026-07-12
 
 - **`Date.format` and `Date.parse` follow the running user's locale for every
