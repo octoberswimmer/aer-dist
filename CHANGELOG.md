@@ -71,6 +71,21 @@
   reports the current phase (schema and package loading, VM pool
   initialization) and elapsed time; once execution starts it reports test
   counts.
+- **Server deployments accept every metadata type aer loads from source.** The
+  deploy endpoints previously handled only Apex classes, single-file custom
+  objects, and `CustomField`/`CustomObject` destructive changes. Deployment
+  zips are now extracted and imported with the same metadata walker used at
+  startup, so objects and fields in metadata and source formats, triggers,
+  flows, flexipages, workflow rules, permission sets, profiles, custom metadata
+  records, queues, labels, value sets, static resources, Visualforce pages,
+  email templates, reports, and dashboards can be deployed at runtime. The
+  pipeline compiles Apex against the merged schema, validates `package.xml`
+  members the way the Salesforce Metadata API does (missing members fail per
+  component; unmodeled types become warning components), migrates storage
+  tables for the deployed objects, and commits only on success.
+  Deployments queue in `Pending` status, apply serially, run as the
+  authenticated deploying user, and roll back on failure; `checkOnly` validates
+  without applying.
 
 ### Fixes and performance
 
@@ -81,6 +96,54 @@
   throughput. The worker is now signaled only when the execution actually
   persisted a deferred async job, and each wake performs a single scan with
   the queued-status filtering done in SQL.
+- **Concurrent server requests no longer share a storage transaction.** Pooled VMs
+  share one storage instance on the SQLite backends, and the storage executor
+  attached every operation to whichever transaction happened to be open on it.
+  Code that issued an operation without owning a transaction used a concurrent
+  request's transaction, so its work was committed or rolled back with that
+  request and failed once the owner finished first. Under concurrent Apex REST
+  and `executeAnonymous` load this produced 500s, lost writes, and
+  "transaction has already been committed or rolled back" errors. There are now
+  two explicit transaction boundaries: Apex execution owns its transaction per
+  VM with savepoint nesting, and direct-storage units of work (REST row
+  handlers, LDS record operations, bulk and Bulk v2 processors, the async job
+  worker, SOAP undelete, login auditing, storage sync) run inside a single
+  `RunInTransaction` helper that commits on success and rolls back on error.
+- **Apex REST requests no longer leak pooled VMs.** The Apex REST handler
+  checked a VM out of the pool for every request but never returned it, so each
+  leaked VM permanently consumed a pool slot. Once the pool reached its maximum
+  the server deadlocked and Apex REST requests, deployments, and OAuth
+  token requests blocked forever; the SOAP undelete and `runTests` handlers
+  leaked the same way. Those handlers now release their VM when the request
+  finishes. The handler also resolved the session user while holding a VM,
+  which required a second pool VM for the query; at the pool maximum, every VM
+  was held by a request waiting for its second VM. The user is now resolved
+  before checkout.
+- **Code deploys no longer panic against in-flight execution.** Pooled VMs
+  share the base VM's code registry by pointer, so a metadata deploy that
+  reloaded the registry in place changed the class ASTs every pooled VM was
+  executing, and a request VM running during the swap panicked when it
+  evaluated a newly deployed class absent from its resolved binding. The
+  storage phase of a deploy already quiesced request work, but the code-swap
+  phase did not; it now holds the request-VM gate across applying and reverting
+  Apex artifacts and destructive changes, so new requests queue and load the
+  new program on their next acquisition. A reloaded VM's program version is
+  also recorded in the same critical section as the assets it loaded, so
+  a deploy landing mid-load cannot leave a VM marked current while holding the
+  older program.
+- **Code-only deploys no longer force a full schema reload.** Every deployment
+  that introduced changes rebuilt the base VM and bumped the schema version,
+  forcing every pooled VM into an expensive schema reload on its next
+  acquisition. Deploying an Apex class was misclassified as a schema change and
+  repeated deploys stalled every subsequent request behind a schema reload. The
+  base-VM rebuild and version bump are now gated on an actual schema change.
+- **Warm runs restore a cached workspace image.** The parsed, canonicalized,
+  and type-checked program is snapshotted into a workspace image keyed by
+  source identity, so a rerun over unchanged sources skips parsing,
+  canonicalization, semantic analysis, flow and external-service class
+  generation, AST line info, and type-check validation. The symbol graph and
+  binding result are stored alongside it, so a warm run also skips symbol
+  resolution.
 
 ## v1.2.15 — 2026-07-14
 
