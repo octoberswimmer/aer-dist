@@ -145,6 +145,56 @@
   binding result are stored alongside it, so a warm run also skips symbol
   resolution.
 
+## v1.2.16 — 2026-07-15
+
+- **String operands compare case-insensitively in relational operators.** `<`,
+  `>`, `<=`, and `>=` now compare Strings with sfapex's case-insensitive
+  ICU (English) collation, the same ordering applied to SOQL string columns,
+  instead of raw code-point order, so `'a' < 'A'` is false rather than true and
+  non-letter characters order by collation weight.
+- **`String.escapeSingleQuotes` escapes backslashes.** The method added a
+  backslash only before single quotes, leaving existing backslashes untouched;
+  it now adds a backslash before each backslash as well.
+- **`String.replaceAll` and `String.replaceFirst` support the full Java regex
+  syntax.**
+- **Custom-object share record DML matches sfapex.** Because all custom-object
+  shares carry the `02c` key prefix, their DML forms behave specially.
+  `Database.delete` on a share SObject accepts any share type as long as its id
+  is filled in and deletes the row that id identifies, instead of failing with
+  `INVALID_CROSS_REFERENCE_KEY`. Updating a share through a different share
+  type that carries the row's id is rejected as `INVALID_ID_FIELD`, "invalid
+  record id". Undelete fails on the entity type before any recycle-bin lookup:
+  the keyword and `Database.undelete` SObject forms throw
+  `CANNOT_INSERT_UPDATE_ACTIVATE_ENTITY`, "Entity type is not undeletable", and
+  `Database.undelete` on a raw id throws the same "Invalid id" `TypeException`
+  as `Database.delete`.
+- **Deleting a parent purges its soft-deleted restrict-lookup children.** A
+  delete blocked by `deleteConstraint=Restrict` children succeeds once the only
+  remaining children are soft-deleted, and sfapex permanently removes those
+  children from the recycle bin so they can no longer be undeleted, even after
+  the parent is restored. aer left them restorable. The purge recurses into the
+  children's own restrict children and applies to optional as well as required
+  lookups, and to standard as well as custom parents.
+- **`System.FlexQueue` move methods return a Boolean.**
+  `moveJobToFront`, `moveJobToEnd`, `moveBeforeJob`, and `moveAfterJob`
+  reordered the queue but evaluated to null, so `Assert.isTrue` failed after a
+  successful move and `Assert.isFalse` passed by unboxing null. Each now
+  returns whether the queue order actually changed.
+- **A variable shadows a same-named type in a field-access chain.** When a
+  variable's name case-insensitively matched a class name, the type checker
+  resolved the chain as a type reference: a parameter `b` of type `A` shadowing
+  a class `B` made `b.category` resolve to the nested type `B.Category` rather
+  than the instance field, reporting "Comparison arguments must be compatible
+  types". A local variable or parameter in scope now wins.
+- **Multi-variable declarations work in property accessor bodies.** A
+  declaration such as `Integer a = 0, b = 0;` in a getter or setter was scoped
+  only to its own line, so a later reference in the same accessor failed with
+  "Variable does not exist".
+- **System-qualified builtin static methods resolve their return type.**
+  `System.Date.today()` produced an empty return type where the unqualified
+  `Date.today()` resolved to `Date`, so `Date d = System.Date.today() - 1` was
+  rejected with "Illegal assignment from Integer to Date".
+
 ## v1.2.15 — 2026-07-14
 
 - **Java regex property classes, whitespace, and class-set constructs.** Apex
