@@ -145,6 +145,105 @@
   binding result are stored alongside it, so a warm run also skips symbol
   resolution.
 
+## v1.2.17 — 2026-07-16
+
+- **Method calls select the most specific matching overload.** Overload
+  resolution bound a call to the first candidate whose parameters were merely
+  compatible with the arguments, so a generic `List<SObject>` overload declared
+  before a concrete-list one won purely by declaration order, and a generic
+  overload that re-dispatched a concrete list value could select itself and
+  recurse forever. Every matching candidate is now collected and the most
+  specific applicable one is chosen.
+- **Overriding a non-virtual, non-abstract method is rejected.** sfapex
+  reports "Non-virtual, non-abstract methods cannot be overridden"; the type
+  checker now does too. A method declared with `override` alone is non-virtual,
+  so a further subclass cannot override it; only a `virtual override` method
+  stays overridable.
+- **Cross-namespace calls work through builtin global interfaces.** A class
+  implementing a builtin system interface such as `System.Callable` or
+  `System.Comparable` with a `public` (not `global`) method was rejected when
+  code in another namespace invoked the method through the interface
+  reference. Dispatch through an interface the caller can see now forwards to
+  the concrete implementation regardless of the implementation method's own
+  access modifier, matching the existing behavior for user-defined interfaces.
+- **Protected custom metadata records are visible only to their owning
+  namespace.** The `<protected>` flag on a custom metadata record was dropped
+  at load time, so a managed package's protected records leaked to subscriber
+  code and other namespaces. The flag is now carried through loading, package
+  creation, and distribution, and SOQL (including subqueries), `getAll()`, and
+  `getInstance()` all hide protected records from code executing outside the
+  namespace that owns them. Unprotected records, and protected records owned
+  by the executing namespace, remain visible.
+- **Custom metadata records are no longer returned twice.** Because packaged
+  custom metadata records carry no Id, reopening a persistent
+  `--db` database inserted every record again, and merging the same package or
+  source more than once accumulated duplicates, including when `aer exec`
+  loads a package alongside a source directory that contributes schema
+  metadata. Records are now upserted on their natural key and deduplicated
+  during package schema merge. `aer package list` also gains a Custom Metadata
+  Records section grouped by type, so the records a package carries are
+  visible.
+- **A custom metadata record's `NamespacePrefix` reflects the package that
+  owns the record, not the type.** A record of `pkg__Config__mdt` authored in
+  unpackaged subscriber code keeps a blank `NamespacePrefix` and an unprefixed
+  `QualifiedApiName`; only records shipped inside a package take that
+  package's namespace. Source directories loaded with `@ns[:pkg]` also behave
+  like packages for custom metadata: a package directory shipping only
+  metadata and no Apex forms a synthetic package so its types are visible to
+  other namespaces, sibling directories sharing a namespace merge their
+  schemas, and a subscriber loaded alongside a namespaced package stays in the
+  default namespace.
+- **Packaged permission records take their package's namespace, and same-name
+  rows stay distinct.** A `CustomPermission`, `PermissionSet`, or
+  `PermissionSetGroup` shipped in a package received a blank
+  `NamespacePrefix`, so consumers filtering by namespace could not find it,
+  and a subscriber and a package shipping a permission of the same base name
+  collapsed into a single row. Both now match sfapex: packaged records are
+  namespaced, same-name rows remain distinct, and reopening a persistent
+  database does not duplicate them.
+- **Lookup filter field references resolve to namespaced columns.** A lookup
+  filter referencing a target field by its unprefixed API name generated SQL
+  against a column that does not exist when the installed column carries a
+  namespace prefix. Filter field references are now resolved to the
+  canonical schema name at schema finalization, walking relationship segments
+  to the object the final field lives on.
+- **Person Accounts auto-enable when lookup filters reference person contact
+  fields.** A lookup filter referencing a person contact field such as
+  `Status__pc` only exists in orgs with Person Accounts enabled, but schema
+  preparation ran before Person Accounts auto-detection and failed with an
+  unresolvable lookup filter reference. A `__pc` or `__pr` segment in any
+  lookup filter now enables Person Accounts before filter references are
+  resolved, including the runtime behavior such as deriving `Account.Name` on
+  person account inserts.
+- **`Account.Name` describes as nillable when Person Accounts is enabled.**
+  With Person Accounts, an Account's Name is derived from the person's
+  FirstName and LastName, so its describe reports `isNillable` as true.
+  Business account inserts still require Name.
+- **Tracked field history values are stored as text.** Field history wrote a
+  tracked field's raw stored value into the History object's `OldValue` and
+  `NewValue` columns, so a tracked checkbox read back as "0"/"1" instead of
+  "false"/"true" and a strict backend rejected the value outright. Tracked
+  values are now rendered to their Apex string form, matching sfapex; null
+  stays null.
+- **Stale `FieldPermissions` rows no longer abort permission loading.** A
+  persistent database can hold `FieldPermissions` rows for objects or fields
+  no longer in the schema, such as a history object after field history
+  tracking is turned off. Loading the current user's permissions failed
+  outright on such a row; the stale rows are now skipped and valid permissions
+  continue to load.
+- **Locals stay in scope across multi-line `if` conditions ending in `break`
+  or `continue`.** A loop-local referenced on the continuation line of a
+  multi-line parenthesized condition (spanning `||` or `&&`) whose body was a
+  `break` or `continue` was falsely reported as "Variable does not exist" when
+  the `if` was the last statement in its block.
+- **Debugger step-over no longer stops inside implicitly invoked method
+  bodies.** A user-defined `hashCode` or `equals` invoked by a Map or Set
+  operation, a static property accessor, and a class's static initializer all
+  ran at the caller's call-stack depth, so step-over stopped inside them
+  instead of stepping past the triggering statement. Each now runs one frame
+  deeper, and exceptions thrown from these bodies carry the caller frame in
+  their stack trace.
+
 ## v1.2.16 — 2026-07-15
 
 - **String operands compare case-insensitively in relational operators.** `<`,
