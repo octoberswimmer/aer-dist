@@ -145,6 +145,50 @@
   binding result are stored alongside it, so a warm run also skips symbol
   resolution.
 
+## v1.2.18 — 2026-07-17
+
+- **Bare custom names resolve only through the executing namespace.** A bare
+  custom object or field reference resolves the way the sfapex compiler does:
+  first through the executing code's namespace, then by its exact authored name.
+  Subscriber code never binds a bare name to a namespaced object or field, a
+  managed object's namespace never substitutes for the caller's, and a namespaced
+  reference is never matched by stripping its prefix. A subscriber field added to
+  a managed object now stays distinct from the package's same-base-name field
+  instead of colliding unpredictably. A `<packageVersions>` dependency pin in a
+  class or trigger meta.xml no longer places the trigger in the pinned namespace,
+  and namespace qualifiers written in a different case than the declared namespace
+  still resolve.
+- **Packaged objects, workflow rules, and flows resolve correctly from a
+  `.pkg`.** Custom SObject types, workflow rules, and flows shipped in a package
+  are now namespaced at load like the rest of the package. Previously a
+  subscriber call passing a packaged list type could pick the wrong method
+  overload, packaged workflow rules silently never fired, and flows were not
+  saved in packages at all. Overload resolution, workflow rules, and
+  record-triggered flows from packages now all behave as they do from source.
+- **Packaged flows run under `aer server` and `Flow.Interview`.** Flows shipped
+  in a `.pkg` previously ran under `aer test` and `aer exec` but not under `aer
+  server`, and packaged flows could not be started with `Flow.Interview` from
+  `aer exec` or `aer server`. Packaged record-triggered and autolaunched flows
+  now run in all three commands.
+- **Record-triggered flows run under `aer exec`.** `aer exec` did not collect
+  flow files from `--path` directories, so DML in anonymous Apex skipped active
+  record-triggered flows that `aer test` and `aer server` apply. Exec now runs
+  them, and `aer exec --debug` loads the same triggers, flows, and packages as
+  `aer exec`.
+- **Deleting a share record now removes it.** Deleting a share previously left
+  a soft-deleted row behind, so it still showed up in `ALL ROWS` queries and
+  blocked re-sharing the same record with the same user. Shares are now
+  hard-deleted, matching sfapex, so re-sharing works.
+- **Protected custom metadata records are visible to the right namespaces.** A
+  protected record authored in the subscriber org (not shipped in a package) is
+  now visible to code in every namespace, and package code can read
+  subscriber-authored protected records of its own type. A caching issue that
+  could restore custom metadata records with protection stripped is also fixed.
+- **Uppercase escape letters are accepted in string literals.** Salesforce
+  accepts escape letters case-insensitively — `\F` is a form feed like `\f`, and
+  `\U0041` decodes like `A`. aer previously rejected the uppercase forms with a
+  token error; both cases now work.
+
 ## v1.2.17 — 2026-07-16
 
 - **Method calls select the most specific matching overload.** Overload
