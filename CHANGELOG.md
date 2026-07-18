@@ -145,6 +145,56 @@
   binding result are stored alongside it, so a warm run also skips symbol
   resolution.
 
+## v1.2.19 — 2026-07-18
+
+- **`TEXT()` of a null value is an empty string in formulas.** A formula
+  comparison like `TEXT(Picklist__c) <> 'literal'` no longer evaluates to null
+  when the picklist is blank, so an `IF` guarded on it takes the expected branch.
+  `TEXT(NULL)` is treated as an empty string, matching Salesforce.
+- **Method calls work on the enum result of a binary expression.** Calling a
+  method on the result of the null-coalescing operator with enum operands — for
+  example `(q ?? System.Quiddity.UNDEFINED).name()` — now works, for both system
+  and user-defined enums.
+- **`MFLOOR` and `MCEILING` formula functions are supported.** Importing a
+  package whose formula field uses `MFLOOR` or `MCEILING` no longer fails. `FLOOR`
+  and `CEILING` are also corrected for negative inputs — `FLOOR` rounds toward
+  zero and `CEILING` away from zero, while `MFLOOR` and `MCEILING` round toward
+  negative and positive infinity — and `CEILING(3.0)` no longer returns 4.
+- **Inserting a share for an inactive user is rejected.** A manual share whose
+  `UserOrGroupId` is a deactivated user now fails with `INACTIVE_OWNER_OR_USER`
+  and creates no row, matching sfapex. Group grantees are unaffected.
+- **Picklist defaults are scoped to the record's record type.** A picklist
+  default configured on one record type no longer leaks onto records inserted
+  with a different record type; each record now receives only the default defined
+  for its own record type.
+- **`Database.convertLead` copies the standard field mappings.** Lead conversion
+  now carries `LeadSource`, `Salutation`, `MobilePhone`, `Fax`, `DoNotCall`, and
+  `HasOptedOutOfEmail` onto the new Contact, `Fax` and `Rating` onto the new
+  Account, and `LeadSource` onto the new Opportunity, instead of copying only a
+  subset.
+- **`Contract.EndDate` is auto-calculated from `StartDate` and `ContractTerm`.**
+  `EndDate` is now computed on insert and update as the day before `StartDate`
+  advanced by `ContractTerm` months, capping at the end of shorter months, across
+  all DML paths and before triggers. It is read-only, so describe results and
+  dynamic `put()` reject writes, and a zero or negative `ContractTerm` is rejected
+  with `FIELD_INTEGRITY_EXCEPTION`.
+- **`Datacloud.FindDuplicates` returns a result per active rule.**
+  `findDuplicates()` and `findDuplicatesByIds()` returned an empty
+  `getDuplicateResults()` list, so the standard `[0]` access threw. They now emit
+  one `DuplicateResult` per active duplicate rule that applies to the object, even
+  when nothing matches, using `DuplicateRule` metadata loaded from source.
+- **Inactive record types appear in `getRecordTypeInfos` describe results.** All
+  four `getRecordTypeInfos*()` collections now include inactive record types, with
+  `RecordTypeInfo.isActive()` reflecting the real state and `isAvailable()`
+  returning false for them, instead of filtering them out and always reporting
+  active. An object whose only custom record type is inactive still reports Master
+  as the default.
+- **`SObject.put` throws on a type-mismatched value into a text field.**
+  `put(field, value)` silently stringified a numeric, Boolean, Date/Datetime/Time,
+  or Blob value put into a text or picklist field. It now raises
+  `System.SObjectException` ("Illegal assignment …") at assignment time, matching
+  Salesforce; String, Id, and null remain accepted.
+
 ## v1.2.18 — 2026-07-17
 
 - **Bare custom names resolve only through the executing namespace.** A bare
