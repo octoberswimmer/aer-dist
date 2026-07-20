@@ -129,7 +129,7 @@ release: checksum
 	fi
 	git push octoberswimmer "$(VERSION)"
 	gh release create "$(VERSION)" --title "aer $(VERSION)" --notes-from-tag --verify-tag $(PRERELEASE_FLAG) $(RELEASE_ASSETS)
-	@if [ -z "$(PRERELEASE_FLAG)" ]; then brew bump-cask-pr aer --version $(VERSION:v%=%); fi
+	@if [ -z "$(PRERELEASE_FLAG)" ]; then HOMEBREW_NO_AUTO_UPDATE=1 brew bump-cask-pr aer --version $(VERSION:v%=%); fi
 
 tag:
 	@set -euo pipefail; \
