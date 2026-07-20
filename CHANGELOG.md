@@ -145,6 +145,49 @@
   binding result are stored alongside it, so a warm run also skips symbol
   resolution.
 
+## v1.2.20 — 2026-07-20
+
+- **`System.debug` and collection rendering honor a `toString` override.**
+  `System.debug` formatted object arguments with the default `Type:[fields]`
+  representation, ignoring a user-defined `toString()`. It now renders through
+  the override, matching `String.valueOf`, and objects nested in collections,
+  assertion messages, and string concatenation do too. Map rendering is shared
+  across `String.valueOf`, `System.debug`, and `toString`:  numeric key
+  ordering, `toString` dispatch on keys and values, and truncation at ten
+  entries like `List` and `Set`. A `toString` override that returns null renders
+  as an empty string from `String.valueOf`, an empty line from `System.debug`,
+  and `null` when embedded in a collection or concatenation.
+- **A static property getter sees writes made by a setter it triggers.** When a
+  static property getter called a method that assigned the property, the getter
+  returned a stale snapshot and, on exit, wrote that stale value back over the
+  setter's write, so a lazy-init getter that delegated population to a helper
+  returned and persisted the pre-helper value. The getter now observes the
+  setter's write and returns the populated value.
+- **Bare child relationships resolve in package dynamic queries.** Package code
+  running a subscriber-supplied dynamic query failed to resolve an unnamespaced
+  child relationship in a subquery, throwing `child relationship 'Bars__r' not
+  found on object 'Foo__c'`. Bare child relationship names now resolve the same
+  way as bare object and field references for both direct and nested subqueries.
+- **`Lead.LastTransferDate` is supported.** The standard `Lead.LastTransferDate`
+  field is now available. Salesforce describes it as a `DATE` while storing the
+  full transfer datetime; it is stamped on insert and restamped when `OwnerId`
+  changes.
+- **Enums print as their constant name.** `System.debug` and other formatted
+  output now print an enum value as its declared constant name in its declared
+  casing, instead of an internal representation.
+- **`isNillable()` reports the correct value for standard name fields.** When an
+  org's source included a partial standard-field stub (for example an
+  `Account/fields/Name.field-meta.xml` carrying only `trackFeedHistory`), the
+  importer forced `Nillable` to true for every name field, so
+  `Account.Name.getDescribe().isNillable()` returned true without Person
+  Accounts. The builtin field's explicit value is now preserved, in both SFDX and
+  MDAPI object formats.
+- **Watch-mode errors explain inotify watch exhaustion.** When the per-user
+  inotify watch budget (`fs.inotify.max_user_watches`) is exhausted, watch setup
+  in test and server watch modes failed with a misleading "no space left on
+  device". The error now names the limit, and a setup that ends with zero watches
+  reports the underlying cause instead of a bare "no watchable paths found".
+
 ## v1.2.19 — 2026-07-18
 
 - **`TEXT()` of a null value is an empty string in formulas.** A formula
