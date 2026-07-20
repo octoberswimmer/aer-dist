@@ -145,6 +145,22 @@
   binding result are stored alongside it, so a warm run also skips symbol
   resolution.
 
+## v1.2.21 — 2026-07-20
+
+- **Parenthesized `when` labels in `switch` statements now match.** A `switch`
+  `when` clause whose literal was wrapped in parentheses — `when ('Alpha')` —
+  never equaled the switch argument, so control always fell through to
+  `when else`. Parenthesized labels are now unwrapped and interpreted the same
+  as bareword ones, including enum-constant handling, so they match as written.
+- **`Database.convertLead` applies picklist defaults before validation rules.**
+  The Account, Contact, Opportunity, and OpportunityContactRole records created
+  during lead conversion did not have field defaults materialized until the
+  storage write, after validation rules had already run. A validation rule
+  guarding a field with a picklist default therefore failed on the blank value
+  even though the default would have satisfied it. Defaults (and formula fields)
+  are now applied before before-save flows, triggers, and validation rules,
+  matching the ordering of a plain `insert`.
+
 ## v1.2.20 — 2026-07-20
 
 - **`System.debug` and collection rendering honor a `toString` override.**
