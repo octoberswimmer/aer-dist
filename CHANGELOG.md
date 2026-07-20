@@ -86,6 +86,31 @@
   Deployments queue in `Pending` status, apply serially, run as the
   authenticated deploying user, and roll back on failure; `checkOnly` validates
   without applying.
+- **Revenue Cloud (Agentforce Revenue Management) support.** The full Agentforce
+  Revenue Management SObject suite (general ledger and accounting-period
+  objects, transactions and journals, billing, payments, usage management,
+  contracts and their documents, the product catalog, and quote, order,
+  rate-card, and fulfillment lines) is modeled behind the `RevenueCloud`
+  feature. Enabling the feature also enables the B2B Commerce objects these
+  records reference. sfapex's field derivation and status validation are
+  reproduced: `GeneralLedgerAccount.Name` and `AccountingPeriod.Name` recompute
+  when their source fields change on update, `Order.Status` is restricted to
+  `Draft` and `Activated` with `Order.StatusCode` derived from it,
+  `FulfillmentOrder.StatusCategory` derives from `Status`, and an
+  `AccountingPeriod.EndDate` referenced by a `LegalEntyAccountingPeriod`
+  becomes read-only.
+- **Server dev-tool pages share the landing page design.** The preview
+  (`/dev/lwc`, `/dev/uibundle`, `/dev/visualforce`), monitoring (`/dev/events`,
+  `/dev/jobs`), and inspect (`/dev/explorer`, `/dev/mocks`) pages now use the
+  same dark-default, light-override design as the redesigned landing page, with
+  a persistent theme toggle whose choice follows the user across pages.
+- **UI Bundle GA support.** The Data SDK shim resolves
+  `@salesforce/platform-sdk` (the GA rename of `@salesforce/sdk-data`) and
+  exposes the GA `graphql.query` and `graphql.mutate` API while staying callable
+  in the older beta form. Bundles are served at the GA application URL
+  `/app/c__<bundleName>` alongside the `/dev/uibundle` preview, authenticated
+  by the session cookie. Source-tree walkers now skip `node_modules` and hidden
+  directories.
 
 ### Fixes and performance
 
