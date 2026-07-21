@@ -170,6 +170,116 @@
   binding result are stored alongside it, so a warm run also skips symbol
   resolution.
 
+## v1.2.22 — 2026-07-21
+
+- **`Datacloud.FindDuplicates` finds matching records through matching rules.**
+  `findDuplicates()` and `findDuplicatesByIds()` returned the per-rule result
+  skeleton but never ran any matching, so every `MatchResult` reported zero
+  match records. Each duplicate rule's matching rules are now evaluated against
+  the stored records: custom matching rules load from `MatchingRule` metadata
+  alongside the existing `DuplicateRule` loading, and the standard Account,
+  Contact, and Lead matching rules are built in. Values compare normalized,
+  blank values match only when the rule item sets `MatchBlanks`, item
+  results combine through the rule's boolean filter, and single-hop parent
+  paths such as the Contact rule's `Account.Name` resolve. Fuzzy matching is
+  not yet implemented.
+- **`Account.OrderSummaries` and `ConnectApi.OrderSummaryCreation` are
+  supported.** Querying the `Account.OrderSummaries` child relationship failed
+  with "Didn't understand relationship 'OrderSummaries'"; it now resolves in
+  inline subqueries, dynamic SOQL, and `getChildRelationships()`.
+  `ConnectApi.OrderSummaryCreation.createOrderSummary` threw "method not
+  found"; it now validates the order Id and creates the `OrderSummary` from the
+  original Order, and throws the standard `UnsupportedOperationException` in
+  data-siloed tests, matching sfapex. `OrderSummary.OriginalOrderId` is
+  non-writeable, so assigning it is rejected at compile time.
+- **`Database.convertLead` returns error results when `allOrNone` is false.**
+  The `allOrNone` argument was ignored, so every row-level validation failure
+  (invalid `convertedStatus`, missing `leadId`, missing `convertedStatus`,
+  `contactId` without `accountId`) threw a `DmlException`. With `allOrNone`
+  false, a failing row now yields a `Database.LeadConvertResult` with
+  `isSuccess()` false and a populated `Database.Error`, and the remaining rows
+  still convert. With `allOrNone` true, the exception message now reports the
+  failing row's actual index instead of row 0.
+- **Person Account inserts fall back to the org default record type.**
+  Inserting an Account with person fields set and no explicit `RecordTypeId`
+  failed with `REQUIRED_FIELD_MISSING` on `Name` unless the running user's
+  profile named a default person account record type. The org default person
+  account record type is now used as a fallback, matching sfapex's
+  auto-assignment, so the insert succeeds and `Name` derives from
+  `FirstName`/`LastName`. Non-string person fields (for example
+  `PersonBirthdate` alone) now mark an insert as a person account, and
+  `IsPersonAccount` reads correctly on a queried Account whose query selected
+  neither `PersonContactId` nor `RecordTypeId`.
+- **Flow conversions handle null values the way the Flow runtime does.**
+  Decision conditions using Starts With, Ends With, or Contains evaluated
+  against a null left operand threw a `NullPointerException`; they now
+  evaluate to false. An Assignment element that sets a field on a
+  still-null record or Apex-type variable implicitly creates the value
+  instead of null-pointering. Flows whose only Update Records element targets
+  a variable or filter criteria no longer fail on the handler-class path.
+- **`$UserRole` and `$Label` flow references are supported.** `$UserRole.Id`
+  converts to `UserInfo.getUserRoleId()`, and other `$UserRole` fields resolve
+  through the running user's role, yielding null for users without a role.
+  `$Label.<name>` references convert to `System.Label.<name>`; previously
+  generated flow classes failed type checking with "Variable does not exist:
+  $Label".
+- **Constant-filter flow lookups are bulkified.** A Get Records element with
+  only constant filters ran its query once per record in a trigger batch,
+  exceeding the query limit on large batches. Such lookups now run once per
+  batch.
+- **`Flow.Interview` version selection follows the Manage Flow permission.** A
+  user with the permission, including test-context administrators, runs the
+  latest version of a flow started from Apex even when it is Draft or Obsolete.
+  A user without it gets a `System.FlowException` whose message is the
+  lowercased flow name. Record-triggered automation still runs only Active
+  versions.
+- **Dangling lookup values raise the sfapex error.** Setting a lookup to a
+  nonexistent Id surfaced an internal foreign-key constraint error listing the
+  statement's id values. `OwnerId` now raises `INVALID_CROSS_REFERENCE_KEY`
+  with "invalid cross reference id", and any other lookup raises
+  `INSUFFICIENT_ACCESS_ON_CROSS_REFERENCE_ENTITY` with the 15-character form of
+  the dangling id, matching sfapex.
+- **Deleted rows are excluded from custom setting `getValues`.** A List custom
+  setting row deleted in the same transaction was still returned by
+  `getValues(name)` with its stale field values. It now returns null once the
+  row is deleted, matching sfapex, for both hierarchy and list settings.
+- **`Crypto.sign` accepts RSA keys smaller than 1024 bits.** Signing with a
+  512-bit key threw "crypto/rsa: 512-bit keys are insecure". sfapex imposes
+  no minimum RSA key size, so the same key now signs successfully.
+- **`ProcessException` inserts no longer require `StatusCategory`.** The field
+  was marked required even though the platform derives it and rejects writes,
+  so inserts failed with `REQUIRED_FIELD_MISSING`. It is now read-only and
+  derived from `Status` on insert:  New and Triaged map to ACTIVE, Paused and
+  Ignored to INACTIVE, Resolved and Voided to RESOLVED, and `Status` defaults
+  to New. Describe results for `Status`, `Category`, `Priority`, `Severity`,
+  and `OwnerId` now report defaulted-on-create the way sfapex does, and
+  the `Category` picklist gains the missing Commerce Delivery Service value.
+- **External Apps Experience Cloud licenses are portal-capable.** Inserting a
+  User linked to a Contact under a profile with the "External Apps" or
+  "External Apps Login" license failed with `FIELD_INTEGRITY_EXCEPTION` "only
+  portal users can be associated to a contact". These licenses now resolve to
+  the `CspLitePortal` user type and receive the implicit standard-object read
+  access community users get. The full set of standard `UserLicense` records is
+  now seeded, so a profile referencing any standard license resolves its
+  `UserLicenseId`.
+- **Namespaced stdlib method results match constructor overloads.** Passing a
+  namespaced stdlib method's result directly to a constructor, such as
+  `cart.getCartItems().iterator()` into a constructor taking
+  `Iterator<CartExtension.CartItem>`, threw `IllegalArgumentException: no
+  matching constructor found`, because stdlib return types referenced sibling
+  types without their namespace. Those return types are now fully qualified, so
+  the overload resolves.
+- **Storage builds succeed for polymorphic lookups with very many targets.** A
+  polymorphic lookup referencing every object in a large org — for example
+  `ContentDocumentLink.LinkedEntityId` with over a thousand targets — failed
+  storage creation with "Expression tree is too large". The validation now
+  nests within the expression-depth limit regardless of target count.
+- **Blank fields in bootstrap databases load as null.** A Salesforce export
+  writes blank fields as empty strings. An empty string in a numeric column
+  aborted storage-template creation outright, and an empty string in a lookup
+  column became a dangling reference that failed foreign-key validation. Both
+  now store null, so exported data with blank numeric and lookup fields loads.
+
 ## v1.2.21 — 2026-07-20
 
 - **Parenthesized `when` labels in `switch` statements now match.** A `switch`
