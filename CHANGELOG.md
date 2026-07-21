@@ -65,6 +65,14 @@
   that metadata across the language server, test runner, watch mode, and
   debugger. `apexTestAccess.permissionSets` are passed to aer as
   `--assign-perms`, combined with the `aer.assignPermissionSets` setting.
+- **VS Code Test Explorer shows Apex code coverage.** A new "Run Apex Tests
+  with Coverage" profile in the VS Code extension runs the selected tests with
+  `aer test --coverage` and reports covered and uncovered lines to VS Code, so
+  they appear in the editor gutter and the Test Coverage view. Unit and
+  integration selections merge, with a line counted as covered when either run
+  executed it. The coverage JSON now lists each class's covered lines in a
+  `coveredLines` field alongside the uncovered lines. The extension's minimum
+  VS Code version rises to 1.88.0, where the test coverage API was finalized.
 - **`SIGUSR1` prints live test-run status.** Sending `SIGUSR1` to a running
   `aer test` process (`kill -USR1 <pid>`) prints a one-line status summary to
   stderr without waiting for the periodic progress output. During setup it
