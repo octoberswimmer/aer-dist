@@ -178,6 +178,119 @@
   binding result are stored alongside it, so a warm run also skips symbol
   resolution.
 
+## v1.2.23 — 2026-07-22
+
+- **Record-triggered flow Get Records lookups bulkify for non-Id keys, custom
+  lookups, and formulas.** A Get Records filtered by a record-dependent value
+  ran one SOQL query per record unless the filter bound a field that looked
+  like an Id: custom lookup (`__c`) fields, text and other non-Id fields, and
+  flow-formula binds each disqualified the query, so a bulk insert of 200
+  records threw `LimitException` ("Too many SOQL queries: 101"). All of these
+  shapes now run one query per batch. A Get Records filtered by a per-record
+  formula also no longer fails at runtime with "undefined bind variable", and
+  fields referenced only from assignments, record creates, formula expressions,
+  or text templates are now included in the generated query instead of throwing
+  `SObjectException` when read.
+- **Flow email alerts send through the alert's actual template.** An email
+  alert action resolved its template at conversion time, guessing a template
+  name when the lookup missed, and sent anyway when resolution failed, a
+  bodyless send that failed the triggering DML with `REQUIRED_FIELD_MISSING`.
+  The alert and its template now resolve at send time, a missing alert or
+  template throws an `EmailException` naming it, and alert sends no longer
+  count against `Limits.getEmailInvocations()`.
+- **Flow deletes of null collections fault the way Salesforce does.** A Delete
+  Records element whose input resolved to a null collection (an empty Get
+  Records result) failed with the internal error "addAll() argument must be a
+  List or Set, got null" in bulk runs. The save now fails with a
+  `CANNOT_EXECUTE_FLOW_TRIGGER` `DmlException` that names the flow label and
+  carries the fault detail "No records in Salesforce match your delete
+  criteria.".
+- **`SUBSTITUTE`, `DATEVALUE`, and old-variable `PRIORVALUE` convert in flow
+  formulas.** A flow formula calling `SUBSTITUTE` or `DATEVALUE` failed to
+  convert, so the raw formula text leaked into the generated Apex, assigning
+  the literal formula string instead of the evaluated value. A Process Builder
+  rule formula written against the old-record variable, such as
+  `PRIORVALUE({!myVariable_old.Field__c})`, failed to convert and the process
+  was silently skipped. All three now convert, and `PRIORVALUE` returns the
+  current value while a record is being created.
+- **Process Builder old-record references no longer fail on insert.** A
+  process referencing its old-record variable threw a `NullPointerException`
+  on every insert, even when the decision guarded with an `IsNull` check.
+  The old-record variable now binds to null on insert, so the guard
+  short-circuits and inserts proceed (reference-verified).
+- **Process Builder flow invocations convert.** An action call with
+  `actionType="flow"`, how Process Builder invokes a flow, aborted the whole
+  flow's conversion with a "requires manual implementation" warning. It now
+  converts to a subflow launch through `Flow.Interview`, passing the action's
+  input parameters and assigning its output parameters.
+- **Datetime values assigned to Date targets in flows convert implicitly.**
+  Assigning a datetime value such as `$Flow.CurrentDateTime` to a Date
+  variable or Date field aborted the run with "Illegal assignment from
+  Datetime to Date". The Flow runtime's implicit conversion is now applied,
+  so the assignment truncates to the date.
+- **Tag objects are supported.** `TagDefinition`, the standard tag objects
+  (`AccountTag`, `ContactTag`, …), and a `__Tag` companion for each custom
+  object are registered when `SearchSettings` enables personal or public
+  tagging, or automatically when Apex references a tag entity. Each taggable
+  object gains a `Tags` child relationship.
+- **Duplicate-matching engine queries no longer consume the SOQL query
+  limit.** `Datacloud.FindDuplicates` runs the duplicate-matching engine, not
+  SOQL, so it does not count toward `Limits.getQueries()` in Salesforce. aer
+  counted each internal candidate scan, so per-record duplicate checks in a
+  loop threw "Too many SOQL queries: 101" on bulk operations that succeed in a
+  real org. The engine's internal queries are now excluded.
+- **Namespace qualifiers written with trailing double underscores are
+  accepted.** sfapex treats `pkg__.PkgApi` and `pkg__.Log.Logger` as
+  equivalent to `pkg.PkgApi` and `pkg.Log.Logger`; aer rejected the `ns__.`
+  spelling. It is now accepted in every type and expression position, and in
+  single-argument `Type.forName`. The two-argument form `Type.forName('ns__',
+  name)` returns null, matching sfapex.
+- **Field describe metadata matches sfapex for length, nillability, and
+  reference targets.** `DescribeFieldResult` reported a 255-character length
+  for every field type; now only text-like fields report a length, id and
+  reference fields report 18, and boolean, numeric, date, datetime, time, and
+  base64 fields report zero. `isNillable()` applies the same rule as
+  `FieldDefinition` (boolean and standard system fields are never nillable),
+  `getDefaultValue()` returns false for booleans without an explicit default,
+  base64 fields report the `BASE64BINARY` SOAP type and are no longer
+  groupable or sortable, and integer fields report zero precision.
+  `getReferenceTo()` and `isNamePointing()` now report lookup targets aer does
+  not store against (for example `Attachment.OwnerId` reports `Calendar` and
+  `User`). Attachment field metadata is updated to the org-verified shape.
+- **Compound `Name` fields describe as not calculated and not nillable.**
+  aer derives `Contact.Name`, `Lead.Name`, and `User.Name` internally, and
+  that leaked into describe results: `isCalculated()` returned true,
+  `getCalculatedFormula()` returned an internal formula, and `isNillable()`
+  returned true. All three now match sfapex.
+- **Share objects appear in their parent's child relationships.** The
+  describe of a sharing-enabled custom object omitted the `Shares` child
+  relationship, so `getChildRelationships()` had no entry for `Foo__Share`
+  even though the share object existed. The relationship is now registered
+  wherever a share object is synthesized.
+- **`Case.CaseMilestones` subqueries resolve.** A child-relationship subquery
+  like `(SELECT Id FROM CaseMilestones)` failed type-check with
+  "'CaseMilestones' is not a valid child relationship of 'Case'" even though
+  direct `CaseMilestone` queries worked. The standard relationship is now
+  registered.
+- **`ProductCategoryProduct` inserts derive `ProductToCategory` and
+  `CatalogId`.** Inserting with only `ProductCategoryId` and `ProductId`
+  failed with `REQUIRED_FIELD_MISSING` for `ProductToCategory`, but the
+  platform derives that field. Both platform-managed fields are now populated
+  on insert and rejected as caller-supplied values.
+- **Subscriber parent relationships resolve in child subqueries from package
+  code.** Package code running a subquery that traverses a subscriber-authored
+  parent relationship, such as `(SELECT Entry__r.Note__c FROM Receipts__r)`,
+  failed with "field not found" because the executing namespace was applied
+  unconditionally to the derived foreign-key field. Subscriber relationships
+  reached from package code now resolve.
+- **Activity formulas referencing sibling-only fields evaluate as blank.**
+  Activity custom formula fields exist on both Task and Event, but may
+  reference standard fields present on only one, such as Task's
+  `CallDurationInSeconds`. Salesforce evaluates such a reference as blank on
+  the other object; aer failed with "field 'CallDurationInSeconds' not found"
+  when computing the formula on Event. The reference now evaluates as the
+  typed blank.
+
 ## v1.2.22 — 2026-07-21
 
 - **`Datacloud.FindDuplicates` finds matching records through matching rules.**
