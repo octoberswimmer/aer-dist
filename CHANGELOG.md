@@ -178,6 +178,131 @@
   binding result are stored alongside it, so a warm run also skips symbol
   resolution.
 
+## v1.2.24 — 2026-07-24
+
+- **Content SObject describe metadata matches sfapex.** The
+  `ContentDocumentLink`, `ContentDocument`, and `ContentVersion` describe
+  surfaces were corrected. `ContentDocumentLink.ContentDocumentId` and
+  `LinkedEntityId` are now non-nillable, non-updateable, and required,
+  `LinkedEntityId.getRelationshipOrder()` returns null (it is a polymorphic
+  lookup, not master-detail), `ShareType` and `Visibility` are restricted
+  picklists with their full labels, and the `CreatedById`, `CreatedDate`,
+  `LastModifiedById`, and `LastModifiedDate` fields the object does not have
+  are dropped. Related Content objects get the matching restricted-picklist,
+  updateable, and required corrections.
+- **`ContentVersion.Title` is derived from `PathOnClient` when omitted on
+  insert.** Inserting a `ContentVersion` with only `PathOnClient` and
+  `VersionData` failed with `REQUIRED_FIELD_MISSING: [Title]`. sfapex
+  populates `Title` from the file name, so the title is now derived from the
+  last `PathOnClient` segment with its extension removed (`reports/MyReport.csv`
+  yields `MyReport`); an explicit `Title` is left untouched.
+- **`DescribeFieldResult.getRelationshipOrder()` reports order for standard
+  master-detail fields.** It returned null for every standard master-detail
+  field; it now returns `0` for a primary master-detail field and `1` for the
+  secondary field on a junction object, and null for plain and polymorphic
+  lookups (`OwnerId`, `CreatedById`, `LinkedEntityId`).
+- **`OrderSummary.OrderedDate` and other feature-gated standard fields describe
+  with their real type.** A retrieved standard-field stub with no `<type>` on a
+  feature-gated object such as `OrderSummary` was left unknown-typed, so
+  `OrderSummary.OrderedDate` described as `STRING` and `DAY_ONLY(OrderedDate)`
+  was rejected with "only datetime fields support: DAY_ONLY". Such stubs are now
+  replaced with the builtin field definition when the feature schema merges.
+- **Flow formula `DATETIMEVALUE` and merge-field string conversion are fixed.**
+  A record-triggered flow failed with "Illegal assignment from String to
+  Datetime" because `DATETIMEVALUE` of a text expression converted to a bare
+  `String`; it now yields a `Datetime`. Embedded `{!merge fields}` in
+  record-create and record-update string assignments were emitted verbatim and
+  never evaluated; they are now expanded and resolved. `LPAD` and `RPAD` are now
+  supported in flow formulas.
+- **Fields declared inline in a source-format `object-meta.xml` are imported.**
+  Only decomposed `fields/*.field-meta.xml` files were read, so a `<fields>`
+  element authored inline in an `object-meta.xml` was dropped, which in turn
+  left the object without `CurrencyIsoCode` under MultiCurrency and failed
+  dynamic SOQL with "No such column 'CurrencyIsoCode'". Inline fields are now
+  imported, with decomposed entries taking precedence.
+- **Custom labels with undeclared HTML entities load.** A `.labels` file
+  containing an entity such as `&nbsp;` was rejected in full by the strict XML
+  decoder, dropping every label in it and surfacing far away as unresolved
+  `System.Label` references. Labels now parse through a tolerant parser that
+  keeps bare ampersands and undeclared entities as literal text, and a labels
+  parse failure is now a hard error instead of a silently swallowed warning.
+- **An instance call resolves to an inherited instance method over a static
+  method of the same signature.** A child class declaring a static method with
+  the same signature as an inherited instance method dispatched to the static
+  method, producing infinite recursion for a static convenience wrapper that
+  called the inherited method on a fresh instance. A static method never shadows
+  an inherited instance method, so the instance method is now invoked.
+- **Feature auto-detection only fires on real SObject fields.** The
+  MultiCurrency, PersonAccounts, and StateAndCountryPicklist auto-detectors
+  matched their standard field names (`CurrencyIsoCode`, `IsPersonAccount`, the
+  `*StateCode`/`*CountryCode` pattern) against any member with that name, so an
+  ordinary Apex class with a `String CurrencyIsoCode` member wrongly enabled
+  MultiCurrency and made `UserInfo.isMultiCurrencyOrganization()` return true.
+  Detection now counts a match only when the target resolves to an SObject.
+- **ConnectApi output representations inherit `success` and `errors`.** Order
+  Management output representations such as `OrderSummaryOutputRepresentation`
+  inherit `success` and `errors` from the abstract
+  `ConnectApi.BaseOutputRepresentation`, but the flat stubs omitted them, so
+  field access, value equality, and `createOrderSummary` did not expose them.
+  Inherited fields now resolve at runtime and participate in `equals`,
+  `hashCode`, and `toString`. `ConnectApi.UserProfiles.getPhoto` now returns the
+  running user's photo for an existing user, throwing `NotFoundException` only
+  when no matching `User` exists.
+- **Auto-generated `User.CommunityNickname` is truncated to the field length.**
+  Inserting a `User` without a `CommunityNickname` could auto-generate a
+  nickname longer than 40 characters and fail with `STRING_TOO_LONG`. The
+  auto-generated value is now truncated to the field length; an explicitly
+  supplied value still fails validation when too long.
+- **Two-argument `Type.forName` accepts an already-qualified class name.** In a
+  namespaced org, `Class.class.getName()` returns `ns.Outer`, and Salesforce
+  resolves `Type.forName(ns, 'ns.Outer')`; aer prepended the namespace
+  unconditionally, producing an unresolvable `ns.ns.Outer` lookup and returning
+  null. The class name is now used as-is when it already begins with the given
+  namespace.
+- **`Id.valueOf(String, Boolean)` restore-casing overload is supported.** The
+  two-argument overload restores the canonical casing of an 18-character id
+  from its checksum suffix when `restoreCasing` is true (a 15-character id
+  throws `StringException`), and both the one-argument and
+  `restoreCasing=false` forms now validate that an 18-character id carries the
+  correct checksum suffix, throwing `StringException "Invalid id: ..."` on
+  a mismatch.
+- **`WebCart` and `CartItem` summary totals are maintained as platform
+  roll-ups.** A freshly inserted `WebCart` returned null for `GrandTotalAmount`,
+  `TotalAmount`, `TotalProductAmount`, and the other summary fields, so code like
+  `Math.roundToLong(cart.GrandTotalAmount * 100)` threw a null pointer
+  exception. A fresh cart now reads 0 for every total and count, and the
+  summaries roll up from `CartItem`, `CartTax`, `CartItemPriceAdjustment`,
+  `WebCartAdjustmentGroup`, and `CartValidationOutput` children sfapex does;
+  none of the fields is writeable.
+- **A class that extends its own inner class no longer hangs on method
+  resolution.** `public class Outer extends Outer.AbstractType` sent method
+  resolution for any method not declared in user code (such as the implicit
+  `clone()`) into an infinite loop until the recursion guard tripped. Resolution
+  now falls through to the default handlers instead.
+- **`CartExtension.CartTestUtil.createCart` persists its records.** `createCart`
+  built only an in-memory cart with a synthetic id, so it was invisible to SOQL
+  and unusable as a lookup target; a `ProcessException` insert referencing
+  `cart.getId()` failed the foreign-key check. It now inserts the record set
+  sfapex creates (Account, Contact, WebStore, WebCart, CartDeliveryGroup, and
+  CartItem), so the records are queryable and referenceable.
+  `ProcessException.AttachedToId` now accepts every custom object (including
+  custom settings) as a reference target.
+- **Generic and array class-literal type names match sfapex.**
+  `Map<Id, Id>.class` stringified as `"Map<Id, Id>"` from `toString()`/`getName()`
+  while `Type.forName` and `StubProvider` paramTypes produced `"Map<Id,Id>"`, so
+  the two spellings were unequal within a run and broke name-based stub matching
+  in mocking frameworks. Class-literal names are now canonicalized everywhere:
+  `Account[].class` yields `"List<Account>"` and generic parameter lists drop the
+  space after commas. Chaining a plain `.` off a generic or array class literal
+  (`Map<Id,Id>.class.toString()`) is now rejected as the compile error it is on
+  sfapex.
+- **`String.replace` with an empty target and `Map.keySet()` mutation match
+  sfapex.** `String.replace('', repl)` now inserts the replacement between
+  every character and at both ends instead of returning the string unchanged. A
+  `Set` returned by `Map.keySet()` is now a read-only view: `add()` and a
+  non-empty `addAll()` throw `System.FinalException: Collection is read-only`,
+  an empty `addAll()` is a no-op, and removals still mutate the backing map.
+
 ## v1.2.23 — 2026-07-22
 
 - **Record-triggered flow Get Records lookups bulkify for non-Id keys, custom
