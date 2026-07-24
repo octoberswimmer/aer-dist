@@ -178,6 +178,60 @@
   binding result are stored alongside it, so a warm run also skips symbol
   resolution.
 
+## v1.2.25 — 2026-07-24
+
+- **Records on objects with row-level sharing get their implicit owner share
+  row.** Inserting a record on an object whose org-wide default calculates
+  sharing (Private or Public Read Only) now creates the share row sfapex
+  maintains for the record owner: `RowCause` `Owner` with `UserOrGroupId` set to
+  the record's `OwnerId`. The row moves to the new owner when ownership is
+  transferred and is removed with the record. Objects whose default is Public
+  Read/Write or Controlled by Parent do not get an owner row. Merging two
+  records that each carry an owner share no longer fails with a share
+  unique-constraint violation; the surviving record keeps its own owner row.
+- **Changing `OwnerId` to a user without read access fails with
+  `TRANSFER_REQUIRES_READ`.** An update that transfers a record to a user who
+  cannot read the object now fails with that status code and the message "The new
+  owner must have read permission". A nonexistent new owner still surfaces
+  `INVALID_CROSS_REFERENCE_KEY`.
+- **`System.hashCode(x)` returns the same value as `x.hashCode()`.**
+  `System.hashCode` used a generic algorithm that diverged from the per-type
+  `hashCode()` methods: `System.hashCode('aaaaaaa')` returned `88957452289`
+  instead of `-1236860927` because the accumulator was not wrapped to 32 bits,
+  and `Long`, `Double`, `Date`, and `Datetime` used entirely different
+  algorithms than their own `hashCode()` builtins. Both paths now share one
+  implementation per type, so `System.hashCode(x) == x.hashCode()` holds and the
+  result is an `Integer`. `Integer`, `Decimal`, `Boolean`, and `Id` already
+  agreed and are unchanged.
+- **`System.Url` accessors match `java.net.URL`/`URI` for opaque URIs and absent
+  components.** `getQuery()` and `getRef()` now return null, rather than an empty
+  string, when the spec has no query or fragment. Opaque URIs whose
+  scheme-specific part does not begin with a slash (`mailto:`, `tel:`, `data:,x`,
+  `urn:`, `file:relative`) report a null path and return the whole
+  scheme-specific part from `getFile()`, with empty host and authority;
+  hierarchical URLs keep the escaped path and append the query to the file.
+  A bare `scheme:` with no scheme-specific part is rejected with
+  `System.StringException` "Expected scheme-specific part at index N: <spec>".
+  `getProtocol()` and `toExternalForm()`/`toString()` preserve the authored case
+  and percent-encoding instead of lowercasing the scheme and normalizing the
+  spec.
+- **Omni-Channel standard objects are modeled.** A relationship query whose
+  lookup targeted `ServiceChannel` failed at runtime with "no such table:
+  ServiceChannel". `ServiceChannel`, `QueueRoutingConfig`, `AgentWork`,
+  `PendingServiceRouting`, `ServiceChannelStatus`, and `ServicePresenceStatus`
+  are now available, enabled by `OmniChannelSettings.enableOmniChannel` and
+  auto-enabled when Apex references one of them, the same way Person Accounts is
+  detected. `AgentWork` and `PendingServiceRouting` carry `CurrencyIsoCode` in
+  multi-currency orgs.
+- **A custom lookup pointing at a missing object is reported at load time.** A
+  custom field whose `referenceTo` names an object that is not part of the
+  schema is now reported when metadata loads in `test`, `exec`, and `server`,
+  instead of surfacing later as a SQL error during a relationship query.
+- **Dynamic SOQL reports an unknown relationship with the sfapex message.**
+  Querying a relationship that does not exist now fails with "Didn't understand
+  relationship 'X' in field path...", and the relationship name keeps its
+  original casing in the message.
+
 ## v1.2.24 — 2026-07-24
 
 - **Content SObject describe metadata matches sfapex.** The
