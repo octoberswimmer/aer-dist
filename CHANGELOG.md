@@ -178,6 +178,47 @@
   binding result are stored alongside it, so a warm run also skips symbol
   resolution.
 
+## v1.2.27 — 2026-07-29
+
+- **Visible custom tabs are queryable through `TabDefinition`.** Permission set
+  `tabSettings` and profile `tabVisibilities` were parsed and discarded, so a
+  custom-object tab never appeared in a `TabDefinition` query even when the
+  running user was assigned a permission set granting it. Tab visibility now
+  becomes `PermissionSetTabSetting` rows — `Visible` maps to `DefaultOn`,
+  `Available` to `DefaultOff`, and `None`/`Hidden` grant nothing — and
+  `TabDefinition` reports a tab when any of the running user's permission sets
+  (profile-owned, directly assigned, or group-expanded) exposes it, so both
+  `--assign-perms` and `runAs`-based assignment work. Custom-object tabs report
+  the object API name as `SobjectName` and the object's plural label as `Label`.
+  Tabs shipped in a managed package are namespaced like object and field
+  permissions, and a `.tab` file passed to `aer test` as an explicit argument is
+  now parsed the same way the directory walker parses it, so its
+  `CustomObject` relationship survives.
+- **Inactive picklist values are rejected on restricted picklists.** aer
+  accepted any entry in the value set regardless of its `isActive` flag;
+  assigning an inactive value to a restricted picklist now fails with
+  `INVALID_OR_NULL_FOR_RESTRICTED_PICKLIST`, matching Salesforce. Inactive
+  values still drive save-time casing normalization, so a case variant of an
+  inactive value is rewritten to the value set's casing first — the rejection
+  message reports the normalized casing, and on an unrestricted picklist the
+  value is stored with the inactive entry's casing. Describe results continue to
+  exclude inactive entries.
+- **`Database.insertImmediate` publishes standard platform events.**
+  `Database.insertImmediate(new OrderSummaryCreatedEvent())` failed with
+  "Argument must be of virtual sObject type." even though Salesforce accepts it.
+  Standard platform events (those without an `__e` suffix) are now accepted by
+  both insert variants: `insertImmediate` publishes them through the event bus,
+  while `insertAsync` compiles and then throws `System.TypeException`
+  ("Asynchronous DML not allowed on <EventName>") at runtime. Custom `__e`
+  events are still rejected at compile time with the virtual-type error, and the
+  update and delete variants keep the strict virtual-type requirement.
+- **`ProductAttributeSet` metadata is queryable.** `productAttributeSets` files
+  in a source tree were walked but never converted to records, so a SOQL query
+  against `ProductAttributeSet` returned zero rows. The files are now loaded as
+  `ProductAttributeSet` records, and their presence enables the B2B Commerce
+  schema on its own — previously the object's table existed only when some class
+  in the run referenced the type.
+
 ## v1.2.26 — 2026-07-29
 
 - **Insert audit fields are assigned after validation rules evaluate.**
