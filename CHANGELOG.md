@@ -178,6 +178,153 @@
   binding result are stored alongside it, so a warm run also skips symbol
   resolution.
 
+## v1.2.26 — 2026-07-29
+
+- **Insert audit fields are assigned after validation rules evaluate.**
+  `CreatedDate`, `CreatedById`, `LastModifiedDate`, `LastModifiedById`, and
+  `SystemModstamp` were stamped before custom validation rules ran, so a rule
+  such as `NOT(ISBLANK(CreatedDate))` blocked every create. Before-insert
+  triggers and insert-time validation rules now see blank audit fields, while
+  after-insert triggers, queries, and an update's validation rules see the
+  assigned values. Values derived before the save — field defaults,
+  auto-populated lookups, the default record type, and the `*State`/`*Country`
+  labels derived from `*StateCode`/`*CountryCode` — are still populated before
+  the rules evaluate, so a rule checking `ISBLANK(BillingState)` sees the label
+  derived from `BillingStateCode`.
+- **An Id assigned by a before-insert trigger is discarded instead of failing
+  the insert.** An insert failed with "cannot specify Id in an insert call" when
+  a before-insert trigger assigned a temporary Id to a `Trigger.new` record.
+  sfapex runs the caller-Id check before triggers fire and ignores any Id a
+  before-insert trigger sets, generating the persisted Id itself, so the insert
+  now succeeds. An Id supplied by the caller is still rejected.
+- **Picklist casing is applied when the record is saved, not when the field is
+  assigned.** An in-memory SObject assigned `oPeN` now keeps `oPeN`, while the
+  record handed to triggers and to storage reads `Open`, matching sfapex.
+  Normalization also covers standard and unrestricted picklists. Multi-select
+  picklists are stored in picklist-entry order rather than the order the
+  selections were given, with selections outside the value set appended in the
+  order supplied — inserting `'Phone;Email'` into a field whose entries are
+  Email then Phone stores `'Email;Phone'`.
+- **Assertions compare with `equals()` semantics rather than Apex `==`.**
+  Strings differing only in case are no longer equal, including Strings nested
+  in Lists, Sets, and Maps, and `System.assertEquals` no longer splits
+  multi-select picklist field arguments on `;` to compare them as sets. Every
+  assertion failure message now uses the sfapex wording, starting with
+  "Assertion Failed", and `System.assertNotEquals` honors its message argument,
+  which it had ignored. Two divergences the case-insensitive comparison had been
+  hiding are also fixed: `Schema.FieldSet.getName()` returned a lowercased name,
+  and builtin enums whose constants are normalized to upper case reported those
+  constants from `name()`. `Metadata.DeployStatus` gets display names and
+  sfapex's `values()` order.
+- **Typed JSON deserialization of temporal values throws sfapex's
+  messages.** `JSON.deserialize` into `Date`, `Datetime`, and `Time` targets
+  throws `JSONException` with the Joda-style parse errors sfapex produces,
+  including the document location of the failing member, and SObject fields
+  throw the Jackson-style "Cannot deserialize instance of ..." errors. A JSON
+  number in a `Date` position reads as a year, truncated ISO values default
+  their missing components, and out-of-range SObject `Datetime` components roll
+  over instead of throwing.
+- **Querying `UserPermissionAccess` returns the running user's effective
+  permissions.** One row describing the running user is rebuilt before each
+  query against the object, so `WHERE` clauses, `COUNT()`, and field selection
+  work normally. Every boolean `Permissions*` field aggregates across the user's
+  permission sets and Profile.
+- **Every `PermissionSetGroup` gets its companion `PermissionSet`.** sfapex
+  exposes a generated permission set for each group, carrying the group's
+  developer name and label, `Type = 'Group'`, and `PermissionSetGroupId`
+  pointing back at the group. It is created with the group, deployed from
+  source or inserted from Apex, and deleted with it, so code that queries
+  `PermissionSet` by a group's developer name now finds a row.
+  `PermissionSet.Type`, which aer left null on every permission set, is now
+  derived: `Group` for a group's companion, `Profile` for a profile's permission
+  set, `Session` for one that requires session activation, and `Regular`
+  otherwise.
+- **Permission set groups load with their components and their source status.**
+  A group's `<permissionSets>` members are parsed at load and
+  `PermissionSetGroupComponent` rows synthesized, so assigning a group grants
+  the object and field permissions its component permission sets contribute and
+  `Test.calculatePermissionSetGroup` has something to aggregate. Members that
+  reference package permission sets by their `Namespace__Name` form now resolve
+  instead of failing startup with "references unknown permission set". A group's
+  `Status` comes from its source `<status>` element, defaulting to `Outdated`
+  when none is declared; a group with no components loads `Updated`, since there
+  is nothing to aggregate.
+- **Overload resolution uses the declared type of a null argument.** A null read
+  through a field or property carried no type, so every overload tied and the
+  first declared constructor won. `new Target(wrapper.recordId)` with a null
+  `Id` property now picks the `(Id)` overload rather than an `(Account)` one,
+  matching how Salesforce selects from the argument's static type.
+- **A list custom setting's `getInstance(String)` returns null for a null or
+  blank name.** It previously selected an arbitrary record, so code looking up
+  a setting by a nullable name silently received an unrelated configuration
+  record, or a non-null empty instance when the table held no records.
+- **Delivered platform events carry `CreatedById` and `CreatedDate`.** A
+  subscriber trigger reading either field on an event published with
+  `EventBus.publish` saw null, losing the identity of the publishing user. Both
+  are now stamped on the delivered event and agree with the stored row:
+  `CreatedById` is the running user and `CreatedDate` is the publish time at
+  second precision. As with `ReplayId`, the publisher's own reference keeps them
+  unset.
+- **A SOSL `RETURNING` clause naming the same type twice produces one result
+  group.** `RETURNING Account(Id), Account(Id)` returned one group per clause
+  (`[[], []]`); Salesforce returns one group per distinct SObject type, for both
+  `Search.query()` and inline `[FIND ...]` literals.
+- **`BatchApexWorker` jobs report `LastProcessedOffset`.** A completed worker
+  `AsyncApexJob` now reports the number of records its scope processed. The
+  record is created with `-1`, which stays queryable when `execute()` throws,
+  and is updated to the processed-record count when the scope completes. Worker
+  records exist only for `QueryLocator`-based batches; an iterable-based batch
+  runs `execute()` with no worker record and a null
+  `BatchableContext.getChildJobId()`. The parent `BatchApex` job keeps a null
+  `LastProcessedOffset`.
+- **A legacy named credential's `<endpoint>` is loaded from its metadata.** A
+  credential declaring `<endpoint>` directly, rather than a `Url` entry in
+  `namedCredentialParameters`, was stored with an empty endpoint and queried
+  back as null, and its principal type, protocol, and callout status were
+  dropped. A `SecuredEndpoint` credential keeps its URL in a `Url` parameter and
+  Salesforce leaves `Endpoint` null for that shape, so a `Url` parameter no
+  longer populates `Endpoint`; `callout:` references still resolve. External
+  credential metadata that a deploy would refuse is now rejected at load: a
+  `Basic`, `Custom`, or `Jwt` credential may not carry `AuthParameter` entries.
+- **`SObjectType.newSObject(recordTypeId, true)` populates the right fields for
+  `User`.** The blanket heuristic defaulted every checkbox to false and applied
+  all configured picklist and locale defaults, which is correct for objects like
+  `Contact`, `Account`, and `Task` but wrong for `User`: sfapex populates
+  only a small subset, with `IsActive` defaulting to true, and applies
+  none of the configured picklist or locale defaults. In a multi-currency org,
+  the currency fields are populated with the org default currency.
+- **`DescribeSObjectResult.getLabelPlural()` is correct for a standard object
+  extended from source.** An SFDX source directory that adds only a custom field
+  to a standard object carries no `object-meta.xml`, and the schema merge
+  overwrote the builtin object's label and plural label with the empty imported
+  defaults, so the plural label came back as the singular. The merge now keeps
+  the existing values when the imported ones are empty or merely the object
+  name. Every builtin and optional-feature object declares its plural label on
+  its own definition.
+- **`ProductRelatedComponent` inserts are validated and `Name` is
+  auto-numbered.** The parent `Product2` must be a bundle, set, or base product;
+  a parent with no `Type` is rejected with `INVALID_INPUT` before any
+  required-field check. When the parent is a static bundle, `IsDefaultComponent`
+  must be true or the insert fails with `INVALID_INPUT` on that field. `Name` is
+  a `PRC-000000000` auto-number so inserts succeed without one, and
+  `ParentProductRole` and `ChildProductRole` are non-creatable and
+  non-updateable, so assigning them is a compile-time "Field is not writeable"
+  error.
+- **`CartExtension.CartTestUtil.createCart()` exposes the `CartItem` it
+  inserts.** `cart.getCartItems()` came back empty, so calculators that iterate
+  cart items saw nothing; the returned cart now carries a `CartItem` (name 'My
+  Cart Item', type Product) for the row it inserts. Two related defects in the
+  parent/child model are fixed: child items were eagerly flattened into the
+  cart's top-level item list so `getCartItems()` counted them, and
+  `setParentCartItem` appended the child to the parent's `childCartItems` so
+  `getCartItems(true)` included a child that was only parented. Child membership
+  now comes from `getChildCartItems().add(...)`, and both `getCartItems()`
+  overloads return top-level items only for an item that is parented but not
+  added to any collection.
+- **License management moved to `portal.aertest.com`.** The license management
+  URL in the CLI, the license action hints, and the extension's
+  subscription-management prompts changed from `kingdom.octoberswimmer.com`.
+
 ## v1.2.25 — 2026-07-24
 
 - **Records on objects with row-level sharing get their implicit owner share
