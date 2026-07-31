@@ -178,6 +178,184 @@
   binding result are stored alongside it, so a warm run also skips symbol
   resolution.
 
+## v1.2.28 — 2026-07-31
+
+- **User-mode DML no longer rejects records queried with a parent
+  relationship.** Updating a record in user mode failed with
+  `NoAccessException: No Access to field: Child__c.Parent__r` whenever the
+  record had been queried with a relationship field, even when the lookup field
+  and both objects were explicitly permitted. A relationship key holds the
+  related record the query populated rather than a value the DML writes, and no
+  `FieldPermissions` row can grant access to a `__r` pseudo field, so the check
+  now skips it; field-level security still applies to the lookup field itself.
+- **`SObject.put()` marks only related records as relationship fields.** Every
+  field written through `put()` was recorded as a relationship container,
+  whatever the value, so a record whose fields were all set that way presented
+  an empty write set: `Security.stripInaccessible` removed nothing and
+  `Database.update(record, AccessLevel.USER_MODE)` raised nothing, and fields
+  the running user has no field-level access to were written. Only an `SObject`
+  value is marked now.
+- **Permission sets from source and packages report `IsCustom = true`.**
+  `PermissionSet.IsCustom` was always false, so a selector using the common
+  `WHERE IsCustom = true` filter skipped every permission set deployed from
+  source or shipped in a package, and code assigning permission sets through
+  such a selector failed. `IsCustom` is now derived at insert: a permission set
+  is custom unless the builtin schema seeds it or it belongs to a profile that
+  is not custom. A permission set the platform ships also reports
+  `Type = Standard` rather than `Regular`.
+- **`PermissionSet` subqueries resolve.** `PermissionSet` carried no child
+  relationships, so a subquery such as `SELECT (SELECT SobjectType FROM
+  ObjectPerms) FROM PermissionSet` failed to resolve the relationship name.
+  Seven relationships are now declared: `ObjectPerms`, `FieldPerms`,
+  `SetupEntityAccessItems`, `Assignments`, `PermissionSetGroupComponents`,
+  `SessionActivations`, and `PermissionSetTabSetting`.
+- **`UserInfo.isCurrentUserLicensed` reports loaded packages as licensed.** It
+  returned false for every namespace, so a package loaded with `--package`
+  looked unlicensed to both the subscriber and the package's own code. It now
+  returns true for the namespace of any loaded package and for the VM's default
+  namespace, which models a packaging org licensing its own namespace to the
+  developer. A namespace with no package and no schema behind it still raises
+  `System.TypeException`.
+- **The default System Administrator profile grants `PermissionsInstallPackaging`
+  and `PermissionsModifyMetadata`.** Both were false on the profile-owned
+  permission set, so `UserPermissionAccess` reported them as false too. This
+  also resolves an inconsistency in the permission dependency closure:
+  `PermissionsAuthorApex` requires `PermissionsModifyMetadata`, which the admin
+  profile granted without it.
+- **Entity feeds are modeled as projections of `FeedItem`.** An entity feed such
+  as `AccountFeed` or `MyObject__Feed` was synthesized as a standalone object
+  backed by a table nothing ever wrote to, so a feed query always came back
+  empty and a subquery over `FeedComments` failed to compile. Each feed is now
+  built from the `FeedItem` field definitions with `ParentId` narrowed to its
+  parent type, gaining the `IsRichText`, `RelatedRecordId`, `InsertedById`, and
+  `BestCommentId` fields and the `FeedAttachments`, `FeedComments`, `FeedLikes`,
+  `FeedSignals`, and `FeedTrackedChanges` child relationships, and posted
+  `FeedItem` records are visible through it. Every custom object is listed in
+  `FeedItem.ParentId`, so posting to a custom record no longer fails with
+  `INSUFFICIENT_ACCESS_ON_CROSS_REFERENCE_ENTITY`. `FeedPostId` is now hidden
+  after API 21.0 for describe as well as inline and dynamic SOQL, and a bare
+  `__Feed` name in a `FROM` clause resolves against the executing namespace.
+- **`--skip-errors` drops metadata with missing dependencies.** The flag covered
+  parse and type check errors only, so a workspace whose metadata referenced
+  something that was not loaded aborted the run outright. Four schema-assembly
+  errors now drop the offending metadata instead: a custom field whose
+  `referenceTo` names an absent sObject, two lookups on one parent deriving the
+  same child relationship name, a field bound to an absent global or standard
+  value set, and a permission set group naming an absent permission set.
+  Removals cascade: formula fields (including those reaching through a removed
+  lookup), rollup summaries, compound components, validation rules, field set
+  members, lookup filters, dependent picklist controllers, and field permissions
+  go with what they depended on, and everything removed is reported in one
+  warning. All four errors still fail the run without the flag.
+- **Apex custom adapters for external data sources are supported.** An
+  `ExternalDataSource` whose `Type` names an Apex class extending
+  `DataSource.Provider` was rejected for having no URL or endpoint; a custom
+  adapter supplies its own connection and needs an endpoint only when the
+  provider declares `DataSource.Capability.REQUIRE_ENDPOINT`. The overridable
+  `DataSource.Provider` and `DataSource.Connection` methods
+  (`getCapabilities`, `getConnection`, `query`, `search`, `sync`, `upsertRows`,
+  `deleteRows`) are also marked virtual, so overriding them no longer fails with
+  "cannot override non-virtual parent method". When a namespace is applied, the
+  adapter class reference is qualified with it (`ns.ProviderClass`), which is
+  how the platform stores it.
+- **Datetimes are stored at whole-second precision, and `SystemModstamp`
+  advances on update.** sfapex keeps datetimes only to the whole second,
+  including `CreatedDate`, `LastModifiedDate`, and `SystemModstamp`, so rows
+  stamped within one second tie under `ORDER BY` and the tie stays in insert
+  order. Storage wrote sub-second precision, which broke ordering two ways: a
+  row carrying a fraction sorted after its same-second siblings, and querying a
+  record and updating it rewrote the field with the shorter value, moving that
+  record under a later `ORDER BY`. `SystemModstamp` is also included in the
+  `UPDATE` statement now.  Nothing can assign it, so it kept the value it
+  received at insert and `ORDER BY SystemModstamp` could not find the most
+  recently modified record.
+- **Formula fields reject every function sfapex forbids.** Field validation
+  rejected `REGEX` alone. `HTMLENCODE`, `PRIORVALUE`, `ISCHANGED`, `ISNEW`, and
+  `IMAGEPROXYURL` are equally unusable in a formula field, and are now rejected.
+- **`CURRENCYRATE`, `GETSESSIONID`, and `IMAGE` are implemented.** The first two
+  failed with an unsupported-function error, and `IMAGE` returned the bare URL
+  rather than markup.
+- **More formula functions can be filtered and sorted on.** A formula field
+  using a function with no SQL translation could not be used in a `WHERE` or
+  `ORDER BY` clause.  Translations were added for `TRUNC`, `MOD`, `PI`, `SQRT`,
+  `EXP`, `LN`, `LOG`, `SIN`, `COS`, `TAN`, `ASIN`, `ACOS`, `ATAN`, `ATAN2`,
+  `INITCAP`, `LPAD`, `RPAD`, `ASCII`, `CHR`, `DAYOFYEAR`, `ISOWEEK`, `ISOYEAR`,
+  `DATETIMEVALUE`, `UNIXTIMESTAMP`, `FROMUNIXTIME`, `PICKLISTCOUNT`,
+  `FORMATDURATION`, `TIMEVALUE`, `TIMENOW`, `SECOND`, `MILLISECOND`, and
+  `DISTANCE` over a Location field.
+- **`DATE()` returns null for an out-of-range or null component.**
+  `DATE(2024, 13, 1)`, `DATE(2024, 0, 1)`, `DATE(2024, 2, 30)`, and
+  `DATE(2024, 1, 0)` are all null rather than rolling over into January 2025,
+  December 2023, March 1, and December 31. In generated SQL, a null year, month,
+  or day also produced the string `0000-00-00` instead of a null date, so a
+  query for a date formula over blank inputs both returned a non-null value and
+  failed to match a null filter.
+- **`BlankAsZero` zeroes only blank field references.** The setting coerced
+  every null it encountered to zero, including nulls returned by functions.
+  `YEAR()`, `MONTH()`, and `DAY()` of a blank date correctly return null, so
+  `DATE(YEAR(d) + 3, MONTH(d), DAY(d))` over blank inputs built year 3 with
+  month 0 and day 0, which rolls back to a date outside the storable range and
+  failed the insert with `FIELD_INTEGRITY_EXCEPTION`. A blank numeric field
+  still reads as zero; a null returned by a function now propagates.
+- **`MOD` by zero returns the dividend.** `MOD(7, 0)` is 7, not null.
+- **`INITCAP` capitalizes after any non-alphanumeric character.** It split on
+  whitespace and rejoined with a single space, so runs of spaces collapsed and
+  `a  b` capitalized to `A b`. Separators are copied through unchanged now, so
+  `o'neill-smith` becomes `O'Neill-Smith` while a letter after a digit is left
+  alone and `3rd` stays `3rd`. `LPAD` and `RPAD` with a width of zero or less
+  yield an empty string instead of failing.
+- **Numeric formula fields are rounded to the field's scale in queries.** A
+  formula field's value is stored at its scale, so a translated expression
+  carrying full precision disagreed with the runtime as soon as a result had
+  more digits than the field holds — `LN(100)` read as 4.605170186 against a
+  stored 4.6052. Rounding previously applied to Currency only.
+- **`TIMENOW()` and time components are available in formulas and flows.**
+  `TIMENOW()` returns the current GMT time of day, honoring the mock clock like
+  `NOW()`. `HOUR`, `MINUTE`, `SECOND`, and `MILLISECOND` gained runtime
+  implementations extracting UTC components, and all of them, along with
+  `TIMEVALUE`, are converted by the flow converter.
+- **`??` promotes its operands to the wider numeric type.** The result type was
+  taken from the left operand alone, so `(nullDecimal ?? 0).longValue()` failed
+  at runtime with "method not found: Integer.longValue" and
+  `(someInteger ?? 0.0).longValue()` was rejected at compile time. Both sides
+  now widen along Apex's implicit numeric chain (Integer to Long to
+  Double/Decimal), including through chained coalescing.
+- **A blank picklist field argument is typed as `String` in overload
+  resolution.** A null value carries no runtime type, so an SObject field
+  argument reading as null takes its type from the schema.  Picklist and
+  multi-select picklist had no Apex equivalent, so the argument was typed
+  `picklist`, matched no parameter, and the call failed with no matching
+  constructor found. Both map to `String` now.
+- **`SObject.Id` is typed, and unconvertible primitive arguments are rejected.**
+  Field access on a value typed as the generic `SObject` base type produced no
+  type, so an overload set taking `List<Id>` and `Id` bound the wrong overload
+  and its `List<SObject>` return value then failed to assign. Separately, a call
+  to a user-defined method was judged only on arity, so an argument whose type
+  can never convert to the parameter type was accepted; a `String`, `Boolean`,
+  or `Id` argument for a `Decimal` parameter, a `Decimal` for an `Integer`, and
+  a `Datetime` for a `Date` now report sfapex's "Method does not exist or
+  incorrect signature" error. Numeric widening, `String`/`Id` interchange,
+  `Date` to `Datetime`, an `Object` parameter, and null still bind.
+- **Enum constants the enum does not declare are rejected at compile time.**
+  Constants were validated for builtin enums only; a reference to an undeclared
+  constant of an enum declared in source or shipped in a package passed the type
+  check and failed at runtime. It now reports "Variable does not exist", the
+  message builtin enums already produce.
+- **A custom object component file whose path cannot name its object is
+  rejected.** A field file placed directly under `objects/`, for instance,
+  resolved to a meaningless object name and was silently dropped from a
+  reference deployment. The required layout and the intended file are now
+  reported.
+- **Faster runs with heavy `@TestSetup` data and query volume.** Batch
+  `UserRecordAccess` rebuilds share their batch-invariant state instead of
+  re-querying per (record, user) pair.
+- **A source path that expands to itself no longer re-runs the load.**
+  Expanding a source path to its surrounding workspace resolves a package
+  directory such as `force-app` back to that same directory, but expansion still
+  reported that it had broadened the load set, so a type-check failure triggered
+  a retry that re-parsed, re-analyzed, and re-checked the same classes to
+  produce the same errors.
+
 ## v1.2.27 — 2026-07-29
 
 - **Visible custom tabs are queryable through `TabDefinition`.** Permission set
