@@ -178,6 +178,160 @@
   binding result are stored alongside it, so a warm run also skips symbol
   resolution.
 
+## v1.2.29 — 2026-08-02
+
+- **ConnectApi Chatter feeds are backed by storage.**
+  `ConnectApi.ChatterFeeds.postFeedElement` threw "Resource not found." for
+  every call and `getFeedElementsFromFeed` always returned an empty page.
+  Posts, comments, and likes now read and write `FeedItem`, `FeedComment`, and
+  `FeedLike` rows, so a post is visible through SOQL and through the subject's
+  entity feed, and `CommentCount` and `LikeCount` are maintained as sfapex
+  maintains them. Posting runs the DML pipeline, so before-save flows and
+  before/after triggers see it. `updateFeedElement`, `updateComment`,
+  `deleteFeedElement`, and `deleteComment` complete the edit and delete path,
+  and deleting a feed element takes its comments and likes with it.
+  `FeedItem`'s `FeedComments` and `FeedLikes` child relationships were not
+  marked cascade-delete, so a plain DML delete of a post left its comments
+  behind. Inside a test, `getFeedElementsFromFeed` and `searchGroups` are still
+  answered only from a response registered with the matching `setTest…` method.
+- **The feed element representation matches sfapex.** A plain text post
+  carries twelve capabilities; ten were missing (`associatedActions`,
+  `bookmarks`, `close`, `edit`, `interactions`, `mute`, `readBy`, `status`,
+  `topics`, `upDownVote`). A post now defaults to `Visibility=InternalUsers`
+  with a header reading "<user> to <org> Only", `postFeedElement`
+  honors the input's visibility, `relativeCreatedDate` reads "Just now" on a
+  fresh post, and `FeedItem.Status` is `Published`. `createdDate` and
+  `modifiedDate` had been null on every feed element. `getBuildVersion` returns
+  the API version rather than 1.0, and a ConnectApi object's `toString` renders
+  nested values through the Apex formatter instead of producing
+  `ConnectApi.X:[…]` with a stray colon.
+- **ConnectApi Chatter groups are backed by storage.** `createGroup`,
+  `getGroup`, `updateGroup`, `deleteGroup`, `getGroups`, and the batch readers
+  work against `CollaborationGroup`, and the membership methods against
+  `CollaborationGroupMember`, with `MemberCount` maintained in storage. Group
+  records, announcements, membership requests, and group photos are stored too,
+  and `getMyChatterSettings` / `updateMyChatterSettings` read and write the
+  membership's `NotificationFrequency`. Group names are unique across the org,
+  so a plain insert or rename of a `CollaborationGroup` with a duplicate name
+  is refused with `DUPLICATE_VALUE` on `Name`. Deleting a group takes its
+  memberships and membership requests with it. Throughout, an id belonging to
+  another table is rejected as an illegal parameter value while a well-formed
+  id with no stored row is reported as not found.
+- **Deleting a parent record no longer fails with "FOREIGN KEY constraint
+  failed".** Cascade children were deleted after the parent row, so a child
+  whose foreign key is not declared `ON DELETE CASCADE` failed the constraint
+  before the cascade could run. Children are deleted first now.
+- **Catching a ConnectApi exception as `Exception` and calling `getTypeName()`
+  no longer panics the VM** with "marked as IsNative but no implementation
+  registered". Native implementations resolve through the declaring type's
+  extends chain, which covers every exception subclass in every namespace.
+- **Flow formulas match the formula engine's null semantics.** Flow formulas
+  never throw on null values, and the generated Apex now agrees: arithmetic
+  evaluates to null when an operand is null, field references through a
+  single-record lookup output get safe navigation, `TEXT(null)` converts to `''`
+  so downstream string methods no longer throw, and a blank text value assigned
+  to a lookup field stores null rather than raising `StringException`.
+- **More flow elements and formula functions convert.** An element or formula
+  function the converter did not know left a call to a never-generated method or
+  a reference to a never-declared variable, and the run aborted with a type
+  error. Custom Error, Collection Filter, Collection Sort, subflow elements, the
+  Submit for Approval core action, and Process Builder Wait elements are now
+  converted, along with the `TRIM`, `CONTAINS`, and `FIND` functions and `+` on
+  text operands. Update Records and Delete Records accept record collection
+  variables and query results, not only a single SObject. Action fault
+  connectors are honored: a failed action routes to its fault connector with
+  `$Flow.FaultMessage` populated.
+- **`$Profile`, `$Organization`, and `$Flow.InterviewGuid` resolve in flows.** A
+  reference to any of them fell through to a bare identifier or a null literal,
+  and the generated handler failed to compile. `$Profile` and `$Organization`
+  now resolve like `$UserRole`, and `$Flow.InterviewGuid` is seeded once per
+  interview. A global variable's Id renders in its 15-character form where the
+  value becomes text, matching Flow, while the reference itself keeps all 18 so
+  it stays assignable to a lookup field.
+- **A flow reference naming a polymorphic branch reads only that branch.**
+  `Owner:Group.Name` reads the owner's name when the owner is a Group and null
+  when it is a User; the converter dropped the type specifier, so both branches
+  read the same value. The specifier is now a guard on the related record's
+  actual type.
+- **A Create Records element's output is the new record's Id.** The converter
+  named the created SObject after the element, so a flow assigning
+  `{!Create_X}` to a lookup field generated an illegal assignment and the
+  generated class failed to compile. Behind that, the trigger optimizer batched
+  in-loop DML after the loop, leaving the inserted record's Id null for the rest
+  of the iteration; an insert now stays inline when a later statement in the
+  loop reads its target.
+- **Two Get Records elements over the same object no longer collide.** Both
+  produced the same local, list temporary, and per-batch cache, which the
+  generated class rejects as duplicate declarations; the local takes the
+  element's name now. An element two scheduled paths converge on was also
+  emitted once per path, duplicating its declarations.
+- **Methods can be declared in a trigger body.** sfapex compiles a trigger
+  body like an anonymous block — methods declared alongside statements are
+  static whether or not the keyword is written, and the body's top-level
+  variables are shared with them. aer rejected such triggers with "unsupported
+  trigger member declaration", and because the parse produced errors the files
+  were re-parsed on every run.
+- **The `Id` field is accepted as an upsert external ID.** `Id` is a standard
+  indexed field on every object, but the type checker rejected it, and the
+  `upsert` statement form failed at runtime with `MISSING_ARGUMENT` because the
+  reference reached the VM as authored (`Account.Id`). The `Object.Fields.Field`
+  spelling and the two-argument overload are validated now as well, and the
+  `MISSING_ARGUMENT` message for an empty external ID value reads
+  "<Field> not specified" with no field names, matching sfapex.
+- **`System.Location.latitude` and `.longitude` can be read as fields.** Only
+  `getLatitude()` and `getLongitude()` worked; reading `loc.latitude` raised
+  "invalid field access target".
+- **A double implicitly converted to `Decimal` keeps its rendering.** A JSON
+  numeric deserialized into a Number or Currency field is a runtime Double, and
+  Salesforce keeps the double's rendering when it becomes a `Decimal`, so a
+  whole number keeps its trailing `.0`. aer dropped it everywhere except the
+  explicit `(Decimal)` cast.
+- **A `List` custom setting's `Name` is required.** `isNillable()` reported it
+  as nillable while DML threw `REQUIRED_FIELD_MISSING`, so describe-driven test
+  factories never populated `Name` and their inserts failed. A Hierarchy
+  setting's `Name` stays nillable, since its records are keyed by
+  `SetupOwnerId`.
+- **Person Account behavior is derived from the loaded schema.** Inserting a
+  person account through `aer exec` failed with `REQUIRED_FIELD_MISSING` on
+  `Name`: only the `test` command enabled the runtime flag, so under `exec` and
+  the server no person account record type was assigned and `Account.Name` was
+  never derived from the name fields. The schema is now the signal, covering
+  `test`, `exec`, `server`, and the pooled VM restore.
+- **Ordering by a standard picklist follows the value set rather than the
+  alphabet**, as `MIN` and `MAX` already did, with values outside the value set
+  breaking the tie on the value itself.
+- **Health Cloud, Survey, Omni-Channel, and Workplace Command Center objects are
+  modeled.** `--feature HealthCloud` gains the care plan family (`CarePlan`,
+  `CarePlanActivity`, `CarePlanDetail`, `CarePlanTemplate` and friends) and the
+  assessment objects (`Assessment`, `GoalAssignmentDetail`,
+  `ExternalAssessmentDefinition`, `OmniProcess`); `SurveySettings.enableSurvey`
+  gains the full Survey family from `Survey` and `SurveyVersion` through
+  `SurveyQuestionResponse` and `SurveyEngagementContext`; Omni-Channel gains
+  `UserServicePresence`; and a new `WorkplaceCommandCenter` feature models
+  `LocationTrustMeasure`.
+- **Settings-gated objects auto-enable from a static Apex reference.** Code
+  referencing `Territory2`, `AccountTeamMember`, `OpportunityTeamMember`, a
+  Survey object, or a Health Cloud object failed type checking with an
+  unresolved reference unless the matching settings file was found. A static
+  reference now turns the setting on, including through a field token such as
+  `CarePlan.CaseId.getDescribe()` where the object never appears in a type
+  position.
+- **An unrecognized `--feature` value is an error.** `--feature InvalidFeature`
+  was silently ignored, and the only symptom was a confusing "Invalid type" from
+  the type checker. The value is now rejected at flag parse time with the list
+  of valid features, across `exec`, `test`, `server`, and the schema inspect
+  commands, and an accepted value is canonicalized so `--feature healthcloud`
+  works.
+- **Packages carry Visualforce pages and custom tabs.** Subscriber source
+  referencing a managed package's page (`Page.ns__Foo`) or a tab in a profile or
+  permission set looked like a missing org dependency, because `package mock`
+  captured neither. `package mock` now queries `ApexPage` and lists `CustomTab`,
+  `package list` gains Visualforce Pages and Custom Tabs sections, and
+  `package unpack` writes `pages/<Name>.page` and
+  `tabs/<Name>.tab-meta.xml`. A tab whose name is not an SObject API name (a
+  Visualforce, Lightning component, or web tab) now takes the package
+  namespace.
+
 ## v1.2.28 — 2026-07-31
 
 - **User-mode DML no longer rejects records queried with a parent
