@@ -178,6 +178,301 @@
   binding result are stored alongside it, so a warm run also skips symbol
   resolution.
 
+## v1.2.30 — 2026-08-12
+
+- **Workflow rules run at correct stage of save order, on every DML path.**
+  Previously only the `insert` and `update` keyword statements evaluated
+  workflow rules at all, and they ran before the database write, so after
+  triggers saw field-update values early and `Database.insert`/`update`,
+  `upsert`, and lead conversion skipped workflow entirely. Rules now evaluate
+  after the after triggers in all of those paths, and when a field update
+  actually changes the record the before-update and after-update triggers fire
+  one more time, during inserts as well, as on sfapex. Field-update and
+  criteria formulas hydrate spanning parents from the lookup id rather than
+  reusing a query-projected relationship image, which had resolved unselected
+  parent fields to blank, and `ISNULL` over a text field is always false,
+  matching the formula documentation.
+- **A comma-separated workflow criteria value is a list of alternatives for
+  every operation.** The list was split for `equals` and `notEqual` but
+  compared as one joined string for `contains`, `notContain`, and
+  `startsWith`, so a rule like `startsWith "Alpha, Beta"` never matched a
+  record starting with "Alpha - ". Every operation now applies its semantics
+  per alternative.
+- **Rollup summary filters match each comma-separated value on its own.** The
+  joined list was matched as a single pattern, with prefix or substring
+  semantics applied only to the last element, so a `startsWith` filter like
+  "Alpha, Beta, Gamma" gave prefix semantics to `Gamma` alone and required
+  exact matches for the rest.  A child whose type began with "Alpha - " never
+  entered the rollup. `contains` had the same defect with its leading
+  wildcard.
+- **Multi-step approval processes run from `approvalProcesses` metadata.**
+  Submitting a record whose object has an active approval process assigns the
+  first step's approver: a related user field is read from the target record, a
+  user approver resolves by username, and a queue approver by the queue's
+  developer name. An empty related-user approver field fails the submission
+  with `MANAGER_NOT_DEFINED` naming the field's label, and `nextApproverIds`
+  does not substitute for it; it only satisfies manually-chosen approvers.
+  Approving a non-final step records a `ProcessInstanceStep`, replaces the
+  acted-on workitem with the next step's, and keeps the instance `Pending`;
+  only the final step's approval completes it. Validation errors carry
+  sfapex's "Process failed. First exception on row N" wording. Objects
+  without a definition keep the previous adhoc single-step behavior.
+  `ProcessInstance.TargetObjectId` and `ProcessInstanceHistory.TargetObjectId`
+  now reference every custom object, each custom object gains the
+  `ProcessInstances` and `ProcessSteps` child relationships, and `ActorId` /
+  `OriginalActorId` reference `Group` as well as `User`, since queues can be
+  approval actors.
+- **Approval process field update actions run.** Submitting, approving,
+  rejecting, or recalling a record left it untouched, so a process whose
+  actions set a status field never set it. A step's `approvalActions` and
+  `rejectionActions` and the process's `initialSubmissionActions`,
+  `finalApprovalActions`, `finalRejectionActions`, and `recallActions` are now
+  resolved against the object's workflow field update definitions, including
+  definitions no workflow rule references, which are now retained.
+- **Record-triggered flows run in trigger order.** Registration order was
+  previously undefined, so a flow whose entry criteria test a field an earlier
+  ordered flow assigns could run first and silently skip itself.
+- **Flow formula functions match the formula engine's blank-in, blank-out
+  rule.** `DATEVALUE`, `TIMEVALUE`, `YEAR`, `MONTH`, `DAY`, `HOUR`, `MINUTE`,
+  `SECOND`, `MILLISECOND`, `ADDMONTHS`, and `DATE` null-guard their operands,
+  as do `LEFT`, `RIGHT`, `MID`, `UPPER`, `LOWER`, and `SUBSTITUTE`; `LEN` of
+  blank text is 0. A Process Builder formula assigning `LEFT` of a null long
+  text area, or an entry filter subtracting `DATEVALUE` of a null relationship
+  field, threw a `NullPointerException`. `MID`'s start position is now 1-based
+  and clamped to the first character, like `FIND`. `ROUND(num, digits)` now
+  converts.  A flow formula using it previously aborted the run with a
+  symbol-resolution error.
+- **A flow's entry criteria formula is checked against prior values.** The
+  "record changed to meet criteria" gate applied only to filter condition
+  lists, not filter formulas, so a record that already met the criteria
+  re-entered the flow and a flow's own update of its triggering record could
+  re-trigger it. Cross-object paths on the old record hydrate through its
+  lookup values, so they see the prior parent when the lookup itself changed.
+- **Fields read only through a Loop element are queried.** A Get Records
+  element's generated SOQL collected only fields referenced through the
+  element's own name, so a flow that loops over the lookup's collection threw
+  "SObject row was retrieved via SOQL without querying the requested field".
+- **An Apex action's automatically-stored output is readable downstream.** With
+  `storeOutputAutomatically`, references of the form `ElementName.field`
+  resolved as static field reads and failed with "undefined static field",
+  because the invocable's return value was discarded. The returned row is now
+  captured per record and exposed to downstream elements.
+- **The Add assignment operator on a scalar variable null-guards.** A bare
+  compound assignment threw a `NullPointerException` when the value was null,
+  e.g. a blank-as-blank formula field read off a queried record; a null value
+  now leaves the target unchanged and a null target takes the value.
+- **A flow that assigns a decimal value to an Integer field converts.**
+  Assigning a Number formula, Number variable, or Decimal field reference to a
+  field like `Account.NumberOfEmployees` produced Apex that failed to type
+  check with "Illegal assignment from Decimal to Integer". The value is now
+  coerced, truncating fractional values toward zero as sfapex does.
+- **Deleting your own record no longer fails with
+  `INSUFFICIENT_ACCESS_OR_READONLY`.** The `delete` keyword enforced
+  object-level CRUD on every statement, but bare DML below API 67 runs in
+  system mode, where object permissions are not enforced and deletes are
+  governed by record-level sharing. The check now only rejects objects that
+  never support delete.
+- **`aer test` shows what it is doing during a long startup.** Startups that
+  took a long time on large workspaces printed nothing. A heartbeat now reports
+  the current phase on stderr, with done/total counts for parsed source files,
+  type-checked classes, resolved classes, and loaded classes. It prints only
+  when nothing else has, so verbose runs and warnings are never interleaved
+  with it, and is skipped under `--quiet` and `--debug`.
+- **Startup and permission checks are substantially faster.** A warm start over
+  a large org schema spends less time preparing the schema.
+  Field and object permission checks no longer issue a `FieldPermissions` or
+  `ObjectPermissions` query on every `isAccessible`/`isUpdateable` call,
+  cutting a trigger-heavy test class run times.
+- **ConnectApi topics read and write storage.** `createTopic`, `getTopics`,
+  `deleteTopic`, `assignTopic`, `assignTopicByName`, `unassignTopic`,
+  `mergeTopics`, and `reassignTopicsByName` returned values but touched no
+  storage, and the mutations reported a missing resource. They now work against
+  `Topic` and `TopicAssignment` rows: assigning stores an assignment naming the
+  record, its type and its key prefix; assigning the same topic twice stores
+  one; the by-name form creates the topic when none of that name exists,
+  comparing without regard to case; and `getTopics` lists the stored topics or
+  a record's topics. Merging assigns the target wherever a merged topic is
+  assigned, and reassigning by name replaces the topics a record carries.
+- **Following and subscriptions are backed by `EntitySubscription`.**
+  `ConnectApi.ChatterUsers.follow`, `getFollowings`, and `getFollowers`,
+  `ConnectApi.Chatter.getSubscription`, `deleteSubscription`, and
+  `getFollowers`, and `ConnectApi.ChatterGroups.follow` and `getFollowings` now
+  read and write real rows. Following the same record twice reports the
+  subscription already there rather than storing a second, a subscription is
+  read and deleted by id, and paging overloads slice the result while the total
+  keeps counting them all. A user who asks to follow themselves is refused with
+  "users cannot subscribe to self". `Chatter.getFollowers` had returned an empty
+  page for every record. `EntitySubscription.SubscriberId` now also refers to
+  `CollaborationGroup`, which had been refused with
+  `FIELD_INTEGRITY_EXCEPTION`.
+- **`ConnectApi.UserProfiles.getUserProfile` reads the stored user** rather
+  than reporting a missing resource.
+- **Profile photos and banner photos are stored for users and groups.**
+  `getPhoto`, `setPhoto`, `deletePhoto`, and the banner equivalents on
+  `ConnectApi.UserProfiles` and `ConnectApi.ChatterGroups` read and write the
+  record's photo columns, so a photo survives a restart against a persistent
+  database. The `…WithAttributes` overloads now perform the write from the file
+  the input names, and the upload overloads set the photo from content the call
+  carries; `ConnectApi.BinaryInput` was registered with no properties, so
+  constructing one did not compile at all. A crop region on the input is
+  honored, and a refusal names the offending attribute. The file's content is
+  decoded rather than sniffed, so a PNG truncated to its signature is refused;
+  content carrying no image signature is reported as not a valid image, and
+  content that announces a format and then fails to decode is told which
+  formats are accepted.
+- **Chatter group invitations are stored.**
+  `ConnectApi.ChatterGroups.inviteUsers` stores a `CollaborationInvitation` for
+  each invited address, against the group, with the running user as the inviter
+  and a `Sent` status.
+- **Creating an order summary builds the whole graph.** Only the root row was
+  created, so the order product and delivery group summaries that hang off it
+  did not exist and any query for them came back empty. Each delivery group now
+  becomes a delivery group summary and each order product an order product
+  summary under it, with inherited fields read from the schema rather than
+  listed by hand. An order whose products have no total line amount is refused
+  before anything is written, naming each offending product. Behind that, an
+  order that has left `Draft` no longer accepts or releases order products and
+  refuses to be deleted, and an order product takes its product from its price
+  book entry when the insert does not name one.
+- **`CartExtension.CartTestUtil.getCart` hydrates delivery groups and cart
+  items from their records.** The wrappers were built from an Id and a handful
+  of columns, leaving every other getter null, so a calculator validating the
+  delivery address or an existing delivery method took its error branch and
+  added a `CartValidationOutput` that sfapex does not produce. A delivery
+  group now carries its address, recipient, shipping instructions, gift
+  details, delivery method, totals, audit fields, `CartDeliveryGroupMethod`
+  records, and selected method; a cart item carries its prices, line totals,
+  adjustment amounts, weight, lookups, audit fields, `CartTax` records, and
+  `CartItemPriceAdjustment` records. A child item nests under its parent rather
+  than appearing as a top-level item. `CartItem.TotalWeight`,
+  `TotalLineNetAmount`, and `TotalLineGrossAmount` are maintained by the
+  platform and are now non-createable and non-updateable.
+- **A static product bundle's components traverse back from the parent
+  `Product2`.** The parent-to-components subquery failed with SQL "no such
+  column" because `Product2`'s child relationship pointed at a `ProductId`
+  field that does not exist on `ProductRelatedComponent`, and the names were
+  cross-wired: `ParentProductId` is reached through
+  `ChildProductRelatedComponents` and `ChildProductId` through
+  `ParentProductRelatedComponents`.
+- **Metadata file names are percent-decoded.** The Metadata API percent-encodes
+  special characters when it writes a full name as a file name, so a profile
+  named "My (Custom) Profile" ships as
+  `My %28Custom%29 Profile.profile-meta.xml`. The encoded string was stored as
+  the record name, so a SOQL query for the real name returned nothing.
+- **Public groups load from source metadata.** `groups/*.group-meta.xml` was
+  never parsed, so queries against `Group` returned no `Regular`-type rows.
+  `Name`, `DeveloperName`, and `DoesIncludeBosses` are read, with
+  `DoesIncludeBosses` defaulting to true when omitted, and explicit `.group`
+  file arguments work with `aer test`.
+- **A product attribute set's items load.**
+- **A user-supplied `TaskStatus` standard value set drives `Task.IsClosed`.**
+  It updated only the `Task.Status` picklist, so a task with a custom closed
+  status like `Canceled` kept `IsClosed` false and appeared in `WHERE IsClosed
+  = false` queries.
+- **A field named after a SQL keyword can be read and written.** Fields such as
+  `Payment.Date` and `PartyConsent.Action` could not be written at all, and
+  reading one failed with a raw SQL error, including from a subquery.
+  Separately, `AssessmentQuestionResponse`,
+  `AssessmentQuestion`, `AssessmentQuestionVersion`, `AssessmentQstnVerChoice2`,
+  and `DisclosureDefinitionVersion` join the Health Cloud feature.
+- **`Task` has a `RecordTypeId` field, and `RecordTypeId` is hidden on objects
+  with no record types.** `Task` carried no `RecordTypeId` while `Account`,
+  `Contact`, `Lead`, `Event`, and `Campaign` all did, so a package shipping a
+  formula field on `Task` that dereferences `RecordType.Name` failed to load
+  with 'relationship "RecordType" not found on Task'. sfapex hides
+  `RecordTypeId` entirely on an object with no record types, but a query for it
+  died with a raw SQL error instead of a `QueryException`, and `get` returned
+  null while `put` silently succeeded.
+- **An invalid validation rule is rejected at load.** A rule whose formula or
+  error display field references something that does not exist is now rejected
+  the way an unresolvable lookup filter reference is, or dropped with a report
+  under `--skip-errors`. An unresolvable reference no longer reads as null,
+  which had let `ISBLANK` of a missing field evaluate true and fire the rule
+  against records it was never meant to match, and a non-boolean rule result is
+  an error rather than a firing rule. References inside function arguments are
+  namespaced and checked like any other, having previously been skipped.
+- **`$RecordType` resolves in validation rule formulas.** The global never
+  resolved, so a rule comparing `$RecordType.DeveloperName` silently skipped
+  its record-type branch. It now reads the record's `RecordTypeId` and resolves
+  the remaining path against the `RecordType` row; a record with no record type
+  resolves to the synthetic Master record type. A validation rule
+  `DmlException` also records the failing row index, so `getDmlIndex` reports
+  the failing record's position in a bulk statement instead of echoing its
+  argument.
+- **A trigger `addError` `DmlException` reports the failing record's row.** The
+  message read "First exception on row 1" for a failure on row 0 of a
+  two-record insert, and `getDmlIndex` reported 0 even when the second record
+  was the one that failed. Both now carry the failing record's position, for
+  single-record and list `insert` and `update`.
+- **An untranslatable formula construct fails conversion instead of emitting
+  invalid SQL.** A `CASE` formula whose value or result expression had no SQL
+  translation silently skipped that `WHEN` pair, emitting
+  `CASE <operand> ELSE NULL END`, which SQLite rejects with a syntax error — so
+  every query selecting the object failed. The same silent drop existed for
+  concatenation operands, `{!field}` merge-field syntax, and the
+  `fieldReference.VALUE` grammar. Such a formula now reports the field that
+  could not be translated.
+- **`Math.min` and `Math.max` return `Integer` and `Long`.** Non-`Decimal`
+  arguments were coerced to a float, so the `(Integer, Integer)` and
+  `(Long, Long)` overloads returned `Double`, breaking callers that check the
+  runtime type, such as `Database.Cursor.fetch`. Two `Integer`s return
+  `Integer`, `Integer`/`Long` pairs widen to `Long`, `Decimal` pairs return the
+  picked operand preserving its scale.
+- **`System.assertEquals` and `System.assertNotEquals` reject a null message.**
+- **A builtin instance method's return type is known at compile time.**
+  Comparing a `String` to an enum-typed `CartExtension` getter result fails to
+  compile on sfapex but only failed at runtime in aer. Builtin instance
+  methods beyond a hard-coded set had no known return type until they ran.
+- **`ClassName.Member` resolves a nested type over a same-named instance
+  field.** When a public instance field or property shared its name with an
+  inner enum or class, differing only by case, the member access bound to the
+  instance field and expressions like `Outer.InnerEnum.CONSTANT` threw a
+  `NullPointerException`. Static fields keep precedence over nested types.
+- **A `COUNT()` result assigned to another class's static field unwraps.**
+  `Other.total = [SELECT COUNT() …]` stored the raw `AggregateResult` instead
+  of the numeric count, unlike the same assignment to a local variable or an
+  instance field.
+- **A large `Blob` body inserts as `ContentVersion`.** `Blob.valueOf` stores a
+  large concatenation result unflattened, which the content-size calculation
+  did not recognize, so the insert failed with a spurious
+  `REQUIRED_FIELD_MISSING` on `VersionData` whenever the body was 16KB or
+  larger. An empty body still fails with `REQUIRED_FIELD_MISSING`, matching
+  sfapex.
+- **`System.enqueueJob` from trigger code starts a fresh queueable chain.** An
+  enqueue from a trigger fired by DML inside an executing queueable is not
+  chained onto that queueable: sfapex starts a fresh chain at depth 1, so
+  the enqueue is exempt from the test-context chaining `AsyncException` and may
+  configure its own explicit depth. It still counts against the
+  one-queueable-job-per-queueable-transaction `LimitException`. `AsyncInfo`'s
+  queueable-only methods throw "not allowed outside a Queueable of Finalizer
+  execution" in trigger code even when the trigger was fired from a running
+  queueable.
+- **A managed package's `@TestSetup` queries are charged to the package.** The
+  CLI class runner ran `@TestSetup` without a limits context, and the fallback
+  counters have no namespace segregation, so queries a package ran during setup
+  merged into the subscriber baseline every test method inherits.  A package
+  seeding twenty queries in setup could fail a subscriber test with "Too many
+  SOQL queries: 101".
+- **`DataSource.Table.get(name, nameColumn, columns)` defaults its labels.**
+  The three-argument overload left `labelSingular`, `labelPlural`, and
+  `description` unset; the documented behavior is that all three take the table
+  name.
+- **`aer package mock` captures protected custom settings.** A protected custom
+  setting is hidden from every subscriber-facing metadata surface, but a
+  package's global class stubs can still reference it in method signatures, so
+  `aer package create` failed on such a mock with unknown-type errors. Missing
+  signature types are now retrieved through the Tooling API and confirmed
+  protected, and the setting's protected visibility is preserved when the
+  package is built, loaded, and unpacked.
+- **`aer package mock` fails instead of producing a package that cannot be
+  loaded.** It now names the fields the package references but does not contain,
+  the sign that the org user running it cannot read them. It also keeps only
+  the child relationships reached through the package's own fields, since a
+  subscriber lookup added to a packaged object surfaced under an unprefixed
+  name that clobbered the package's own relationship. Separately, a saved
+  package no longer carries namespaced lookup filter references that belong to
+  the merged schema rather than the package.
+
 ## v1.2.29 — 2026-08-02
 
 - **ConnectApi Chatter feeds are backed by storage.**
