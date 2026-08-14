@@ -178,6 +178,110 @@
   binding result are stored alongside it, so a warm run also skips symbol
   resolution.
 
+## v1.2.31 — 2026-08-14
+
+- **Duplicate rules are enforced during insert and update DML.** Each record's
+  active duplicate rules run in the save order, after validation rules and
+  before the write. A rule whose action is Block or whose operations include
+  Alert fails the record with `DUPLICATES_DETECTED`, using the rule's alert
+  text as the error message; report-only rules never fail the save. Partial
+  saves surface the failure as a `Database.DuplicateError` whose
+  `getDuplicateResult()` carries the matched records.
+- **A new `Division` feature models Salesforce divisions.** `--feature
+  Division` adds the `Division` object and the restricted `Division` picklist
+  (label "Division ID") to the standard objects that carry it in a
+  divisions-enabled org, plus `DefaultDivision` on `User` and `Group`.
+  Changing a record's division or reparenting it transfers its related
+  records. Custom objects opt in through the CustomObject `enableDivisions`
+  flag, and master-detail details of a division-carrying object get a
+  read-only field automatically.
+- **Every active validation rule evaluates on every update.** A rule was
+  skipped during update DML unless one of the changed field names appeared in
+  its formula text, and all rules were skipped when no field values changed.
+  sfapex evaluates every active rule on every update, including no-op
+  updates, so a rule referencing only the parent lookup and a cross-object
+  formula field now fires when an unreferenced child field is edited.
+- **Formula fields that reference other formula fields evaluate in dependency
+  order.** Evaluation order was previously undefined, so a dependent formula
+  could be computed before its dependencies and store a null that was never
+  repaired, surfacing as an intermittent `NullPointerException` when Apex
+  divided by a formula field after `Formula.recalculateFormulas`.
+- **`Formula.recalculateFormulas` matches sfapex semantics.** Formulas
+  recompute from in-memory values, with missing dependencies fetched from the
+  database by Id; loaded and mutated values win over stored ones, and blank
+  handling is honored. In a multi-currency org, a currency-referencing formula
+  whose currency-typed dependencies hold a non-null value fails with "isoCode
+  of currency data should never be null" when the record supplies no currency
+  context, nulling the field and reporting a `FormulaRecalcFieldError`; a
+  non-null in-memory `CurrencyIsoCode` or a database fetch supplies the
+  context. Single-currency orgs always recalculate currency formulas.
+- **Percent formula fields convert between display and fraction forms
+  consistently.** A formula returning a bare field reference, such as
+  `IF(ISNULL(Pct__c), 0, Pct__c)`, skipped the display-form conversion, so
+  the same field carried the fraction or the display form depending on the
+  formula's shape, and a validation rule comparing a Percent formula total to
+  `1.00` fired while the total displayed 100%. Recomputed values now get the
+  same conversions as ordinary reads: Apex sees the display form and formulas
+  read the fraction form.
+- **Blank date fields stay null in "treat blanks as zeroes" formulas.** The
+  zero substitution covers only number, currency, and percent fields, so a
+  Number formula like `End_Date__c - Start_Date__c` with a blank operand now
+  yields null instead of a date value, which had failed with an invalid
+  numeric value error when saved into a Number field from a trigger.
+- **A checkbox reached through a null lookup reads false in queried
+  formulas.** sfapex applies blank substitution at the leaf field
+  references of a queried spanning formula, so a checkbox behind a null
+  relationship is false, never blank, and `NOT(Parent__r.Checkbox__c)` is
+  true when the lookup is empty; aer evaluated the whole reference to false.
+  Trigger records and validation rules keep the different, also
+  reference-verified, behavior: there the whole cross-object reference is
+  null, so the `NOT(...)` stays false.
+- **SOQL `LIKE` honors backslash escapes.** A backslash escapes only the `_`
+  and `%` wildcards; before any other character it pairs with that character
+  as two literals. `'Alpha\_%'` matches a literal underscore and `'Alpha\\_%'`
+  matches two literal backslashes followed by the `_` wildcard. Previously the
+  escapes were ignored entirely, so a pattern like `'Alpha\_%'` matched
+  nothing.
+- **Updating a clone of a queried row writes back every populated field.** aer
+  limited a clone's update payload to explicitly assigned fields. sfapex
+  derives the write set from the record's populated fields, and `clone()`
+  copies all of them, so the update writes every populated field back,
+  overwriting whatever another update committed in the meantime, and
+  `Trigger.new` exposes those stale values to trigger guards. Clones keep
+  their query provenance: accessing an unqueried field still throws.
+- **User-mode DML enforces edit field permissions across the whole update
+  payload.** An update only checked that the user could read each field it
+  wrote, so it succeeded without edit access; it now checks every field the
+  record carries, not only the fields assigned since the query. Standard
+  profiles' implicit grants on standard-object fields now extend to writes
+  when the user has object create or edit access, so describe no longer
+  reports an object as updateable while its own standard fields are not.
+- **User-mode DML accepts system-generated and upserted immutable fields.**
+  An AutoNumber field carried in a queried payload no longer fails the edit
+  check, and AutoNumber fields now describe as neither createable nor
+  updateable. A non-reparentable master-detail field is rejected only by the
+  update operation: an upsert accepts it on its update leg as well as its
+  insert leg, matching sfapex.
+- **Restricted picklist DML errors include the field label.** `getMessage()`
+  reads "INVALID_OR_NULL_FOR_RESTRICTED_PICKLIST, Status: bad value for
+  restricted picklist field: Bogus Value: [Status__c]" and `getDmlMessage()` /
+  `Database.Error.getMessage()` read "Status: bad value for restricted
+  picklist field: Bogus Value", matching sfapex; the label prefix was
+  previously missing from both.
+- **`Task.CompletedDateTime` is maintained at save time.** The field was
+  previously never populated.
+- **Manual shares granting a user no more access than the org-wide default are
+  rejected.** Salesforce refuses such rows with `FIELD_INTEGRITY_EXCEPTION`
+  ("trivial share level") on `AccessLevel`: with a ReadWrite sharing model
+  both Edit and Read user shares are trivial, with Read only Read is, and
+  Private accepts both.
+- **Before-save flow record lookups are bulkified per trigger batch.** A Get
+  Records element whose filters bind per-record values ran its query once per
+  record, so a 200-record batch exceeded the 100-query governor limit.
+  Repeated bind values within a batch now reuse the first lookup's result;
+  before-save flows cannot perform DML, so the reuse cannot observe stale
+  data. After-save flows keep per-record queries.
+
 ## v1.2.30 — 2026-08-12
 
 - **Workflow rules run at correct stage of save order, on every DML path.**
