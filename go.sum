@@ -330,8 +330,8 @@ github.com/CloudyKit/jet v2.1.3-0.20180809161101-62edd43e4f88+incompatible/go.mo
 github.com/CloudyKit/jet/v3 v3.0.0/go.mod h1:HKQPgSJmdK8hdoAbKUUWajkHyHo4RaU5rMdUywE7VMo=
 github.com/ForceCLI/force v1.9.0 h1:tfZkky9zAtqQXWoJQW/lH89U+t5WM63d+oQio+5OIgI=
 github.com/ForceCLI/force v1.9.0/go.mod h1:vZhTNH4A1cgnFV21igwqwMRy01TXYsquzdXF4LnrZB8=
-github.com/ForceCLI/force-md v0.46.0 h1:/NIDMrvb65n54fVAbdnfow5fTF4CoGt45b29Zr1tbXU=
-github.com/ForceCLI/force-md v0.46.0/go.mod h1:8RNh1Fo33UbMNHIYoD0u6DAYjCbI7n5NlavyfVN9m4k=
+github.com/ForceCLI/force-md v0.47.0 h1:4nM12US6H0qlhPtPIrulTVhJ1PkKXNibQy0ogQulUOk=
+github.com/ForceCLI/force-md v0.47.0/go.mod h1:8RNh1Fo33UbMNHIYoD0u6DAYjCbI7n5NlavyfVN9m4k=
 github.com/ForceCLI/inflect v0.0.0-20130829110746-cc00b5ad7a6a h1:mMd54YgLoeupNpbph3KdwvF58O0lZ72RQaJ2cFPOFDE=
 github.com/ForceCLI/inflect v0.0.0-20130829110746-cc00b5ad7a6a/go.mod h1:DGKmCfb9oo5BivGO+szHk2ZvlqPDTlW4AYVpRBIVbms=
 github.com/GoogleCloudPlatform/grpc-gcp-go/grpcgcp v1.5.0/go.mod h1:dppbR7CwXD4pgtV9t3wD1812RaLDcBjtblcDF5f1vI0=
@@ -957,8 +957,8 @@ github.com/nightlyone/lockfile v1.0.0 h1:RHep2cFKK4PonZJDdEl4GmkabuhbsRMgk/k3uAm
 github.com/nightlyone/lockfile v1.0.0/go.mod h1:rywoIealpdNse2r832aiD9jRk8ErCatROs6LzC841CI=
 github.com/nxadm/tail v1.4.4 h1:DQuhQpB1tVlglWS2hLQ5OV6B5r8aGxSrPc5Qo6uTN78=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
-github.com/octoberswimmer/aer v1.2.30 h1:/xGU9vMd010Xsnd25lpO1S0tx8eW3lbq0WEFp8oLcLg=
-github.com/octoberswimmer/aer v1.2.30/go.mod h1:DpNwhLqdSbqxUDQmomcxaOWyxbxwaGYnpxKj0nesjw0=
+github.com/octoberswimmer/aer v1.2.31 h1:EiX/9btVYQN93Ufo4RuqyTh1YlzMb4KZsA/dgqlRYLo=
+github.com/octoberswimmer/aer v1.2.31/go.mod h1:M+WNT07vY7ro0QxjOtUBYuAeqpbHhFJAx4ksnfCL60w=
 github.com/octoberswimmer/antlr/v4 v4.13.1-octoberswimmer.2 h1:rpDkgKKK6P88RfMDuRhbpdV3miYbuXykNy/fGEMmmjA=
 github.com/octoberswimmer/antlr/v4 v4.13.1-octoberswimmer.2/go.mod h1:r0JDJcPLkuzJ/NPwHZYpNBJoCXYSWHbFSr9F1R1FWYQ=
 github.com/octoberswimmer/apexfmt v0.60.0 h1:LqV7rIbRswXAopLR1/MSc0e9snym9RQP/oLWA/B/aDQ=
