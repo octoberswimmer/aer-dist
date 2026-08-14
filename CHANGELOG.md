@@ -178,6 +178,67 @@
   binding result are stored alongside it, so a warm run also skips symbol
   resolution.
 
+## v1.2.32 — 2026-08-14
+
+- **Flow global variable lookups no longer consume SOQL queries.** A flow
+  reference to a global variable field with no `UserInfo` accessor
+  (`$User.Custom_Field__c`, `$Profile.Description`, `$UserRole.DeveloperName`,
+  `$Organization.City`) issued a query that counted against the governor limits
+  at every evaluation so a trigger batch could exceed 100 queries on globals
+  alone. The Flow runtime resolves these from the running user's context, so
+  these lookups now run without counting queries or query rows.
+- **Get Records is bulkified in handler-class flows.** A flow generated through
+  the handler path (converging branches) ran its Get Records element once per
+  record, consuming one query per record where the Flow runtime bulkifies the
+  lookup across a trigger batch. A before-save handler Get whose filters AND
+  together with exactly one per-record condition now runs a single combined
+  query for the whole batch.
+- **Process Builder record updates apply on converging-branch processes.** The
+  generated handler discarded the updates without issuing DML, so every record
+  update in such a process silently did nothing. Updates from filter-criteria
+  action groups now run in place, in group order, so two action groups updating
+  the same record no longer collide on a duplicate Id.
+- **Process Builder update filters comparing old record values work on
+  insert.** A filter referencing the prior value threw a
+  `NullPointerException` on insert, where the old map is null; the comparison
+  is now made against a null value, matching the Flow runtime.
+- **Flow record updates match Salesforce write-set semantics.** A record passed
+  into `Flow.Interview` from Apex writes back its populated fields while
+  a `Trigger.new` record passed as `$Record` into a subflow writes only the
+  fields the flow assigns. SObject values entering an interview are copied, so
+  assignments inside the interview no longer mutate the caller's instance.
+  A record update whose input names a single-record variable now updates that
+  record instead of silently doing nothing.
+- **Before-save flows whose record lookup filters on a formula no longer fail
+  with "undefined bind variable."** The generated query referenced the formula
+  by name with nothing defining it.
+- **Flow apex action inputs convert Number resources to `Integer`.** Passing a
+  flow Number resource into an `@InvocableVariable` declared `Integer` failed
+  the generated class's typecheck with "Illegal assignment from Decimal to
+  Integer" and aborted the run before the flow executed. The conversion the
+  Flow runtime performs implicitly is now applied to action inputs as well as
+  to field assignments, truncating a fractional value toward zero.
+- **Flow formulas that subtract two dates generate valid Apex.** A formula
+  subtracting two `Date` or two `Datetime` values produced Apex that sfapex
+  rejects at compile time.
+- **A flow formula's spanning field references are queried by after-commit
+  elements.** An async-after-commit path selected only the fields other
+  elements referenced, so a formula reading any other field threw "SObject row
+  was retrieved via SOQL without querying the requested field" at runtime.
+- **`SELECT COUNT()` always yields an `Integer`.** Assigning the result of an
+  argument-less `COUNT()` query to a static field of an enclosing class from an
+  inner class stored the raw `AggregateResult` instead of the count, because
+  the unwrapping depended on being able to determine the target's declared
+  type. `COUNT()` is typed `Integer` in Apex regardless of the assignment
+  target, so it is now always unwrapped.
+- **Rollup summaries with more than one record-type filter evaluate against
+  every filter.** When an object carried multiple `RecordTypeId`-filtered
+  rollups, all but one kept the authored record type label rather than its Id,
+  and which one survived varied between runs.
+- **`--json` test output is no longer lost after a workspace-expansion retry.**
+  Every test result written after startup failed with "write |1: file already
+  closed" and the JSON output disappeared.
+
 ## v1.2.31 — 2026-08-14
 
 - **Duplicate rules are enforced during insert and update DML.** Each record's
