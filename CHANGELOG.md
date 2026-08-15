@@ -119,6 +119,63 @@
   `/app/c__<bundleName>` alongside the `/dev/uibundle` preview, authenticated
   by the session cookie. Source-tree walkers now skip `node_modules` and hidden
   directories.
+- **Analytics REST API, and a much broader report engine behind it.** The
+  Analytics REST subset now covers `analytics/reports`,
+  `analytics/reports/<id>` with `factMap`-shaped results,
+  `analytics/reports/<id>/describe`, `analytics/dashboards`, and
+  `analytics/dashboards/<idOrDevName>`, which returns dashboard metadata plus
+  per-component report results, memoizing runs so components sharing a source
+  report execute it once. Dashboard components run in the dashboard's running
+  user context: a `SpecifiedUser` dashboard resolves its stored running user
+  (failing when that user does not exist) and `LoggedInUser`/`MyTeamUser`
+  dashboards resolve the session user, so user-scoped report filters reflect
+  the right user. The report engine gained row-level formulas
+  (`customDetailFormulas`), joined (MultiBlock) reports, bucket-field criteria,
+  criteria on joined-child columns with boolean filter logic decomposed across
+  the join, Record Type filters compared by developer name, lookup filters
+  compared by the related record's name, filter literals typed from the
+  filtered field's schema type rather than guessed from the value, the full
+  `UserDateInterval` timeframe vocabulary, activity reports over the Task/Event
+  union including their polymorphic Who and What columns, the campaign-member
+  and "Activities with <Object>" report families, custom report types with a
+  custom child or an Activities join, multi-hop relationship-terminating
+  columns, and the legacy report column token vocabulary (`CUST_`, `FK_`,
+  `ADDRESS1_`, `OWNER_ROLE`, and the rest). Fields the running user cannot read
+  are dropped from a report instead of failing the query, matching Salesforce,
+  and `contains`/`does not contain` filters match per comma-separated entry
+  with blank values handled the way Salesforce handles them.
+- **Per-test Apex code coverage.** Salesforce records which test method covered
+  which lines of each class; aer now reports the same. `aer test --json
+  --coverage-per-test` emits a `perClassCoverage` field listing the covered and
+  uncovered lines of every class a test touched, and the server serves
+  `ApexCodeCoverage`, `ApexCodeCoverageAggregate`, and `ApexOrgWideCoverage`,
+  populated for asynchronous runs and for synchronous `runTests` unless the
+  request sets `skipCodeCoverage`.
+- **`--locale` sets the org's default locale.** The `exec`, `test`, and `server`
+  commands accept `--locale`, mirroring `--timezone`. It seeds the default
+  user's `LocaleSidKey` and becomes the fallback everywhere `en_US` was
+  hardcoded: `UserInfo.getLocale()`, `Integer.format()`, `runAs` users, the
+  `Organization.DefaultLocaleSidKey` record, and flow interviews.
+- **`--currency` sets the org's default currency.** The `exec`, `test`, and
+  `server` commands accept `--currency`, validated against the ISO 4217 codes.
+  `UserInfo.getDefaultCurrency()` resolves the running user's
+  `CurrencyIsoCode`, then the corporate `CurrencyType`, then the user's
+  `DefaultCurrencyIsoCode`, then this value. With `MultiCurrency` enabled the
+  configured currency becomes the corporate `CurrencyType` at a conversion rate
+  of 1.0, and the seeded `DatedConversionRate` rows match.
+- **`--assign-psg` assigns permission set groups to the default user.** `aer
+  test` and `aer server` accept a repeatable `--assign-psg`, the permission set
+  group counterpart of `--assign-perms`. Each value is a `DeveloperName` or
+  `NamespacePrefix__DeveloperName`.
+- **`--bootstrap-db` merges rather than replaces.** Copying bootstrap data no
+  longer deletes the target's rows first. A bootstrap row whose Id already
+  exists is ignored, rows the target holds beyond the bootstrap data are left
+  alone, and re-running the copy is a no-op. The old wipe deleted the seeded
+  `admin@aer.local` and Automated Process users on every restart with `--db
+  --bootstrap-db`, which then failed startup with
+  `INSUFFICIENT_ACCESS_ON_CROSS_REFERENCE_ENTITY`. A table with no `Id` column
+  shared with the target is skipped with a warning, since re-running the copy
+  would duplicate its rows.
 
 ### Fixes and performance
 
@@ -177,6 +234,67 @@
   generation, AST line info, and type-check validation. The symbol graph and
   binding result are stored alongside it, so a warm run also skips symbol
   resolution.
+- **Package merges no longer re-migrate the whole database.** Merging each
+  package schema into a VM ran a full storage migration over the entire merged
+  schema, re-inspecting every table's columns and re-applying every generated
+  index and trigger. Migration is now scoped to the tables a merge actually
+  touches.
+- **Persistent databases restart without re-migrating and reseeding.** A server
+  started against a `--db` database re-migrated every table and reseeded all
+  metadata on every restart, even when nothing had changed. A startup
+  fingerprint over the schema, package schemas, and startup options is now
+  recorded after a full startup; a later start whose fingerprint matches
+  attaches storage without migration, skips metadata seeding, and reconstructs
+  its in-memory state from the existing rows. Any input change produces a
+  different fingerprint and falls back to the full path.
+- **A persistent database survives an aer upgrade.** The synthetic
+  `admin@aer.local` user is recreated at startup and its id advances whenever
+  metadata is loaded, so after an upgrade or a schema-cache version change the
+  id aer computed no longer matched the one the database held, and startup
+  aborted while loading standard metadata so upgrading aer required rebuilding
+  the database. A persisted default user or profile id that resolves to no
+  record is now dropped and re-resolved against the actual database.
+  Separately, a `Profile` copied in by `--bootstrap-db` whose `CreatedById`
+  references a user that was not copied no longer aborts startup with a foreign
+  key error.
+- **Fields named after reserved SQL keywords are stored and queried
+  consistently.** A field such as `IdpEventLog.Timestamp` is stored in an
+  underscore-prefixed column, but the storage layer and the SOQL-to-SQL
+  generator kept two disagreeing lists of reserved words, so the column was
+  written as `_Timestamp` and queried as `Timestamp`. Both now share one
+  reserved set and one column-to-field mapping.
+- **Server REST writes require an authenticated session and apply the profile's
+  default record type.** REST sObject create, update, and delete now resolve
+  the request's session token to a real user and run in that user's context,
+  rejecting the request with 401 when no valid user can be resolved; they
+  previously ran with no user context, so records were created with no default
+  record type and profile-driven access checks resolved against nobody. Create
+  assigns the profile's default record type when one is not supplied, matching
+  Salesforce. The LWC and UI bundle preview routes reject stale and expired
+  sessions consistently rather than serving a page whose data operations would
+  then fail. Session tokens issued against a persistent `--db` database are
+  themselves persisted, so a login survives a server restart.
+- **Custom rich text fields describe as rich text.** The source importer mapped
+  custom `Html` fields to plain `String` fields; they are now imported as
+  `textarea` with `htmlFormatted` set, which also drives
+  `extraTypeInfo = richtextarea`, matching how Salesforce describes them.
+- **`Owner.Type` no longer reports null for user-owned records.** The SQL
+  generator's multi-target lookup branch shadowed the `Owner.Type`
+  User/Queue discriminator, joining `Group`'s own `Type` column and yielding
+  null wherever the owner was a user. `Owner.Type` now resolves through the id
+  prefix.
+- **Two LWC compiler fixes.** A class field whose initializer contained a
+  template literal with a `${...}` interpolation had its removal range run past
+  the end of the enclosing class, deleting later methods and producing invalid
+  JavaScript. A base class exported by name rather than as the default export
+  was treated as a utility module, so its `@track`/`@api`/`@wire` decorators
+  were never stripped and every component extending it broke. The
+  `getObjectInfo` wire adapter now also returns `recordTypeInfos` and the
+  default record type id, so component code iterating them no longer throws.
+- **The LWC preview no longer loads its stylesheet from the network.** Every
+  preview fetched the Salesforce Lightning Design System stylesheet from
+  unpkg.com, a live network dependency; the same version is now vendored and
+  served by the dev server.
 
 ## v1.2.32 — 2026-08-14
 
