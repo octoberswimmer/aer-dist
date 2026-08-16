@@ -176,6 +176,14 @@
   `INSUFFICIENT_ACCESS_ON_CROSS_REFERENCE_ENTITY`. A table with no `Id` column
   shared with the target is skipped with a warning, since re-running the copy
   would duplicate its rows.
+- **A `.pkg` file given as a source path loads as an unmanaged package.**
+  Passing one directly (`aer test force-app fflib.pkg`), or leaving one inside
+  a source directory, no longer requires `--package`/`--package-dir`. Its
+  contents load exactly like source code, modeling an unmanaged package whose
+  components belong to the org: they take the path's `@ns` suffix or the
+  default namespace rather than the package file's own name, and test classes
+  inside the package are discovered and run like source tests. This works the
+  same way for `aer test`, `aer exec`, and `aer server`.
 
 ### Fixes and performance
 
