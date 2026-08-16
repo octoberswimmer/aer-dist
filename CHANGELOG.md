@@ -296,6 +296,32 @@
   unpkg.com, a live network dependency; the same version is now vendored and
   served by the dev server.
 
+## v1.2.34 — 2026-08-16
+
+- **Duplicate rule matching implements the `CompanyName`, `Street`, and `City`
+  methods.** Rule items using them fell through to exact comparison, so the
+  standard Account matching rule never detected the fuzzy duplicates Salesforce
+  detects.
+- **A rollup over similarly named parent records no longer fails with
+  `DUPLICATES_DETECTED`.** The rollup engine recalculates parents in batch but
+  saved them outside a duplicate-rule save scope, so the parents were compared
+  against each other. Records saved in the same call are never compared against
+  each other, so a bulk rollup over many similarly named parents now saves
+  cleanly.
+- **A successful partial-save retry keeps its triggers' side effects.** When a
+  partial save (`allOrNone` false) has after triggers fail some rows, the
+  successful subset is retried with triggers re-fired. The batch-update path
+  then ran its failed-row restore anyway, rolling back to a savepoint taken
+  just before the retry and re-saving only the row fields, so an after trigger
+  that wrote to another record on behalf of a surviving row silently lost that
+  write whenever any other row in the call failed. The restore now runs only
+  when the final attempt still had failures.
+- **`Schema.getGlobalDescribe()` resolves keys of any casing.** The returned map
+  stored lowercase keys plus an original-case alias, so `get` and `containsKey`
+  with a mixed-case key matching neither spelling returned null. `keySet()`
+  still returns lowercase names, and a `putAll` copy into a regular map remains
+  case-sensitive with lowercase keys.
+
 ## v1.2.33 — 2026-08-15
 
 - **Updating a `List<SObject>` enforces the same sharing write check as
