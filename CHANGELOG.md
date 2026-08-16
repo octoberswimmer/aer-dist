@@ -296,6 +296,72 @@
   unpkg.com, a live network dependency; the same version is now vendored and
   served by the dev server.
 
+## v1.2.33 — 2026-08-15
+
+- **Updating a `List<SObject>` enforces the same sharing write check as
+  updating one record.** The single-record `update` path denies the write when
+  class sharing is enforced and the running user has no edit access to the
+  stored record, but the list path validated CRUD/FLS, duplicate Ids, and
+  deleted entities and then wrote every row, so a `with sharing` class silently
+  modified records the same update would have refused one at a time. The check
+  now runs per row, and the failing row index is carried in the `DmlException`
+  message.
+- **A unique field constraint is evaluated against the final state of the whole
+  DML statement.** One record can now take over a value another record in the
+  same statement releases, and two records can swap values outright, matching
+  sfapex.  A keyword DML exception's `getDmlIndex()` now reports the row that
+  actually failed instead of echoing its argument.
+- **A custom object share's `AccessLevel` is validated as a restricted
+  picklist.** An invalid value now fails with
+  `INVALID_OR_NULL_FOR_RESTRICTED_PICKLIST` on `[AccessLevel]` on the
+  keyword list-insert path as well, reporting the failing row index.
+- **A failed all-or-none list insert leaves `Id` unset.** When a later step,
+  an after-insert trigger, workflow, or after-save flow, failed and rolled
+  back, the Ids were still copied onto the caller's records, so re-inserting
+  the same list threw "cannot specify Id in an insert call". `Id` and
+  `PersonContactId` are now cleared on rollback and the retry succeeds.
+- **Duplicate rule name matching applies its fuzzy algorithms.** The
+  `FirstName` matching method matches nickname variants (Will/William,
+  Liz/Elizabeth), initials against full names (J/John), and misspellings within
+  its 85% threshold; `LastName` matches misspellings within its 90% threshold.
+  A shared phonetic encoding alone is not a match. `Datacloud.MatchRecord` now
+  reports one `FieldDiff` per matching rule item with the values `Same`,
+  `Different`, and `Null`, using the relationship name for a parent item like
+  `Account.Name`, and `getMatchConfidence()` returns 100.0 for every match.
+- **Rollup summary fields aggregate to their real values.** `SUM`, `AVG`,
+  `MIN`, and `MAX` over a rollup summary field silently returned zero, because
+  the aggregate path treated the field as a query-time formula and read its
+  stored column raw.
+- **`Decimal.toString()` renders the value's scale.** A `Decimal` with a scale
+  of two printed as `34` where sfapex prints `34.00`; it now agrees with
+  `String.valueOf()` and with string concatenation. `Decimal.precision()`
+  likewise counts the digits of the unscaled value, so `34.00` has a precision
+  of four and `0.05` a precision of one.
+- **`Decimal.format()` respects the running user's locale.** It hardcoded a
+  comma group separator and a period decimal point; it now uses each of the
+  locales' group and decimal separators, negative prefix, digit
+  script, and grouping style (thousands or the Indian lakh/crore pattern).
+  `Long.format()` and the `Double` overload share the same behavior.
+- **Flows read auto-stored subflow outputs.** A subflow element with
+  `storeOutputAutomatically` exposes the child flow's output variables as
+  `ElementName.variable`, but only explicit output assignments were handled, so
+  any converted flow reading one failed at runtime with "identifier not found
+  in binding". A reference on a path where the subflow never ran resolves to
+  null, matching Flow semantics.
+- **Flow datetime literals evaluate correctly.** A `dateTimeValue` literal was
+  emitted verbatim into `Datetime.valueOf`, which does not accept the ISO 8601
+  form flow metadata stores, so an entry criterion like `CreatedDate >=
+  <datetime>` threw "Invalid date/time" on every record save on the object.
+- **Flow constants resolve on every reference path.** A flow's `<constants>`
+  were parsed but never seeded into the interview, so any reference raised
+  "Unknown flow variable reference". They are now seeded before variables, so a
+  variable's default value can reference one, and cloned interviews carry them.
+- **Record-triggered flows no longer expose relationship data on `$Record`.**
+  Flows received the caller's record image verbatim, where Apex triggers get
+  theirs stripped, so when the record came from a query with a partial parent
+  projection a spanning reference threw `SObjectException`, "SObject row was
+  retrieved via SOQL without querying the requested field", on the second hop.
+
 ## v1.2.32 — 2026-08-14
 
 - **Flow global variable lookups no longer consume SOQL queries.** A flow
