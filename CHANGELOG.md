@@ -184,6 +184,17 @@
   default namespace rather than the package file's own name, and test classes
   inside the package are discovered and run like source tests. This works the
   same way for `aer test`, `aer exec`, and `aer server`.
+- **The server supports more Tooling API endpoints.**
+  Tooling queries return `ApexClass`, `ApexSettings`, and
+  `MetadataComponentDependency`, whose rows come from the dependency graph with
+  class members rolled up to their classes and entity types mapped to
+  Salesforce metadata component types. `MetadataContainer`, `ApexClassMember`,
+  and `ContainerAsyncRequest` implement the container save path: a deploy
+  applies every member body atomically, reports parse failures as component
+  messages, restores the previous code when the request fails or is check-only,
+  and swaps the deployed class into the running program so the new body is what
+  executes. `runTestsSynchronous` runs a test class inline, recording coverage
+  for the follow-up `ApexCodeCoverage` queries.
 
 ### Fixes and performance
 
@@ -303,6 +314,13 @@
   preview fetched the Salesforce Lightning Design System stylesheet from
   unpkg.com, a live network dependency; the same version is now vendored and
   served by the dev server.
+- **Repeated class deploys keep dependent classes working.** A class deploy or
+  watch reload re-resolves only the changed classes and their dependents, but
+  the re-resolved classes recorded no dependency edges of their own, so after
+  the first deploy aer no longer knew what depended on the changed class. A
+  second deploy then left the dependents bound to deleted symbols, and a
+  chained access through a static property whose name shadows an inner
+  interface threw a `NullPointerException` at runtime.
 
 ## v1.2.35 — 2026-08-17
 
