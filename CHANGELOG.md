@@ -304,6 +304,63 @@
   unpkg.com, a live network dependency; the same version is now vendored and
   served by the dev server.
 
+## v1.2.35 — 2026-08-17
+
+- **`ADDMONTHS` works in formulas evaluated by Apex.** Only the SOQL translation
+  implemented it, so `recalculateFormulas` and dynamic `Formula.builder`
+  evaluation always yielded null. It now returns the shifted date with month-end
+  clamping, matching the SOQL behavior, including leap-day clamping, year
+  rollover, negative month counts, and null dates.
+- **Triggers at API version 67.0 or later default to user context.** The default
+  was taken from the current class's API version so a 67.0 trigger kept the
+  system-mode default for SOQL, DML, and `Database` methods. The executing
+  trigger's own API version now decides; `WITH SYSTEM_MODE` and `as system` opt
+  out, and a class called from the trigger keeps its own default.
+- **`USER_MODE` queries enforce field-level security on `WHERE`-clause fields,
+  while `WITH SECURITY_ENFORCED` does not.** A user-mode query filtering on a
+  field the running user cannot read now fails with the inaccessible-field
+  `QueryException`, whose message gains the "If you are attempting to use a
+  custom field" hint and echoes the field as authored, bare or
+  namespace-qualified. `WITH SECURITY_ENFORCED` applies only to the `SELECT` and
+  `FROM` clauses, so a query selecting accessible fields while filtering on an
+  inaccessible one succeeds with the filter applied.
+- **Workflow field updates bypass custom validation rules.** A field update may
+  write a value a direct DML update would be rejected for, and the save of the
+  re-fired update triggers' changes does not re-run the rules either. Field
+  updates ran through the full update pipeline, so a rule matching `ISCHANGED` on
+  the updated field failed the triggering DML.
+- **Workflow rules with `triggerType` `onCreateOnly` fire.** They previously
+  never executed. Such a rule now runs its actions on insert only; updates never
+  evaluate it, not even an edit that moves the record into the criteria.
+- **`Datetime.format` renders full month and day names for pattern runs of four
+  or more letters.** Month (`M`, `L`) and day-of-week (`E`) are
+  `SimpleDateFormat` text fields, where any run of four or more letters gives the
+  full name; the converter topped out at four letters, so `MMMMM` produced
+  "November11" and `EEEEE` produced "SaturdaySat".
+- **`Datetime.format` supports the general time-zone pattern `z`.** It renders
+  the short zone name (`PDT`), `GMT` for UTC, and a GMT offset for a zone with no
+  name.
+- **A subscriber permission set or profile can grant a custom permission shipped
+  in a managed package.** Schema import failed with "no CustomPermission named
+  `pkg__Advanced_Access` found" before any package schema was merged, so the
+  reference could never be satisfied by `--package`, `--package-dir`, or a
+  `path@ns` source dir. Such references are now resolved after the last package
+  merge, and the same error with its package hint is raised only for whatever
+  remains unresolved. A namespace-qualified name resolves against the owning
+  namespace's record, and a bare name still never binds to a packaged permission.
+- **`aer exec` handles subscriber source alongside `path@ns` sources.** It built
+  one schema from every directory and then applied the single namespace to all of
+  it, so subscriber objects like `Entry__c` became `pkg__Entry__c` and failed
+  type checking; with two or more namespaces no namespace was applied at all and
+  package objects were unresolvable. `exec` now mirrors `test`: the base schema
+  comes from unnamespaced dirs only, and each namespaced path group is built with
+  its own namespace and merged as a package.
+- **`aer license show --key` displays a public-only license without
+  `GITHUB_TOKEN`.** The command ran full validation, including GitHub org
+  membership verification. It now decodes the key and checks its format,
+  expiration, and signature only; `license show` for an installed license still
+  runs full validation.
+
 ## v1.2.34 — 2026-08-16
 
 - **Duplicate rule matching implements the `CompanyName`, `Street`, and `City`
