@@ -322,6 +322,89 @@
   chained access through a static property whose name shadows an inner
   interface threw a `NullPointerException` at runtime.
 
+## v1.2.36 — 2026-08-18
+
+- **A queried row returns only the branch it takes through a `TYPEOF` clause.**
+  The relationship was typed by whichever `WHEN` clause a projected column
+  belonged to, so a `ContentDocumentLink.LinkedEntityId` pointing at one object
+  came back as an empty instance of an unrelated one, and every branch's fields
+  were marked queried on every row. A row whose type matches a `WHEN` clause now
+  comes back typed as that object with that clause's fields; a row matching no
+  clause comes back typed `Name` when the query has an `ELSE` branch, and null
+  with the lookup Id field still populated when it does not. The Id always comes
+  back whether or not the branch selected it, and reading a field that a
+  different branch projected throws `SObjectException`, even when that field
+  exists on the row's own object. The `ELSE` branch also no longer builds a
+  `COALESCE` over every object the polymorphic field can reference, which
+  exceeded SQLite's argument limit and failed queries on a relationship as wide
+  as `ContentDocumentLink.LinkedEntity` outright.
+- **`Approval.process` accepts its `allOrNone` argument.** With
+  `allOrNone=false` a failing request rolls back only its own work and returns a
+  failed `ProcessResult` carrying the failure as a `Database.Error`, with null
+  `entityId`, `instanceId`, and `instanceStatus` and an empty `newWorkitemIds`,
+  while the remaining requests commit. With `allOrNone=true`, and with the
+  one-argument form, a failure throws the row-naming `DmlException` and rolls
+  back every request in the batch, including ones that had already succeeded; a
+  null `allOrNone` throws `NullPointerException`. Per-request failures now carry
+  a real status code, `NO_APPLICABLE_PROCESS`, `REQUIRED_FIELD_MISSING`,
+  or `MANAGER_NOT_DEFINED`, instead of a formatted string, a request naming a
+  nonexistent workitem fails with `INVALID_CROSS_REFERENCE_KEY` rather than
+  returning a fabricated success, and a successful `ProcessResult` reports
+  `getErrors()` as null rather than an empty list.
+- **Approval processes evaluate their entry criteria.** Submitting a record
+  without naming a process evaluates each active process's criteria in process
+  order and enters the first that accepts the record; an explicitly named
+  process must also accept it, and when an object has approval processes but
+  none accept, the submission fails with `NO_APPLICABLE_PROCESS`. Criteria
+  items, boolean filters, and criteria formulas are read from the approval
+  process metadata and evaluated with the workflow criteria machinery, and are
+  qualified with the package namespace when they ship in a package.
+- **Approval `ActorId` and `TargetObjectId` fields are name-pointing polymorphic
+  lookups.** `ProcessInstance.TargetObjectId`,
+  `ProcessInstanceHistory.TargetObjectId`, and the `ActorId` and
+  `OriginalActorId` fields on `ProcessInstanceStep`, `ProcessInstanceWorkitem`,
+  and `ProcessInstanceHistory` now resolve their `Type` pseudo-field to the
+  object-type discriminator and their `Name` pseudo-field through the `Name`
+  object, so `ActorId` on a record whose owner is a queue or a user projects the
+  right name. Plain multi-target lookups such as `EmailTemplate.Folder.Type`
+  keep resolving real referent fields. `Name` rows carry AutoNumber names, and
+  the `Name` object follows sfapex's test data isolation: rows that existed
+  before a test project null names, rows inserted during the test read back, and
+  the transaction rollback restores the baseline.
+- **A queue and a public group can share a `DeveloperName`.**
+  `Group.DeveloperName` is unique per `Type`, not globally, but the metadata
+  loader upserted `Group` records by developer name alone, so a public group
+  loaded after a same-named queue overwrote the queue's row.  `aer test` also
+  accepts `.queue`/`.queue-meta.xml` files passed explicitly, which it
+  previously ignored.
+- **Dangling lookup Ids report `INVALID_CROSS_REFERENCE_KEY` on the fields
+  sfapex reports it for.** Writing a well-formed but nonexistent Id into a
+  reference field raised `INSUFFICIENT_ACCESS_ON_CROSS_REFERENCE_ENTITY` for
+  every field except `OwnerId`, so reassigning an approval work item to a
+  deleted user (`ProcessInstanceWorkitem.ActorId`) reported the wrong status
+  code and message.
+- **Flow formula text functions accept non-text operands.** `LEFT`, `RIGHT`,
+  `MID`, `LEN`, `UPPER`, `LOWER`, `TRIM`, `LPAD`, `RPAD`, `CONTAINS`,
+  `SUBSTITUTE`, and `FIND` applied to an Id-typed reference generated a `String`
+  method call on the Id, which failed to compile with "Method does not exist:
+  left on builtin type Id". The operand is now rendered as text when its type
+  is not `String`.
+- **Three constructs Salesforce rejects at compile time are now rejected.** A
+  bare expression that computes a value and does nothing with it fails with
+  "Expression cannot be a statement".  Previously only unary operators were
+  checked, so an identifier, literal, field access, comparison, ternary, cast,
+  index, or `instanceof` passed. The operand of `++` or `--` must be assignable
+  wherever the operator appears, so `switch on ---p` fails with "Expression
+  cannot be assigned". A bare identifier on the left of an assignment that names
+  nothing in scope fails with "Variable does not exist". Switch statements are
+  covered too: the subject, every `when` value, and every `when` body are now
+  checked like any other expression or statement, with a `when Type var` name
+  bound over its case body.
+- **Loading a source directory is faster.** Each source tree was traversed
+  multiple times.  Each tree is now captured once and every traversal answered
+  from that capture.
+- **Test runs spend less time on permissions, formulas, and name lookups.**
+
 ## v1.2.35 — 2026-08-17
 
 - **`ADDMONTHS` works in formulas evaluated by Apex.** Only the SOQL translation
