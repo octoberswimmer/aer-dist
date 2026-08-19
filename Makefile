@@ -24,8 +24,9 @@ GO_LDFLAGS_WASM := -X main.wasmRuntimeVersion=$(VERSION)
 
 .PHONY: default install install-debug dist clean checksum release tag
 
-# Releases with an odd minor version are published as pre-releases.
-PRERELEASE_FLAG = $(shell case "$(VERSION)" in (v*.*.*) minor=$$(printf "%s" "$(VERSION)" | cut -d. -f2); [ "$$((minor % 2))" -eq 1 ] && echo --prerelease;; esac)
+# Releases with an odd minor version or a pre-release suffix (e.g. v1.4.0-beta.1)
+# are published as pre-releases.
+PRERELEASE_FLAG = $(shell case "$(VERSION)" in (v*.*.*-*) echo --prerelease;; (v*.*.*) minor=$$(printf "%s" "$(VERSION)" | cut -d. -f2); [ "$$((minor % 2))" -eq 1 ] && echo --prerelease;; esac)
 
 default:
 	go build $(GO_BUILD_FLAGS) -ldflags "$(GO_LDFLAGS)"
