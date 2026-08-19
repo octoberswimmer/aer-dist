@@ -195,6 +195,19 @@
   and swaps the deployed class into the running program so the new body is what
   executes. `runTestsSynchronous` runs a test class inline, recording coverage
   for the follow-up `ApexCodeCoverage` queries.
+- **Test suites run from `.testSuite-meta.xml` metadata.** Test suite metadata
+  in `testSuites/*.testSuite-meta.xml` loads into queryable `ApexTestSuite` and
+  `TestSuiteMembership` records, and tests can be selected by suite: `aer test
+  --suite <name>` runs the classes a suite names, and the server's
+  `runTestsAsynchronous` accepts `suiteNames` and `suiteids` in both the
+  comma-separated and array forms, so `sf apex run test --suite-names` works
+  against a running server.
+- **`--seed-session-token` registers a pre-shared session token.** `aer server`
+  accepts `--seed-session-token` (or `AER_SEED_SESSION_TOKEN`) to register a
+  token as an authenticated session for the default admin user at startup, so a
+  client that already holds it can log in without an interactive flow, e.g.  `sf org
+  login access-token`.  The token must be in session-id form
+  (`00D000000000000!` followed by characters matching `[A-Za-z0-9_.]`).
 
 ### Fixes and performance
 
@@ -321,6 +334,31 @@
   second deploy then left the dependents bound to deleted symbols, and a
   chained access through a static property whose name shadows an inner
   interface threw a `NullPointerException` at runtime.
+- **An Apex class keeps one Id across the Tooling API, the Data API, and Apex.**
+  A program load now updates the existing `ApexClass` rows instead of deleting
+  and reinserting them, and the server takes each class's id from its row rather
+  than inserting a second row to obtain one. Id assignment is also serialized,
+  since concurrent callers each assigned a different id to one class and
+  registered it under every one of them, repeating the class in later query
+  results.
+- **A Tooling query returns the fields it selected and nothing else.** Selecting
+  `Id` from `ApexClass` answered with every class body, including the subfields
+  of a relationship. A record's `attributes.url` carries its id even when the
+  query does not select `Id`, and a row with no id of its own, such as an
+  aggregate, carries no url.
+- **Session tokens are accepted in the classic `OAuth <sessionId>` scheme.** The
+  CometD client behind `sf apex get test` sends that scheme on every streaming
+  request and was rejected with `invalid_session` even though its REST calls
+  authenticated; `Bearer` is still accepted. Request paths with repeated slashes
+  are also collapsed before dispatch instead of answering with a 307 redirect,
+  which clients joining an instance URL that ends in a slash to an absolute path
+  could not follow. Encoded slashes (`%2F`) are preserved.
+- **The seeded Organization is named "aer Organization".** It was "Test
+  Organization", which `UserInfo.getOrganizationName`, `$Organization.Name`, a
+  query against the `Organization` singleton, and
+  `ConnectApi.Organization.getSettings` all reported. The server also sets a
+  `Server` response header of `aer/<version>` on every response, including 404s
+  and unauthenticated routes.
 
 ## v1.2.36 — 2026-08-18
 
