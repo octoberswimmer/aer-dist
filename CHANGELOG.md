@@ -208,6 +208,18 @@
   client that already holds it can log in without an interactive flow, e.g.  `sf org
   login access-token`.  The token must be in session-id form
   (`00D000000000000!` followed by characters matching `[A-Za-z0-9_.]`).
+- **REST and Bulk writes run the full DML pipeline.** A record written through
+  the REST or Bulk endpoints now fires the same triggers, flows, workflow rules,
+  and validation rules an Apex insert would, and each row reports its own
+  errors. Retired automation stays retired: an inactive trigger neither runs nor
+  appears as an `ApexTrigger` record, and only a flow's active version runs;
+  `Draft`, `Obsolete`, and `InvalidDraft` versions load as metadata and are
+  never executed.
+- **Record-triggered flows convert Transform elements.** A Map builds one output
+  per source member, binding `Source[$EachItem]` to the member being mapped,
+  both in direct references and inside formulas; `Count` and `Sum` reduce a
+  collection named through an `aggregationValues` input parameter to a scalar,
+  and reducing an empty collection gives zero.
 
 ### Fixes and performance
 
@@ -359,6 +371,156 @@
   `ConnectApi.Organization.getSettings` all reported. The server also sets a
   `Server` response header of `aer/<version>` on every response, including 404s
   and unauthenticated routes.
+- **A record-triggered flow saves once per element, not once per record.** The
+  Flow runtime advances every interview of a trigger batch element by element,
+  so a record DML element saves the records built by all of them in one DML. aer
+  ran each interview to completion instead, so a Create Records element inserted
+  once per triggering record, firing the created object's triggers again for
+  each one. Any flow that saves records now runs as a generated handler class
+  whose interviews suspend at a DML element and resume after the save, so one
+  DML covers the batch, with save batches deduplicated by Id. An update of the
+  triggering record still folds into the save already in progress as one
+  batched follow-up update per trigger batch.
+- **A flow formula converts the functions and references it names, or the
+  conversion fails.** `REGEX(text, pattern)` converts to `Pattern.matches`,
+  matching the text end to end, with an unset text matched as the empty string
+  and an unset pattern never matching. A function aer does not model no longer
+  falls through to a bare identifier or emits the formula's own source text as
+  an Apex literal.  A formula's expression is also converted to the data type
+  the formula declares, so a formula declared `Date` whose expression adds
+  a day to a datetime field no longer feeds a `Datetime` to every `Date`
+  target.
+- **A `{!$Name}` merge field naming no global variable renders as literal
+  text.** Such a reference resolves only against Flow's global variables, so a
+  text template holding `{!$link_formula}` renders those characters while
+  `{!link_formula}` renders the formula's value. aer emitted the reference as an
+  invalid identifier, and the generated class failed to compile with
+  "Variable does not exist: $Name". A text template's value is also built as a
+  real expression rather than a literal holding generated Apex source, which had
+  assigned the source text to the field the template fed.
+- **A flow value assigned to a text field is rendered in the running user's
+  locale.** A Boolean renders as `true` or `false`, a Number and a Datetime
+  through their locale-aware `format()`, and a Date in the locale's long date
+  form, for every locale and language a user can be assigned. A formula that
+  offsets a Date by a Number converts to `addDays` over the whole part, which
+  is what Flow does with the fraction, and assignments to formula and roll-up
+  fields are dropped, since Flow's runtime ignores them while Apex refuses to
+  compile one. A flow loaded into a namespace now resolves field types
+  namespace-first, which had left a namespaced flow with no field types and
+  therefore no conversions at all.
+- **A flow variable's default is applied when the interview starts.** A declared
+  default became a field initializer on the generated handler class, so a
+  default reading the triggering record ran before the handler was given one and
+  the flow failed with a null dereference. Defaults are now assigned at the top
+  of the interview, so each interview of a trigger batch computes its own from
+  its own record.
+- **A flow polymorphic qualifier converts and types the field behind it.** A
+  formula reference like `Owner:User.Alias` used to reach the generated Apex
+  verbatim, which is not Apex syntax; it now becomes the same guarded read an
+  element reference builds, reading the field only when the related record is of
+  that type and giving null otherwise. The qualifier also names the branch's
+  type, so `Owner:User.CreatedDate` is a `Datetime` and converts on assignment
+  to a `Date` target, while an Id reads as an Id.
+- **A flow implies the optional features of the objects it names.** Flows are
+  converted before the run applies optional features, so a text formula function
+  over an Id-typed lookup on a feature-gated object generated Apex calling a
+  `String` method on an `Id`. The objects a flow names in its metadata now imply
+  their feature the way a static Apex reference does, in `aer test`, `aer exec`,
+  and `aer server` alike, and a warm run's cached flows carry the objects they
+  name.
+- **A polymorphic relationship in SOQL selects only `Name` entity fields.** A
+  field selected through `What`, `Who`, or `Owner` used to resolve against the
+  relationship's first `referenceTo`, so `What.Amount` returned null for every
+  task instead of being rejected with "No such column 'Amount' on entity
+  'Name'". Reading a branch's own fields still takes a `TYPEOF`, whose projected
+  numeric fields no longer panic on their packed decimal representation.
+- **`Pattern.matches` and `Matcher.matches` anchor the pattern.** Both found the
+  leftmost match and then checked whether it covered the whole input, so an
+  alternation whose shorter alternative matched first reported no match: the
+  regex `[a-zA-Z0-9]{15}|[a-zA-Z0-9]{18}` matched only the first fifteen
+  characters of an eighteen-character Id. The pattern is now anchored the way
+  Java anchors it for `matches()`, leaving capture group numbering unchanged,
+  and `Matcher.matches()` matches the current region rather than the whole
+  input.
+- **A `static final String` initialized with a literal is a compile-time
+  constant.** sfapex inlines it into its use sites, so a static initializer
+  declared above such a field still reads its value and the field's own
+  declaration is not an executable location for coverage. aer evaluated static
+  fields in strict declaration order, so a class whose constructor read a
+  constant declared below it saw null.
+- **Apex comparison and equality operators share one precedence level, evaluated
+  left to right.** aer's parser bound the relational operators tighter, as Java
+  does, so `(a < 0) != (b < 0)` re-parsed as `((a < 0) != b) < 0`. A bare
+  `instanceof` operand of a comparison is now rejected, since `instanceof` is
+  non-associative with those operators, and an ordering comparison of Booleans
+  is rejected with the message sfapex uses for it.
+- **Approval process and workflow criteria match on a record's record type.** A
+  criteria item on the `RecordType` pseudo-field named no field of the object,
+  so it read as null and every process gated on a record type was skipped,
+  failing submission with `NO_APPLICABLE_PROCESS`. The comparison now
+  substitutes the record's record type `Name`.
+- **A nested formula field is inlined at every reference, not just the first.**
+  The SQL generator marked a referenced formula field visited for the rest of
+  the enclosing expression, so every reference after the first was treated as a
+  circular reference and emitted as a bare column. A formula field has no stored
+  value, so those references evaluated to null: a formula like
+  `IF(NOT(ISBLANK(a)), b, IF(c, b * 1.15, b))` over a formula field `b` produced
+  null for rows taking either `ELSE` branch, `SUM()` over them returned null,
+  and a `WHERE` filter on the formula matched nothing.
+- **An `Iterator<T>` parameter accepts `List<T>.iterator()`.** Return type
+  inference had an iterator case for `Set<T>` but none for `List<T>`, so the
+  argument reached overload resolution typed as a bare `Iterator`, which matches
+  no `Iterator<T>` parameter: constructors raised `IllegalArgumentException` and
+  a method overload silently selected a different candidate.
+- **`Task.AccountId` and `Event.AccountId` derive from a contact `WhoId`.** An
+  activity linked only to a contact came back with a null `AccountId`, so rollup
+  code grouping activities by account silently counted nothing. When the
+  `WhatId` does not own the derivation, the `WhoId` contact's account
+  supplies it, and a Lead `WhoId` supplies nothing. Updating an activity no
+  longer clears a correct `AccountId` at every `WhatId` dead end, and moving a
+  contact to another account takes its activities with it.
+- **State and country validation applies only where the repo has the picklists.**
+  A `*StateCode` / `*CountryCode` component field exists only when State and
+  Country/Territory Picklists are enabled; aer carried them on every address
+  compound unconditionally, so describes reported fields the repo does not have
+  and every insert was validated against picklists the repo had never enabled.
+  With the picklists on, a compound `*Country` / `*State` text field holds the
+  picklist entry's integration value and nothing else, so a label or an ISO code
+  is rejected as an invalid country or state rather than resolving and then
+  failing with a mismatched code. Turning the picklists on later restores the
+  component fields verbatim.
+- **A new record takes the org's default country in every address compound.**
+  Address Settings' default country is stamped on each address compound of a new
+  record whether or not the record carries an address, so a state supplied
+  without a country resolves within that default instead of raising the
+  country-required error, and a state belonging to another country is rejected
+  as an invalid state. A person account takes the default in its person
+  addresses; a business account leaves those blank.
+- **The server's test bookkeeping no longer re-migrates the database.**
+- **A database whose table name differs only in case is repaired on open.**
+  SQLite compares identifiers case-insensitively, so a table stored under an
+  object's older spelling satisfied `CREATE TABLE IF NOT EXISTS` for the
+  canonical one; migration reported success, the startup fingerprint was
+  written, and the next startup matched it, skipped migration, and failed
+  validation with "missing table QueueSobject".  The migrator now renames such
+  a table to its canonical spelling, preserving rows, indexes, and triggers,
+  before generating DDL and before validating a database that skipped
+  migration.
+- **Legacy SQLite feed tables are replaced with views during migration.** A
+  database created by an older aer version holds entity feeds, `ContentNote`,
+  and picklist masters as real tables, where the current generator emits views
+  over their backing tables. On SQLite the conversion silently did nothing, and
+  the following write-through trigger failed with "cannot create INSTEAD OF
+  trigger on table: AccountFeed". The legacy table is now dropped before the
+  view is created, matching the PostgreSQL path.
+- **A failed insert names the field and value the database rejected** instead of
+  reporting the bind parameter's position. Bootstrap data also merges users on
+  their username as well as their Id, so a bootstrap file captured from an org
+  no longer leaves two users sharing a username once the target has assigned its
+  own admin a different Id.
+- **The web extension's wasm binary is 20% smaller**   The API server, the
+  LWC/Aura preview bundler, package authoring, and the VS Code launcher were
+  all reachable from the wasm build and retained; they are excluded now.
 
 ## v1.2.36 — 2026-08-18
 
