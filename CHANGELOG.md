@@ -522,6 +522,25 @@
   LWC/Aura preview bundler, package authoring, and the VS Code launcher were
   all reachable from the wasm build and retained; they are excluded now.
 
+## v1.2.38 — 2026-08-26
+
+- **`WEEKDAY` is converted in record-triggered flow formulas.** A flow formula
+  such as `WEEKDAY(DATEVALUE({!$Record.CreatedDate}))` previously had no
+  conversion: the formula reference was emitted as a bare
+  identifier that evaluated to text at runtime, so the flow's record create
+  failed with "SObjectException: Illegal assignment from String to Date".
+  `WEEKDAY` now returns the day of the week, 1 (Sunday) through 7 (Saturday),
+  and is null-guarded like the other date functions.
+- **Date arithmetic on `Datetime.date()` type-checks in generated flow
+  handlers.** Expressions like `someDatetime.date() + days` failed the
+  handler's typecheck with "Illegal assignment from Integer to Date" because
+  the `date()` result was left untyped; it now resolves to `Date`. A user class
+  with the same name as a stdlib type shadows the stdlib type for such calls.
+- **Auto-stored subflow outputs are cast to their target type.** A subflow
+  output read back through `Flow.Interview.getVariableValue` is `Object`-typed,
+  so assigning it to a typed field or variable now emits an explicit cast
+  instead of generating code that fails to type-check.
+
 ## v1.2.37 — 2026-08-26
 
 - **Non-reparentable master-detail fields are read-only once a record has an
