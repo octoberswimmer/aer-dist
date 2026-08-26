@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 env:
-  AER_VERSION: v1.2.38
+  AER_VERSION: v1.2.39
 
 jobs:
   nppatch:
