@@ -522,6 +522,45 @@
   LWC/Aura preview bundler, package authoring, and the VS Code launcher were
   all reachable from the wasm build and retained; they are excluded now.
 
+## v1.2.37 — 2026-08-26
+
+- **Non-reparentable master-detail fields are read-only once a record has an
+  Id.** Assigning such a field on an SObject that already carries an Id, even
+  a fake Id stamped on an in-memory record, now throws `System.SObjectException`
+  "Field is not writeable" at assignment time, matching sfapex. Previously
+  the write was silently allowed. Named field arguments in the SObject
+  constructor remain permitted.
+- **`JSON.deserialize` into SObjects resolves columns by exact API name and
+  raises sfapex's unknown-column errors.** Scalar fields, child relationships,
+  and parent `__r` keys now match only their fully qualified API names; a bare
+  key in a namespaced org no longer binds to the namespaced field. Unknown
+  columns on the top-level record are tolerated and dropped (their nested
+  known columns still apply to the record, and a non-empty array anywhere
+  inside throws "No field name specified on column for sobject of type
+  <T>"); a child-relationship row rejects any unknown column with "No such
+  column '<key>' on sobject of type <RowType>"; a parent-relationship value
+  rejects one with "Cannot deserialize instance of ... or request may be
+  missing a required field". A child-relationship value must be a
+  `QueryResult` object ("QueryResult must start with '{'"), a nested
+  `attributes` key that duplicates the record's own throws "Duplicate column
+  specified for sobject at location: [Line: L, Column: C]", and a parent
+  value deserializes as its `attributes.type` so polymorphic lookups keep
+  their `Type` and `Name` fields.
+- **`JSON.serialize` no longer emits dropped or internal columns.** Unknown
+  columns dropped during deserialization stay invisible when the record is
+  serialized again, and deep parent-path selects (`Account.Owner.Name`) no
+  longer leave dotted storage columns in the output; only the nested
+  relationship records are serialized.
+- **`SObject.putSObject` validates the target relationship.** Passing a field
+  that is not a reference field throws `System.SObjectException` — "<Type>.<Field>
+  is not a relationship" for the token form, "Invalid relationship <name> for
+  <Type>" for the string form, and `put` of an SObject value into a String
+  field throws "Illegal assignment from <Type> to String".
+- **Custom metadata records serialize with only qualified field names.** A
+  packaged `__mdt` record no longer serializes each namespaced field twice
+  (`ns__Active__c` and `Active__c`), so `JSON.serialize` followed by
+  `JSON.deserializeStrict` into the same type round-trips from package code.
+
 ## v1.2.36 — 2026-08-18
 
 - **A queried row returns only the branch it takes through a `TYPEOF` clause.**
