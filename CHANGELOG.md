@@ -522,6 +522,32 @@
   LWC/Aura preview bundler, package authoring, and the VS Code launcher were
   all reachable from the wasm build and retained; they are excluded now.
 
+## v1.2.39 — 2026-08-26
+
+- **Flow interviews select the relationship fields a flow reads through a
+  record lookup.** An autolaunched flow run through `Flow.Interview` that reads
+  a relationship field off a Get Records result (for example
+  `{!Loop_Items.Parent__r.Flag__c}` in a decision or formula) silently
+  resolved the reference to null, because the query only selected the lookup's
+  own fields; a decision branch depending on it never ran and its output
+  collection stayed null. The lookup's query now includes every field path the
+  flow reads through its stored variable, including through loops and
+  collection processors that iterate its collection, from decision conditions,
+  assignments, record element values and filters, action and subflow inputs,
+  and formula and text-template merge fields. Object, relationship, and field
+  names in those references resolve with the executing namespace first and
+  the authored name second.
+- **Flow interview Get Records honors `sortField` and `sortOrder`.** The
+  lookup's rows are now ordered as configured instead of coming back in
+  storage order.
+- **Flow interview formulas resolve dotted record references.** A
+  `{!Element.Field}` merge field inside a formula previously evaluated to an
+  empty string; it now reads the field from the stored record.
+- **Adding a record to a flow collection stores a copy.** Reusing one record
+  variable across loop iterations now builds distinct collection entries,
+  matching flow value semantics, instead of every entry reflecting the
+  variable's final state.
+
 ## v1.2.38 — 2026-08-26
 
 - **`WEEKDAY` is converted in record-triggered flow formulas.** A flow formula
