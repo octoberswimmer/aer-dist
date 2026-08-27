@@ -522,6 +522,24 @@
   LWC/Aura preview bundler, package authoring, and the VS Code launcher were
   all reachable from the wasm build and retained; they are excluded now.
 
+## v1.2.40 — 2026-08-27
+
+- **`MIXED_DML_OPERATION` is enforced.** sfapex refuses to mix DML on
+  restricted setup objects (`UserRole`, `GroupMember`, `QueueSobject`,
+  `PermissionSet`, `PermissionSetAssignment`, `PermissionSetGroup` and its
+  components, `ObjectPermissions`, `FieldPermissions`, `SetupEntityAccess`, and
+  the rest) with DML on ordinary objects in one transaction, and aer now raises
+  the same error.
+- **`User` DML is gated on the Manage Users permission.** A `User` insert by a
+  running user without Manage Users fails with `REQUIRED_FIELD_MISSING
+  [ProfileId]`, because the org strips `ProfileId` for non-administrators, and
+  an update of admin-only `User` fields on another user's record fails with
+  `INSUFFICIENT_ACCESS_ON_CROSS_REFERENCE_ENTITY`.
+- **`DmlException.getDmlFieldNames` reports field names for
+  `Database.insert`.** The failing rows' field names are now carried into the
+  exception that `Database.insert` with `allOrNone` raises, as they already
+  were for the `insert` statement.
+
 ## v1.2.39 — 2026-08-26
 
 - **Flow interviews select the relationship fields a flow reads through a
