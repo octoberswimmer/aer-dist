@@ -220,6 +220,10 @@
   both in direct references and inside formulas; `Count` and `Sum` reduce a
   collection named through an `aggregationValues` input parameter to a scalar,
   and reducing an empty collection gives zero.
+- **`aer test --skip-mixed-dml-validation` turns off the `MIXED_DML_OPERATION`
+  check.** sfapex skips that check for tests run as part of a deployment or
+  validation, and the new flag, listed under the `test` command's execution
+  options, reproduces the same leniency for a local run.
 
 ### Fixes and performance
 
@@ -521,6 +525,260 @@
 - **The web extension's wasm binary is 20% smaller**   The API server, the
   LWC/Aura preview bundler, package authoring, and the VS Code launcher were
   all reachable from the wasm build and retained; they are excluded now.
+- **A null `Boolean` used as a condition throws `NullPointerException`.** The VM
+  treated it as false; sfapex throws `System.NullPointerException` from `if`,
+  `while`, `do`-`while`, and `for` conditions, the ternary condition, either
+  evaluated operand of `&&` and `||`, and the right operand of `&=`, `|=`, and
+  `^=`. Short-circuiting still skips the right operand. `Blob.valueOf(null)`
+  likewise throws with "Argument cannot be null." instead of returning a Blob
+  built from "<nil>". A checkbox field still reads `false` however the null
+  arrived and one read through an empty parent relationship
+  (`Contact.Account.Flag__c` where `AccountId` is blank) is `false` rather than
+  null; only the untyped `get()` reports the stored null.
+- **Comparing a `List<SObject>` with an `SObject` assigns the list first.** The
+  same rule as `Account a = [SELECT ...]`: a one-row list equals the record it
+  holds, an empty list raises "List has no rows for assignment to SObject", and
+  a longer one raises "List has more than 1 row for assignment to SObject".
+  Only the comparison's own operands unwrap; elements compared inside a
+  collection do not, and all four assertion methods report the unwrapped record
+  in their failure messages.
+- **`System.Assert.areEqual` raises `TypeException` for runtime types sfapex
+  refuses to compare** rather than reporting a failed assertion. Two enum
+  constants are equal when their names match, whatever types they belong to, and
+  the enum check runs only on the branch where an assertion is about to fail,
+  which is why `areNotEqual` accepts constants `areEqual` rejects. `areEqual`
+  converts a `String` compared with an `Id` and raises `StringException` for an
+  unparseable one, while `areNotEqual`, the legacy `assertEquals`, and `==`
+  leave both arguments alone. Casting an enum value to `Object` is allowed.
+- **Member reads off a record are validated against the schema.** Fields, parent
+  relationships, and child relationships are checked for standard and custom
+  objects alike, a variable of the base `SObject` type exposes only `Id`, and
+  reading `SObjectType` or `Fields` off a record is rejected. Type references, a
+  `Schema`-qualified declared type, polymorphic traversals, and the
+  `UserRecordAccess` relationship every record exposes keep resolving. External
+  objects now carry the `ExternalId` and `DisplayUrl` fields sfapex adds
+  implicitly.
+- **A name-pointing relationship resolves only to a record whose `Name` row the
+  transaction can see.** A polymorphic `Owner` pointing at a pre-existing user
+  is null in a test while a queue the test created resolves, and reading a field
+  off the unresolved relationship reports null rather than dereferencing null.
+- **DML writing a reference to a record in the recycle bin fails with
+  `ENTITY_IS_DELETED`.** Delete sets `IsDeleted` rather than removing the row,
+  so an insert or update whose lookup pointed at a deleted parent succeeded.
+  The row now fails with "entity is deleted".
+- **Deleting a parent clears every `SetNull` lookup on a child at once.** When
+  one child row referenced the deleted parent through more than one `SetNull`
+  lookup, none of them were cleared: the clearing pass wrote a full-row update
+  per relationship, each tripped the deleted-reference check on the sibling
+  lookup still pointing at a record deleted in the same operation, and the
+  errors were silently swallowed. Clearing now collects every field to clear per
+  child record and writes one sparse update, and errors propagate.
+- **An update's validation rules see the merged record.** A validation rule sees
+  the record as it will be saved, but internal callers update sparsely, and
+  evaluating such a payload by itself read every untouched field as null,
+  firing rules incorrectly. Only the copy handed to validation is merged; the
+  record that reaches storage stays sparse, so the write still touches just the
+  fields the caller set.
+- **User-mode DML no longer check FLS for custom-setting fields.**
+  Writing a populated custom setting under `USER_MODE` failed with the
+  inaccessible-fields `DmlException` even for an admin. No `FieldPermissions`
+  row can exist for a custom-setting field, and sfapex doesn't check FLS once
+  the running user has custom-setting access, matching the read-side exemption
+  the SOQL permission check already applied.
+- **Async jobs and platform event subscribers run with their own mixed-DML
+  state.** Each executes in its own transaction, so the enqueuing or publishing
+  transaction's state does not apply to it and its DML does not poison the
+  caller. A future job executed at `Test.stopTest` inherited the state and
+  failed with `MIXED_DML_OPERATION`, and a subscriber delivered through
+  `Test.getEventBus().deliver()` failed silently after the test body had written
+  a restricted `User` field.
+- **A missing approval approver is named.** An approval step assigns a specific
+  user by username, and a username with no `User` means the org data is
+  incomplete. The submission now fails with "Approval step X references Y, which
+  doesn't exist as a user.", the message Salesforce raises when the process is
+  deployed, instead of the misleading `REQUIRED_FIELD_MISSING
+  [nextApproverIds]`, and the failure is raised even when another approver in
+  the step resolves. The `Approval` builtins also spelled their Id collections
+  `List<ID>`, so comparing one with a list built in Apex raised "Comparison
+  arguments must be compatible types: List<Id>, List<ID>"; they use the
+  canonical `Id` spelling now.
+- **A `Document` insert may omit `DeveloperName`.** sfapex generates a
+  unique developer name for the record, so aer's required-field validation was
+  rejecting inserts that succeed on sfapex.
+- **A standard profile file in source merges into the builtin profile record.**
+  A source tree shipping `Standard.profile-meta.xml` created a second `Profile`
+  record under the file name, and at load the builtin record was skipped in
+  favor of the source one.  Standard User lost its builtin `ObjectPermissions`
+  rows, so reassigning an Opportunity to a Standard User owner failed with
+  `TRANSFER_REQUIRES_READ`. The file name is now canonicalized to the profile's
+  display name so the record merges in place and keeps its object permissions;
+  the same mapping serves the custom-permission profile lookup, and `ReadOnly`
+  maps to Read Only.
+- **`Schema.describeTabs()` reports each tab's own icon.** Every tab got one
+  hardcoded standard icon URL, so the `substringBetween('custom/', '.svg')`
+  idiom parsed a null out of a custom object's tab and threw a
+  `NullPointerException`. A tab's icon now comes from the object's `CustomTab`
+  motif and objects with no custom tab motif keep the generic standard icon.
+- **Person account fields retrieved as type-less stubs resolve to their real
+  types.** A source directory retrieved from an org with Person Accounts carries
+  the standard person fields as stubs holding only attributes such as history
+  tracking, with no type element, so a field like `PersonEmail` stayed
+  type-unknown and skipped email-format validation. Stubs are now filled from
+  the builtin definitions, preserving the stub's history tracking flag. Type
+  checking also auto-enables Person Accounts from any Person-prefixed field
+  reference, not just `PersonContactId`, `IsPersonAccount`, and the `__pc`
+  suffix, so a class that assigns `PersonEmail` on an `Account` variable
+  type-checks without loading a wider workspace.
+- **`JSON.deserializeUntyped` types integral numbers within `Integer` range as
+  `Integer`.** Every integral JSON number came back as `Long`, so casting one
+  out of the resulting `Map` reported "Invalid conversion from runtime type Long
+  to String" where Salesforce reports `Integer`. Values outside
+  `Integer.MIN_VALUE`..`Integer.MAX_VALUE` are still `Long`.
+- **Empty JSON input reports sfapex's no-content message.**
+  `JSON.deserialize`, `JSON.deserializeStrict`, and `JSON.deserializeUntyped`
+  raised "Malformed JSON: EOF" for an empty or whitespace-only string. The
+  methods now throw "No content to map to Object due to end of input".
+- **`List.sort()` works on custom metadata records.** Sorting a list built by
+  `getAll()` or `getInstance()` threw "ListException: One or more of the items
+  in this list is not Comparable." because those records are object instances
+  rather than SObject instances in the VM. They are now exempt from the
+  `Comparable` requirement and compared with the default SObject ordering, where
+  standard fields such as `DeveloperName` and `Label` break ties between records
+  whose custom fields are equal.
+- **Bind variables work in SOQL `INCLUDES` and `EXCLUDES` value lists.** The
+  parser had no case for the parenthesized value list, so `Field__c INCLUDES
+  (:var)` was stored as one raw text literal, never evaluated, and the
+  multiselect field was compared against the literal text ":var", matching
+  nothing. Each element is now built as a real expression, and multi-value lists
+  desugar into `OR` (`INCLUDES`) / `AND` (`EXCLUDES`) of single-value
+  comparisons.
+- **`Test.setFixedSearchResults` honors the `RETURNING` clause's `ORDER BY`.**
+  Only the `WHERE` filter was applied, so records came back in
+  fixed-search-result order. The clause's fields and `ASC`/`DESC`/`NULLS`
+  modifiers now order the results, specs carrying an `ORDER BY` but no `WHERE`
+  are processed too, and the `WHERE` clause is parenthesized when spliced so a
+  top-level `OR` cannot escape the Id filter.
+- **`DataSource.QueryContext` and `DataSource.SearchContext` extend
+  `DataSource.ReadContext`.** Reading `context.maxResults` in an external object
+  handler failed with "undefined field: DataSource.QueryContext.maxResults"; the
+  inherited `maxResults`, `metadata`, and `offset` fields now resolve at compile
+  time and at runtime.
+- **`<apex:attribute>` applies its `default=` and types the value.** A component
+  reference that omitted the attribute left the controller property null, and a
+  null `Boolean` property then threw from any condition reading it. Markup
+  carries every attribute value as text, so the value is converted to the
+  attribute's declared type whether it comes from `default=` or from the
+  component reference; a `Boolean` follows `Boolean.valueOf`, where only "true"
+  is true and any other text, empty included, is false rather than null.
+- **`Date` and `Datetime` merge fields render the way Salesforce renders a
+  `java.util.Date`.** In GMT, so 1980-02-03 renders as "Sun Feb 03 00:00:00 GMT
+  1980" rather than in ISO form, matching the Java-flavored rendering `Decimal`
+  already had.
+- **Visualforce email template markup is compiled when the template is saved.**
+  A component attribute expression naming a property nothing provides now fails
+  the insert with `FIELD_INTEGRITY_EXCEPTION`, as it does in an org. Those
+  expressions compile against the template's own controller rather than the
+  component's, so only a merge-field root or a variable the markup introduces
+  resolves.
+- **A property's declaration line counts as covered.** An auto-accessor runs no
+  statements of its own, so all four accessor entry points now record the line
+  against the class declaring the property.
+- **Workflow formulas resolve global variables.** A reference like `$Label.Name`
+  in a field-update or criteria formula silently evaluated to blank, so formula
+  field updates wrote null. Bare `$Label` references are qualified with the
+  workflow's namespace only when that namespace defines the label.
+- **A workflow field update whose formula produces a number saves.** An
+  increment such as `Counter__c + 1` failed with "DmlException: invalid numeric
+  value for field", because the raw evaluator result was placed on the record
+  instead of an Apex `Decimal`.
+- **A formula field referencing `$CustomMetadata` can be filtered on.** The
+  value evaluated correctly when selected, but the formula compiled to `NULL`
+  when inlined into a `WHERE` clause, so filtering on such a field matched no
+  rows even though the queried value was true. Checkbox values inline as the
+  dialect's boolean literal.
+- **`DATEVALUE(DATETIMEVALUE(text))` works on the SQLite backend.** The
+  conversion feeds SQLite's `DATETIME()` output — "YYYY-MM-DD HH:MM:SS" in GMT —
+  into `DATEVALUE_TZ`, which only parsed RFC3339 strings and failed the formula
+  with a parse error. The space-separated form is now parsed as UTC.
+- **Converted Process Builder processes save records in lockstep.** An action
+  group's Update Records queried and saved once per record, and each save
+  cascaded its own round of the object's other automation. Processes now run on
+  the same lockstep driver as flows with record DML, which saves each element's
+  records for the whole batch in one statement; two action groups updating the
+  same record stay safe, since separate elements save in separate rounds. An
+  Update Records element naming a variable also no longer drops its
+  `inputAssignments`.
+- **A flow Get Records that binds a value from an earlier element bulkifies.** A
+  handler Get Records only bulkified when its filter bound a direct `$Record`
+  field; a bind reading a field off an earlier element fell back to a keyed
+  cache, one query per distinct value. It now chains off the earlier element's
+  combined query, whose rows already cover everything the batch can reach.
+- **Apex actions and subflows inside a converted flow are bulkified.** An apex
+  invocable action ran once per interview, so an invocable that publishes a
+  platform event per call blew the publish-immediate DML limit on a 200-record
+  batch; the element now suspends like a DML element, the driver makes one call
+  carrying every interview's request, and each interview reads its own row of
+  the returned outputs. A Get Records inside a subflow likewise executed and
+  counted one SOQL query per record, blowing the 101-query limit; it now costs
+  one query per element per batch. Elements inside a Loop, which the Flow
+  runtime does not bulkify, still count every time.
+- **An after-save flow whose Get Records binds a per-record value no longer
+  queries once per record.** Routing every record-saving flow onto the lockstep
+  path lost the query hoisting those flows used to get, so a 200-record insert
+  blew the 101-query limit. Such lookups are now shared across the batch. A
+  save can change what a shared lookup would return, so the lookups are
+  re-run after each round of saves and an interview resuming afterwards sees
+  the rows that round wrote. Flows off the lockstep path, such as those with a
+  Loop element, keep their inline queries.
+- **A flow variable's default is assigned where the triggering record is in
+  scope.** A default reading the triggering record became a field initializer on
+  the generated handler class and ran in the constructor, before the handler was
+  given a record, so the flow failed with a null dereference. It is now assigned
+  at the top of `execute`, and every interview of a trigger batch computes its
+  own.
+- **A Get Records element with manual output assignments reads as a Boolean.**
+  Salesforce exposes such an element's name as true when a record was found and
+  false when none was. The converter emitted a bare identifier, which failed
+  symbol resolution with "identifier not found in binding" on the handler path
+  and compiled as `SObject == Boolean` on the trigger-body path, so a found
+  record still took the not-found branch. A lookup the interview never reached
+  leaves the Boolean null, matching neither `EqualTo true` nor `EqualTo
+  false`.
+- **A loop with converging branches no longer recurses forever.** The
+  handler-class generator emitted a connector from inside a loop body back to
+  the loop element as a call to the loop's own method, restarting the for-each
+  from the first item until the VM's recursion limit tripped. Such back-edges
+  now return so the enclosing for-each advances to the next item; connectors
+  that enter a loop from outside its body still start the loop, and nested loops
+  resolve through their own body membership.
+- **`CONTAINS` in a converted flow formula is null-guarded.** It converted to a
+  bare `String.contains` call, which threw a `NullPointerException` when the
+  field was null; the formula engine returns null there, and `NOT`, `AND`, `OR`,
+  and `IF` treat a null argument as non-truthy, so the converted Apex now
+  evaluates to false instead of faulting.
+- **`Reports.ReportManager.describeReport` requires the Run Reports user
+  permission**, throwing `reports.UnsupportedOperationException` like
+  `runReport` does.
+- **A saved report filter on a field the running user cannot read is dropped.**
+  The run succeeds and the results widen to the unfiltered rows; only runtime
+  filters supplied through `Reports.ReportMetadata` are access-checked, with
+  `reports.InvalidFilterException`. Filter columns resolve the way the query
+  builder resolves them: row-level formula and bucket columns are skipped,
+  standard tokens such as `CUST_CREATED_DATE` and `RECORDTYPE` resolve to the
+  fields they query, and relationship traversals are checked through the related
+  object. Dropping a filter also clears the boolean filter whose indexes no
+  longer line up.
+- **The second run of an unchanged workspace is now faster.** A run with
+  packages used to need three runs before it started up at full speed, because
+  each run warmed only part of the cache and one part was rebuilt on every
+  transition. One run now warms all of it, and every later unchanged run starts
+  from it.
+- **Runs with `--package` and `--package-dir` get the fast startup path too.**
+  The workspace image, the snapshot that lets a warm run skip parsing and type
+  checking, was unavailable to runs with packages, which always paid full
+  startup. A changed package still invalidates the image. Runs with namespaced
+  source, `--default-namespace`, coverage, watch, or `--skip-errors` remain
+  excluded.
 
 ## v1.2.40 — 2026-08-27
 
