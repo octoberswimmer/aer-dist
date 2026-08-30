@@ -779,6 +779,208 @@
   startup. A changed package still invalidates the image. Runs with namespaced
   source, `--default-namespace`, coverage, watch, or `--skip-errors` remain
   excluded.
+- **A flow's Update Records element saves through the DML pipeline.** It wrote
+  straight to storage, so the target object's triggers, workflow rules, and
+  record-triggered flows never ran on the records it saved. It now saves like
+  an Apex update of the same records, and the records an element saves are
+  collected across a flow-triggered batch and saved in a single DML, matching
+  how the Flow runtime advances a trigger batch's interviews in lockstep.
+- **A flow interview's Create Records element saves through the DML pipeline.**
+  Like Update Records above, a Create Records element run by the interview
+  engine inserted with a direct storage write, so triggers, workflow rules, and
+  record-triggered flows never ran on the record and the insert consumed no DML
+  limits. It now saves through the pipeline, counts one DML statement and one
+  row (per iteration inside a Loop), and a row-level failure becomes the
+  element's fault. Under a namespace, the element's object and field names now
+  resolve against the executing namespace, so triggers and validation rules
+  keyed by the qualified name match.
+- **`$Flow.CurrentDate` and `$Flow.CurrentDateTime` carry typed values in
+  interviews.** They resolved to pre-rendered text, so assigning one to a date
+  field stored a literal string. They now carry `Date` and `Datetime` values,
+  and conversion to text happens where a value is assigned to a text target: a
+  `Date` renders in the locale's long form ("August 30, 2026"), a `Date/Time`
+  as `Datetime.format()` does, numbers render grouped for the locale keeping
+  their display scale, and an Id becomes fifteen characters when it becomes
+  text (a lookup assignment still stores the full Id).
+  `Flow.Interview.getVariableValue` returns a `Datetime` (midnight GMT) for a
+  Date-typed flow variable, matching Salesforce.
+- **Flow date and datetime literals compare as dates, not text.** A decision
+  comparing a `Datetime` field against a `dateTimeValue` literal failed with
+  "invalid operands for <", and a `dateValue` literal read as null, so a record
+  filter using one matched nothing. Both now resolve to real `Date`/`Datetime`
+  values in interviews and in generated Apex, and a Create Records element's
+  input assignments no longer drop date, datetime, and number literals.
+- **Flow interview null handling matches the Flow runtime.** A null passed into
+  an interview from Apex through safe navigation (e.g.
+  `Trigger.oldMap?.get(record.Id)` on insert) now reads as null, so an Is Null
+  decision takes the null branch. A collection Get Records element that matches
+  nothing stores null rather than an empty list, and a null passed for a
+  collection input becomes an initialized empty collection, so Is Null on it is
+  false.
+- **A reference to an unexecuted flow element resolves to null in interviews.**
+  Reading a field off an element that was defined in the flow but skipped on
+  the taken path raised "unknown flow variable"; the Flow runtime resolves it
+  to null. Genuinely unknown names still raise an error.
+- **Post to Chatter and primitive-list Apex actions run in flow interviews.**
+  A Post to Chatter action fell through to "Unsupported flow action type" and
+  took its fault path; it now creates a `FeedItem` with the action's text on
+  the subject record and exposes the new Id as `<element>.feedItemId`, working
+  in a data-siloed test without `SeeAllData`. An Apex action whose
+  `@InvocableMethod` takes a list of a primitive or SObject type now receives
+  the flow's value as that list (or a one-element list) instead of a
+  wrongly-built wrapper instance.
+- **Get Records output assignments can target a record variable's fields.** A
+  Get Records element storing field values into `Var_Rec.Field` threw a
+  `NullPointerException` when the record variable had no value yet; the record
+  is now created on the first field write, as the Flow runtime does, in both
+  the matched branch and the `assignNullValuesIfNoRecordsFound` branch.
+- **Flow formulas written as brace-wrapped expressions, and `BEGINS`, now
+  convert.** A record-triggered flow whose formula could not be translated was
+  dropped whole. Formulas like `{!TEXT($Record.Type__c) = 'Turn'}` or
+  `({!$Record.Name = 'Alpha'}) || ({!$Record.Name = 'Beta'})`, merge-field
+  braces around a whole expression, which Salesforce evaluates as parentheses,
+  now convert, as does `BEGINS`, which maps to case-sensitive `startsWith` with
+  a null operand yielding false.
+- **Generated flow locals for custom objects are valid identifiers.** An
+  Update, Create, or Get Records element names a local after its object, and a
+  custom object's `__` is illegal inside an Apex identifier, so a flow touching
+  `MyObject__c` failed to compile with "Invalid character in identifier". The
+  underscore runs are now collapsed.
+- **Workflow rules evaluate all criteria before running any field update.** A
+  rule's criteria are checked against the record as saved, so a rule no longer
+  fires on a value another rule's field update wrote in the same pass. The
+  matching rules' field updates still run in sequence and do see each other's
+  writes.
+- **A workflow rule's record type criteria match.** Setup stores a record type
+  condition as a criteria on `RecordTypeId` whose value is the record type's
+  *Name*, and aer compared it against the 18-character Id, so rules keyed off a
+  record type silently never fired. The comparison now matches the record type
+  name.
+- **Approval process entry criteria can read formula fields.** A criterion
+  comparing a formula field always saw it as blank, so a process gated on one
+  rejected every record and an explicit submission failed with
+  `NO_APPLICABLE_PROCESS`. The formula fields the criteria read are now
+  calculated on the target record before evaluation, and a failure to load the
+  record or calculate a formula propagates instead of becoming a silent
+  `NO_APPLICABLE_PROCESS`.
+- **A formula referencing another formula field respects each formula's own
+  blank treatment.** The referencing formula's "treat blank fields as zeroes"
+  setting leaked into the referenced formula's operands (a blank-as-blank
+  `Amount1__c - Amount2__c` computed `0 - 5` instead of null), while a
+  blank-as-zero referencing formula never zeroed a blank referenced formula in
+  SQL, so `SUM()` over such a formula returned null where reading the field
+  directly returned 0. Both paths now agree: the outer setting applies to the
+  referenced formula's result, not its operands.
+- **Formula comparisons of decimal fields are numeric.** A stored decimal
+  compared as text in generated SQL, so a comparison like `Amount__c > 0` was
+  true for a stored zero and the formula took the wrong branch. A formula
+  reading a field of a related object that another formula's query projection
+  had only partially loaded read blank; the related record is now reloaded
+  whenever it cannot answer the dependency path. `AND()` and `OR()` with a
+  single argument no longer abort the translation (which surfaced as a null
+  value in a `SELECT` and a `QueryException` in a `WHERE`).
+- **A blank string in a SOQL `IN` list matches null.** SOQL treats `''` as
+  null, so `Field IN ('A', '')` matches rows whose field is empty and
+  `NOT IN` excludes them. The rule already applied to `= ''` and `!= ''` but
+  not to `IN` lists, whether the empty string is a literal or arrives through a
+  bind.
+- **`!=` date comparisons match rows where the field is null.** SOQL treats
+  null as a value that differs from everything, so `Date__c != TODAY` matches
+  records with an empty field. The generic `!=` path already included them, but
+  the four date-specific comparison paths (date ranges and Date/DateTime
+  literals and binds) dropped them, returning no rows for unpopulated fields.
+- **A queried relationship stays null after its lookup Id is reassigned.**
+  sfapex never rebinds a queried parent relationship when code writes the
+  relationship's lookup Id field: a relationship that joined null stays null
+  for the row's lifetime, even after a successful update. aer hydrated the
+  newly referenced parent and then threw "SObject row was retrieved via SOQL
+  without querying the requested field" when code read through it.
+- **`getSObject` throws for a queried-but-empty lookup.** After
+  `SELECT Id, AccountId` on a contact with no account,
+  `getSObject('Account')` returned null where sfapex throws
+  `SObjectException`. The dynamic path now matches direct field access.
+- **Inserting a record with a populated Id fails the way sfapex reports
+  it.** The rejection was a bare internal error with status code
+  `UNKNOWN_EXCEPTION` (and `INVALID_FIELD` from `Database.insert`). It is now a
+  regular `DmlException` with status code `INVALID_FIELD_FOR_INSERT_UPDATE`,
+  the message "cannot specify Id in an insert call" naming the failing row and
+  the Id it carried (reported by `getDmlId`), and a matching `Database.Error`
+  from the `Database.insert` paths.
+- **A blank text value is normalized to null before insert.** The `insert`
+  keyword and the REST and Bulk entry points now normalize `''` to null before
+  the DML pipeline runs, as `Database.insert` and every update path already
+  did, so a `before insert` trigger gated on the field being null fires when
+  the caller assigned an empty string.
+- **Duplicate `ContentDocumentLink` rows are rejected, and a merged loser's
+  links hide with it.** A link is unique per (`ContentDocumentId`,
+  `LinkedEntityId`); inserting a second one fails with `DUPLICATE_VALUE`
+  naming both ids in 15-character form. A merge no longer moves the losing
+  record's links onto the master: they stay bound to the loser, hidden like
+  any deleted entity's links, and undeleting the loser restores them. Deleting
+  a link directly hard-deletes it, and linking a deleted entity is refused with
+  `INSUFFICIENT_ACCESS_ON_CROSS_REFERENCE_ENTITY` rather than
+  `ENTITY_IS_DELETED`.
+- **Async work enqueued by platform-event triggers during `Test.stopTest()`
+  runs.** A job that a subscriber trigger enqueued while `stopTest()` delivered
+  queued events was dropped, so a failure in it never surfaced. It now runs
+  after the test method returns, and an uncaught exception in it fails the
+  test. Jobs the test enqueues itself still run inside `stopTest()` and throw
+  there, and a failing job no longer stops the remaining queued events from
+  being delivered.
+- **Template email sends validate before rendering, and an empty template body
+  is allowed.** `Messaging.sendEmail` rejected a message whose body comes from
+  an email template with "Email body is required"; sfapex accepts a
+  template send even when the template has no body. A template message without
+  a `targetObjectId` now fails with "REQUIRED_FIELD_MISSING, Missing
+  targetObjectId with template" unless an explicit `plainTextBody` or
+  `htmlBody` exempts it.
+- **`EncodingUtil.base64Decode` decodes one continuous bit stream.** Input
+  carrying padding in the middle failed with "illegal base64 data"; sfapex
+  skips whitespace and `=` wherever they appear, emits whole bytes from the
+  remaining six-bit values, and drops trailing bits that do not fill a byte, so
+  `'QUJDRA==QUJDRA=='` decodes to nine bytes. Only the standard alphabet is
+  recognized: the URL-safe `-` and `_` raise `System.StringException`
+  ("Unrecognized base64 character: -"), and rejections are catchable Apex
+  exceptions rather than internal errors.
+- **A null String into the JSON parser raises `NullPointerException`.**
+  `JSON.createParser`, `JSON.deserialize`, `JSON.deserializeUntyped`, and
+  `JSON.deserializeStrict` returned a raw internal error for a null input that
+  only `catch (Exception)` could catch; all four now throw
+  `System.NullPointerException` with the message "null input to JSON parser".
+- **`Decimal.valueOf(null)` reports "Argument cannot be null."** The null
+  String overload threw `NullPointerException` with the generic "Attempt to
+  de-reference a null object" instead of the message
+  `Integer.valueOf(String)` and `Blob.valueOf` already produce.
+- **Extending a built-in exception other than `System.Exception` is a compile
+  error.** A class extending, e.g., `System.CalloutException` compiled in aer
+  but fails to deploy to Salesforce; the type checker now reports "Non-virtual
+  and non-abstract type cannot be extended". A user exception may still extend
+  `System.Exception` or another user exception.
+- **`StandardSetController.getListViewOptions` reports the SObject's list
+  views.** It returned an empty list for every controller. It now returns one
+  `SelectOption` per `ListView` record on the controller's SObject and an
+  SObject with no list views reports the single built-in option
+  `000000000000000AAA` labelled "All". `getFilterId` answers with the first
+  option's value until a filter is set, and constructing a controller from an
+  empty untyped `List<SObject>` is rejected with "Record set cannot be empty."
+- **`try` and `catch` lines count as executable coverage locations.**
+  Salesforce reports the `try` line and each `catch` line of a try statement as
+  coverage locations. aer counted none of them, so a class with a try/catch
+  reported fewer executable lines than the org.
+- **Optional-feature fields replace type-less field stubs from source.** An
+  sfdx source tree may keep a bare `<fullName>` stub file for a standard field
+  retrieved for history tracking or field permissions. When the field only
+  exists under an optional feature, the stub used to survive as the field's
+  definition: `Contact.Division` described as a createable text field instead
+  of the read-only "Division ID" picklist (so filling every createable field
+  failed with `INVALID_OR_NULL_FOR_RESTRICTED_PICKLIST`), and the
+  Territory2 lookup fields had no type or relationship. The Division and
+  Enterprise Territory Management features now install their definitions over
+  such stubs.
+- **Metadata records import in a stable order.** Records imported from a
+  source tree were appended in directory-iteration order, which varies run to
+  run, and a record's position decides its row Id. Records are now ordered by
+  source path, so the Ids depend on the source tree alone.
 
 ## v1.2.40 — 2026-08-27
 
