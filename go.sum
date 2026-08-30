@@ -330,8 +330,8 @@ github.com/CloudyKit/jet v2.1.3-0.20180809161101-62edd43e4f88+incompatible/go.mo
 github.com/CloudyKit/jet/v3 v3.0.0/go.mod h1:HKQPgSJmdK8hdoAbKUUWajkHyHo4RaU5rMdUywE7VMo=
 github.com/ForceCLI/force v1.9.0 h1:tfZkky9zAtqQXWoJQW/lH89U+t5WM63d+oQio+5OIgI=
 github.com/ForceCLI/force v1.9.0/go.mod h1:vZhTNH4A1cgnFV21igwqwMRy01TXYsquzdXF4LnrZB8=
-github.com/ForceCLI/force-md v0.49.0 h1:vdg2MtQKOHafKPRKMI5DGF3UrQ2cmzYGfW0uEVdOjfI=
-github.com/ForceCLI/force-md v0.49.0/go.mod h1:8RNh1Fo33UbMNHIYoD0u6DAYjCbI7n5NlavyfVN9m4k=
+github.com/ForceCLI/force-md v0.49.1 h1:i/+kDmiFL8Xb8OeKaMifNAmY53DEHrO9jX1/gAPVV24=
+github.com/ForceCLI/force-md v0.49.1/go.mod h1:8RNh1Fo33UbMNHIYoD0u6DAYjCbI7n5NlavyfVN9m4k=
 github.com/ForceCLI/inflect v0.0.0-20130829110746-cc00b5ad7a6a h1:mMd54YgLoeupNpbph3KdwvF58O0lZ72RQaJ2cFPOFDE=
 github.com/ForceCLI/inflect v0.0.0-20130829110746-cc00b5ad7a6a/go.mod h1:DGKmCfb9oo5BivGO+szHk2ZvlqPDTlW4AYVpRBIVbms=
 github.com/GoogleCloudPlatform/grpc-gcp-go/grpcgcp v1.5.0/go.mod h1:dppbR7CwXD4pgtV9t3wD1812RaLDcBjtblcDF5f1vI0=
@@ -965,8 +965,8 @@ github.com/nightlyone/lockfile v1.0.0 h1:RHep2cFKK4PonZJDdEl4GmkabuhbsRMgk/k3uAm
 github.com/nightlyone/lockfile v1.0.0/go.mod h1:rywoIealpdNse2r832aiD9jRk8ErCatROs6LzC841CI=
 github.com/nxadm/tail v1.4.4 h1:DQuhQpB1tVlglWS2hLQ5OV6B5r8aGxSrPc5Qo6uTN78=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
-github.com/octoberswimmer/aer v1.4.0-beta.4 h1:GdXpaT2BqvYYc5Wx34KL9BbPiSAufUTNl+Zge5hP5Rw=
-github.com/octoberswimmer/aer v1.4.0-beta.4/go.mod h1:In67s1lzAAJJ/L15gQpx9GJHOk0qp+rGETXDCCyM47Q=
+github.com/octoberswimmer/aer v1.4.0-beta.5 h1:PMBntb0zxQ4EPDo5UID4OAyoOoe/mWgmEzyEVnPf2D4=
+github.com/octoberswimmer/aer v1.4.0-beta.5/go.mod h1:XLdc/KnG5fbKdFUXe55D5KxxMLhu4icQo4GMRkPhFVM=
 github.com/octoberswimmer/antlr/v4 v4.13.1-octoberswimmer.2 h1:rpDkgKKK6P88RfMDuRhbpdV3miYbuXykNy/fGEMmmjA=
 github.com/octoberswimmer/antlr/v4 v4.13.1-octoberswimmer.2/go.mod h1:r0JDJcPLkuzJ/NPwHZYpNBJoCXYSWHbFSr9F1R1FWYQ=
 github.com/octoberswimmer/apexfmt v0.60.0 h1:LqV7rIbRswXAopLR1/MSc0e9snym9RQP/oLWA/B/aDQ=
@@ -977,8 +977,8 @@ github.com/octoberswimmer/libc v1.67.7-octoberswimmer.7 h1:gE+3YfB+K9kCN5trTL/X2
 github.com/octoberswimmer/libc v1.67.7-octoberswimmer.7/go.mod h1:nfj5e+9K77S6nKCbt5sVeAt5Be1AVxhd7jooGVJR7Dk=
 github.com/octoberswimmer/memory v1.11.0-octoberswimmer.6 h1:uYPCBoXogYIaBU0mPp1P7KpYuv8D4pzFjuJex1+EDr0=
 github.com/octoberswimmer/memory v1.11.0-octoberswimmer.6/go.mod h1:qAxvZaeFZnTB98TgFzMYVAawXSSXNHRdgf8fSS47svc=
-github.com/octoberswimmer/sformula v0.17.0 h1:xygPXcT3JiY1JXrwvEI2WK1oWhCTh/XX55SVyrbEKdI=
-github.com/octoberswimmer/sformula v0.17.0/go.mod h1:jj/jQdckA8mXgz9vOT8B1vfF5Jf9MrPuSQVAjLUr8Yo=
+github.com/octoberswimmer/sformula v0.18.0 h1:opUqpwNAAHH62eFl9WABBBn3fyCnVPST17XQOPXu++8=
+github.com/octoberswimmer/sformula v0.18.0/go.mod h1:jj/jQdckA8mXgz9vOT8B1vfF5Jf9MrPuSQVAjLUr8Yo=
 github.com/octoberswimmer/skyfire v0.6.0 h1:rTakOLMi/iTyg6r6pckyyeVlPedv46KiqSPgdurFTso=
 github.com/octoberswimmer/skyfire v0.6.0/go.mod h1:BTuqcnV0bbGxl1DjKVtiLiY9nZAVYPDsAmHcSGysrjk=
 github.com/octoberswimmer/sqlite v1.46.1-octoberswimmer.6 h1:/6a6JIP/RcVNNo6XmlttJsUH5Ku9ekckjzsV0mtZ6zo=
