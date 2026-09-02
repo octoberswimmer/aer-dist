@@ -196,7 +196,7 @@ require (
 	pluginrpc.com/pluginrpc v0.5.0 // indirect
 )
 
-replace github.com/antlr4-go/antlr/v4 => github.com/octoberswimmer/antlr/v4 v4.13.1-octoberswimmer.2
+replace github.com/antlr4-go/antlr/v4 => github.com/octoberswimmer/antlr/v4 v4.13.1-octoberswimmer.3
 
 // Force newer split genproto modules to avoid ambiguous import conflicts
 // // Required until github.com/sourcegraph/scip updates its dependencies
