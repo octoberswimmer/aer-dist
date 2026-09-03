@@ -120,6 +120,10 @@ release: checksum
 		echo "gh CLI is required for 'make $@'."; \
 		exit 1; \
 	fi
+	@if ! command -v lodge >/dev/null 2>&1; then \
+		echo "lodge is required for 'make $@' to record the release: go install github.com/octoberswimmer/lodge@latest"; \
+		exit 1; \
+	fi
 	@if [ "$(VERSION)" = "dev" ] || printf "%s" "$(VERSION)" | grep -q "dirty"; then \
 		echo "VERSION '$(VERSION)' is not a clean tag. Tag the commit or invoke 'make $@ VERSION=vX.Y.Z' with a published tag."; \
 		exit 1; \
@@ -128,6 +132,11 @@ release: checksum
 		echo "Tag '$(VERSION)' does not exist. Create the tag before running 'make $@'."; \
 		exit 1; \
 	fi
+	LODGE_REPO=octoberswimmer/evidence-store lodge release --product aer --version "$(VERSION)" \
+		--commit "$$(git rev-parse --short "refs/tags/$(VERSION)^{commit}")" \
+		--checksums-file "SHA256SUMS-$(VERSION)" \
+		--ci "built by make release from a clean tag" \
+		--channels "GitHub Releases$(if $(PRERELEASE_FLAG),, and the October Swimmer Homebrew tap)"
 	git push octoberswimmer "$(VERSION)"
 	gh release create "$(VERSION)" --title "aer $(VERSION)" --notes-from-tag --verify-tag $(PRERELEASE_FLAG) $(RELEASE_ASSETS)
 	@if [ -z "$(PRERELEASE_FLAG)" ]; then HOMEBREW_NO_AUTO_UPDATE=1 brew bump-cask-pr aer --version $(VERSION:v%=%); fi
