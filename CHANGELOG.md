@@ -224,6 +224,21 @@
   check.** sfapex skips that check for tests run as part of a deployment or
   validation, and the new flag, listed under the `test` command's execution
   options, reproduces the same leniency for a local run.
+- **A package's own metadata enables the org features it needs.** Building,
+  validating, or loading a package whose metadata references a feature-gated
+  field or object failed with errors such as "field CurrencyIsoCode does not
+  exist" for a validation rule or formula, or "references unknown sObject" for
+  a lookup to `ConsumptionSchedule`, unless the matching `--feature` flag was
+  passed. `aer package create` and every `.pkg` load path (`test`, `exec`,
+  `server`) now infer the features a package implies, e.g. MultiCurrency from a
+  `CurrencyIsoCode` reference, PersonAccounts from a lookup filter naming a
+  person-contact field, and the feature owning any feature-gated object a
+  reference resolves through, and enable them before the package's references
+  are resolved.
+- **`aer package edit` changes a package in place.** `aer package edit trigger`
+  adds or replaces a trigger in a package, reading the source from stdin or an
+  editor and storing it the way `package create` does, and `aer package edit
+  field --display-format` records an auto-number display format.
 
 ### Fixes and performance
 
@@ -981,6 +996,388 @@
   source tree were appended in directory-iteration order, which varies run to
   run, and a record's position decides its row Id. Records are now ordered by
   source path, so the Ids depend on the source tree alone.
+- **Rows a test class did not write are hidden from tests without
+  `SeeAllData`.** Apex test data isolation is a filter over query results, and
+  aer applied none of it: committed org rows from a bootstrap database visible
+  to every test, so a test could match a pre-existing record and fail its own
+  insert with `DUPLICATES_DETECTED`. In a test without `SeeAllData`, a row the
+  test class has not inserted or updated is now hidden from SOQL by Id and by
+  field, from `countQuery`, aggregates, query locators, SOSL, semi-joins on
+  either side, child relationship subqueries, and duplicate-rule matching, and
+  a visible row's parent traversal into a hidden row selects as null. Setup and
+  metadata objects (`User`, `Profile`, `RecordType`, `Group`, `Folder`,
+  `EmailTemplate`, `ListView`, `Period`, `BusinessHours`, `Division`, and
+  others) stay visible.
+- **`Limits.getHeapSize()` counts query results and batch scopes.** It moved
+  only for string concatenation, `List.add`, and `Map.put`, so every query
+  measured a heap delta of zero, and a batch `execute()` started at zero heap,
+  so a batch that flushes partial output when the heap fills never flushed.
+  Query results are now counted.
+- **Dropping a query result from a collection or field releases its heap.**
+  Release was hooked only on overwriting a local, overwriting a static, and
+  `List.clear`, so every other way of dropping the last reference left the heap
+  charged for the rest of the transaction. `List.remove`, overwriting a `List`
+  element, `Map.remove`, overwriting a `Map` value, and nulling an instance
+  field now release as well.
+- **Saving half a geolocation is rejected.** Setting a latitude without its
+  longitude (or the reverse) now raises `FIELD_INTEGRITY_EXCEPTION` naming the
+  missing half, on address compounds and custom Location field components
+  alike. The update path validates the merged pre-save record, so supplying one
+  half against a stored other passes while clearing one half fails.
+- **Apex identifier shape is validated at every declaration site.** The rule
+  rejecting a leading or trailing underscore and a double underscore covered
+  class names, method names, parameters, and locals, but not for-each loop
+  variables, catch variables, fields, properties, or enum constants, so aer
+  accepted code that fails to deploy.
+- **Scheduled jobs run at `Test.stopTest()` regardless of their cron
+  expression.** A job was run only when its cron expression matched the current
+  date. sfapex runs every job scheduled with `System.schedule`, whatever
+  the expression says and whether it was scheduled before or after
+  `Test.startTest()`; only `System.abortJob` prevents the run.  A job that
+  throws propagates its exception out of `Test.stopTest()`, rolls back only its
+  own DML, stops the scheduled jobs after it, still lets queued queueables run,
+  and fails the test even when the method catches the exception; its
+  `AsyncApexJob` stays `Queued` and its `CronTrigger` `WAITING`.
+- **`Database.executeBatch` deep-copies the batchable's state.** The
+  serialization clone copied field values shallowly, so objects nested in batch
+  fields were shared with the caller's instance and a results buffer mutated
+  during `execute()` leaked its rows back into the caller's reference. Values
+  are now deep-copied with aliasing and cycles preserved, so `Database.Stateful`
+  accumulation still works across a job's chunks.
+- **`Test.createStub` stubs survive being queued with a batch job.** The
+  serialization clone treated stubs as non-serializable and reset them to their
+  field initializers, so a stateful batch that received stubs through its
+  constructor ran with null dependencies when `Test.stopTest()` executed the
+  job. sfapex preserves injected stubs across batch queueing; only
+  `@IsTest` class instances are lost.
+- **Multi-argument `System.Url` constructors are implemented.** Only
+  `Url(spec)` existed, so `new Url(context, spec)` failed with "URL constructor
+  requires 1 argument". `Url(context, spec)`, `Url(protocol, host, file)`, and
+  `Url(protocol, host, port, file)` now work: a null context throws a
+  `NullPointerException` even for an absolute spec, a spec carrying a protocol
+  stands alone, a query-only spec truncates the context path at its last slash,
+  other relative specs resolve against the context, and a port of `-1` means no
+  explicit port.
+- **Instance field access binds to an inherited property, not a same-named
+  subclass static.** Apex names are case-insensitive, so a subclass's
+  `static final ACTION_TYPE` constant can collide with an `action_type`
+  property inherited from a parent. Access through an instance expression
+  (`this.x`, `var.x`, a chained access) bound to whichever the class chain
+  produced first, so `this.action_type = ACTION_TYPE` wrote the static and the
+  parent's methods read the untouched property as null. Instance access now
+  prefers a non-static member anywhere in the inheritance chain, and reaches
+  the inherited property's setter body; access through a class name stays a
+  static context.
+- **A `return` in a `finally` block wins after the `try` block throws.** The VM
+  applied a `finally` block's return only when the `try` block completed
+  normally; once it threw, the return was discarded and control fell through to
+  the statement after the `try`, or the exception was re-thrown. A method that
+  catches its own exceptions and returns its result from a `finally` block
+  therefore returned whatever followed the `try` statement, often null. The
+  `finally` block's return value now wins and discards an exception no `catch`
+  clause handled.
+- **Null `Set` and `Map` copy constructors throw a `NullPointerException`.**
+  `new Set<T>(nullList)` built a one-element set holding the null and
+  `new Map<K,V>(nullMap)` and `new Map<Id,SObject>(nullList)` built empty maps,
+  so code relying on the exception to enter a `catch` block ran on through the
+  `try`. `new List<T>(null)` remains the exception, yielding an empty list.
+- **Field access on a null SObject throws even in argument position.** Reading
+  a field off a null SObject held in a local or a parameter throws a
+  `NullPointerException`, but the VM converted the error to a null value when
+  the access was written as a method argument, a list-literal element, an
+  SObject constructor value, or the argument to `String.valueOf`, so the
+  failure surfaced later inside the callee or not at all.
+- **A for-each over a null collection throws.** The statement skipped the loop
+  whenever the collection came from a method call returning null; sfapex
+  throws a `NullPointerException` for a null list from a user method, an
+  interface method, `Map.get`, a method argument, or a ternary.
+- **An out-of-range list subscript reports sfapex's message.** A subscript
+  read threw a `ListException` whose message carried the source path, line
+  number, and list size ("Class.cls:30: list index out of bounds: 0 (list size:
+  0)"); it now reports "List index out of bounds: 0", as `get()`, `set()`,
+  `remove()`, and `add(index, value)` already did. Code that inspects a caught
+  `ListException`'s message now matches.
+- **A chained static field token resolves to the root object's field.**
+  `Account.Owner.Name` is `Account.Name` on sfapex: every intermediate
+  segment is ignored, whether it names a relationship, a plain field, the
+  `fields` accessor, or nothing at all. The VM instead built a relationship
+  name from the chain and failed with "getDescribe() called on non-SObjectField
+  instance". Only the last segment must exist on the root object, so
+  `Account.Owner.Alias` and the bare `Account.Owner` fail to compile with
+  "Variable does not exist". A Schema token or describe value also never
+  converts to or from a primitive: `String s = Account.Name` is "Illegal
+  assignment from Schema.SObjectField to String", the reverse assignment, a
+  return, and a token passed for a `String` parameter all fail as they do on
+  sfapex.
+- **`System.Label` references resolve case-insensitively in unnamespaced
+  code.** A label reference whose casing differed from the label definition
+  missed the lookup in subscriber code and leaked an unresolved reference into
+  runtime values, so `Boolean.valueOf` on it threw "Invalid boolean or String:
+  &{System.Label.X }". Label references are now canonicalized whatever the
+  executing namespace.
+- **JSON deserialization checks the first token's type.** `JSON.deserialize`,
+  `JSON.deserializeStrict`, and `JSON.deserializeUntyped` read the first
+  complete JSON value and ignore trailing content, so an unquoted
+  `2024-01-07T00:00:00.000Z` deserialized to a `Datetime` from its leading
+  `2024` instead of raising "Malformed JSON". A bare number in a temporal
+  position now reads as its text, a `String` target returns the token's text
+  whatever the token is, `List` and `Set` targets raise "Expected '[' at the
+  beginning of List/Set" for any non-array token, `Map` and user-class targets
+  raise the matching "Expected '{'" errors, numeric and Boolean targets coerce
+  string tokens through their trimmed text and truncate float tokens toward
+  zero, and bare words fail with Jackson's "Unexpected character" and
+  "Unrecognized token" messages and locations. `JSON.serialize` no longer emits
+  internal `__`-prefixed markers such as `__isClone`, so a cloned, inserted
+  record round-trips with its Id serialized last.
+- **`JSON.deserialize` runs a property's setter body.** It wrote the property's
+  hidden backing value directly, so a property whose setter stores the value in
+  a separately declared field never ran that setter and a getter reading the
+  declared field returned null. The setter now runs for each JSON member
+  present, including an explicit null; absent members are skipped and a member
+  whose property has no setter is silently ignored, in both lenient and strict
+  modes.
+- **JSON rejects a space between the date and time.** Joda's
+  `dateOptionalTimeParser` separates them with a literal `T`, so
+  `"2026-04-01 00:00:00"` now fails as malformed after the date instead of
+  parsing. `Datetime.valueOf` still accepts the space form. An SObject temporal
+  field's "Cannot deserialize instance of ..." error carries the failing
+  member's document location for a `Datetime` field and none for a `Date` or
+  `Time` field, whichever way the value failed.
+- **`SUM` totals exactly.** A sum over a numeric field accumulated in floating
+  point, so a run of scale-2 values landed a fraction of a cent off
+  (`517.45 + 334.98 + 246.00` gave `1098.4300000000001`). Numeric sums now
+  total in decimal arithmetic on both SQLite and PostgreSQL.
+- **A formula following `Owner:Queue` can read `QueueName`.** sfapex
+  presents the owning `Group` through a Queue pseudo-object whose `Name` is
+  exposed as `QueueName`; the SQL generator resolved the qualifier to `Group`
+  and then failed with "No such column 'QueueName' on entity 'Group'", so any
+  query selecting such a formula field threw a `QueryException`.
+  `Owner:Queue.DeveloperName` and every other Queue field keep their `Group`
+  names.
+- **A null formula field reads as a typed blank from another formula.** In
+  record-context evaluation (trigger records, validation rules), a formula
+  field whose own formula traverses a null lookup resolved to null, so a
+  consuming formula's `Check__c = false` or `Text__c <> 'x'` evaluated to
+  unknown instead of true. A checkbox formula field now materializes as
+  `false` and a text formula field as the empty string; a null-lookup traversal
+  written directly in the consuming formula still evaluates as null.
+- **Email field values are trimmed and lowercased before triggers run.**
+  sfapex stores an Email-type field's value trimmed and fully lowercased,
+  rewriting it before before-triggers run on insert, update, upsert, and
+  `Database.insert`, for standard and custom Email fields alike, while the
+  caller's in-memory record keeps what it was assigned. aer kept the assigned
+  casing, so a queried email compared against a lowercase literal failed.
+- **Trigger record numeric values carry the field's declared scale.** DML
+  coerces `Trigger.new` values to the field's scale before triggers run, so a
+  currency field assigned `Integer` 84 reads as `84.00` in every trigger
+  context while the caller's SObject keeps the scale it was assigned. aer left
+  the caller's scale, so Apex building string keys from both `Trigger.new` and
+  queried records never matched them.
+- **Assigning a wrong-prefix Id to a record's own `Id` field is rejected.**
+  sfapex raises "TypeException: Invalid id value for this SObject type"
+  both for the constructor form (`new Account(Id = contactId)`) and for direct
+  assignment (`acc.Id = contactId`, including string literals and
+  `Id.valueOf` values); aer checked only the constructor form.
+- **An upsert batch rejects repeated external Id values.** There was no
+  duplicate-key check, so two records sharing an external Id value each went
+  through the normal save path. sfapex rejects every record whose external
+  Id value repeats within the batch, before field validation, with
+  `DUPLICATE_VALUE` and "Duplicate external id specified: <value>". Records
+  with a distinct value in the same batch still save, a plain external Id field
+  compares case-insensitively and reports the lowercased value while a
+  case-sensitive field keeps the spellings distinct, and an Id-keyed upsert
+  naming the same record twice throws `System.ListException` "Duplicate id in
+  list".
+- **A derived `Group` `DeveloperName` gets a numeric suffix when it collides.**
+  A `Group` inserted without a `DeveloperName` got one derived from its `Name`
+  with no regard for existing groups, so inserting a queue named after an
+  already-deployed queue produced two rows with the same `DeveloperName` and
+  queries by that name returned both. sfapex appends the first free integer
+  suffix (`Name`, `Name1`, `Name2`, …) among groups of the same `Type`,
+  assigned per row so a batch of same-named groups is uniquified within the
+  batch; a queue and a regular group may still share a name.
+- **A duplicate rule runs on update only when a matched field changes.**
+  sfapex recomputes match keys as it saves, so editing an unrelated field
+  never surfaces a duplicate the record already had. aer ran every applicable
+  rule on every update, so updating an unrelated field of a record whose name
+  already duplicated another failed the save with `DUPLICATES_DETECTED`.
+  Renaming a record onto another is still detected, including when only the
+  letter case of the matched value changes.
+- **Approval step entry criteria decide which step a record enters.** They were
+  not modeled, so a record that should skip a step still had that step's
+  approvers resolved and a submission could fail with `MANAGER_NOT_DEFINED` on
+  a step it never enters. Criteria are now parsed from each `approvalStep` and
+  evaluated with the workflow criteria evaluator: a record that fails them
+  skips the step, running out of steps completes the approval, and a submission
+  that enters no step completes without a workitem while the request itself
+  still succeeds.  `Approval.ProcessSubmitRequest.setSkipEntryCriteria` was
+  stored and never read; it now submits the record to the named process whether
+  or not the record meets that process's entry criteria.
+- **Workflow and approval criteria support the relational operations.**
+  `lessThan`, `greaterThan`, `lessOrEqual`, and `greaterOrEqual` fell through
+  to a default that always evaluated false, silently disabling every workflow
+  rule and approval criterion resting on them. Numbers now compare numerically
+  and everything else as text, which orders ISO-8601 dates correctly, and an
+  unmodeled operation reports itself instead of quietly failing. A blank
+  numeric field reads as zero in these comparisons, as it does on the org, so a
+  record with a null number meets "lessThan 50000"; blanks of other types still
+  have no ordering.
+- **Submitting a record that is already in an approval process fails.**
+  `Approval.process` accepted a `ProcessSubmitRequest` for a record with a
+  pending `ProcessInstance` and created a second one. A record can be in only
+  one approval process at a time, so the submission now fails with
+  `ALREADY_IN_PROCESS`.
+- **A `BackToPrevious` rejection returns the process to the previous step.**
+  Rejecting a step whose `rejectBehavior` is `BackToPrevious` ended the
+  process. It now records the Rejected step row, runs only that step's
+  `rejectionActions`, creates a new workitem for the previous step's approver,
+  and leaves the instance `Pending`.
+- **An approval process's field updates save the record.** They were written
+  straight to storage, so the object's triggers, workflow rules, and
+  record-triggered flows never ran — an org that keys a record-triggered flow
+  on a flag field an approval action sets saw nothing happen. They now save
+  through the pipeline like a workflow field update, bypassing validation
+  rules.
+- **`Approval.ProcessWorkitemRequest` rejects unknown and null actions.** The
+  action was upper-cased and any unrecognized value was treated as a successful
+  "Submitted" transition. It is now matched exactly and case-sensitively
+  against `Approve`, `Reject`, and `Removed`; anything else, including
+  `approve` and `APPROVE`, fails with `INVALID_OPERATION` "Illegal transition
+  type", and a null action fails with `REQUIRED_FIELD_MISSING` naming the
+  action field. A classified approval failure thrown under `allOrNone=true` now
+  carries its status code, message, and fields as the `DmlException`'s DML
+  error row, so `getDmlType`, `getDmlMessage`, and `getDmlFieldNames` report
+  them instead of `UNKNOWN_EXCEPTION`.
+- **A workflow field update is judged against the stored row.** It compared
+  against the save's in-memory snapshot, so when a nested DML from the save's
+  own after triggers had already saved the value the field update computes, the
+  update was treated as a change and re-fired the update triggers on every
+  save, looping trigger and workflow cycles into the SOQL query limit. The
+  stored row is now re-read and fields that already match it are dropped before
+  deciding whether anything changed.
+- **A rollup change that re-saves the parent runs its record-triggered flows.**
+  The rollup recalculation path ran validation rules and Apex triggers on the
+  parent but dispatched no flows, so a before-save flow gated on the rollup
+  field changing never fired and after-save flows on the parent were skipped.
+- **Record-triggered flows run again for each top-level DML statement.** The
+  per-statement flow dedupe was cleared only by insert and update statements,
+  so a flow that ran for a record during an earlier statement's cascade was
+  silently skipped when a later delete, undelete, upsert, or merge statement,
+  or any `Database.` method, saved the record again. Every top-level DML entry
+  point now clears it; DML issued by a flow stays inside the flow's cycle.
+- **`Database.insert` and `Database.delete` dispatch record-triggered flows.**
+  `Database.insert` (and the insert half of `Database.upsert`) ran before-save
+  flows and workflow rules but never dispatched after-save flows, so a flow's
+  immediate path never ran for records inserted that way, and `Database.delete`
+  skipped before-delete flows that the `delete` statement runs.
+- **A before-save flow's Custom Error survives a partial save.** The
+  partial-save paths behind `Database.insert` and `Database.update` with
+  `allOrNone=false` ran the before-save flows and then cleared every record's
+  errors before the Apex triggers, so a record the flow rejected lost its error
+  and saved. Records carrying errors after the before-save flows now leave the
+  trigger batch and keep their errors for their `SaveResult`.
+- **A flow record element with a fault connector takes the fault path.** A
+  create, update, or delete element carrying a fault connector was converted as
+  though it had none, so a row-level failure threw out of the generated flow
+  code and failed the triggering save. Such an element now saves with
+  `allOrNone` false and hands each interview the message Salesforce reports as
+  `$Flow.FaultMessage`: rows that succeed stay saved, only the interviews whose
+  rows failed take the fault path, and an Update Records element whose filter
+  matches no records is not a fault. An element with no fault connector keeps
+  its unhandled-fault behavior.
+- **Deleting an already-deleted record fails with `ENTITY_IS_DELETED`.** A
+  record an enclosing statement is still deleting stays a no-op, which is what
+  a cascade needs, but a delete that has already completed no longer makes a
+  later one succeed silently.
+- **Flow Transform elements run in interviews.** An interview that reached one
+  failed with "Unknown flow element", and a subflow called from a
+  record-triggered flow raised that as `CANNOT_EXECUTE_FLOW_TRIGGER` and rolled
+  back the save. A Map binds each member of the source collection to the
+  element's item variable and evaluates the element's actions against it,
+  producing scalars or records, and a Count or Sum reduces the named
+  collection. A Get Records element that found nothing stores null, and mapping
+  null stores null rather than an empty collection, so an Is Null decision on a
+  mapped output takes the right branch.
+- **`BLANKVALUE` converts in flow formulas.** A flow formula calling it failed
+  conversion as an unsupported function, and an unconvertible formula drops the
+  whole flow, so none of that flow's automation ran. It now converts to a
+  conditional: over text the blank test is `String.isBlank`, matching the
+  formula engine's rule that null, empty, and whitespace-only text is blank,
+  and over every other type it is a null comparison.
+- **A flow's string values render their `{!reference}` merge fields.** The
+  interview engine assigned such a value verbatim, so an invocable action or a
+  text field received the template text, and the converter concatenated the raw
+  typed values. Both engines now render each merge field the way the Flow
+  runtime renders a value landing in text: a number in the locale's grouped
+  form, a date in its long form, a global variable's Id as fifteen characters,
+  a record Id as eighteen, and null as empty text. A literal's merge fields
+  resolve against the variable values at element entry, so a text variable an
+  earlier item of the same Assignment element sets renders empty in a later
+  item's literal.
+- **A record-triggered flow's entry filters compare an empty string as null.**
+  Start filters use SOQL semantics, where an empty string is null, so a
+  `NotEqualTo ''` filter excludes records whose field is null and `EqualTo ''`
+  matches them. aer compiled these to Apex comparisons against `''`, so a flow
+  gated on `Field NotEqualTo ''` ran for records with a null field and its
+  record updates overwrote fields read from a null parent. Decision conditions
+  keep Apex semantics.
+- **A cross-object reference in an interview hydrates the parent record.** A
+  path like `var_Rec.Parent__r.Field__c` on a trigger record passed into a
+  subflow silently resolved to null, because trigger records strip relationship
+  data, so a `NotEqualTo` decision on it wrongly matched and fired flow paths
+  Salesforce skips. Missing parents are now fetched through the lookup, in
+  decision conditions, flow formulas, and record-update input values.
+- **A subflow's Apex actions batch across a trigger batch.** The Flow runtime
+  stops every interview at an action element, makes one invocable call carrying
+  all their requests, and resumes each with its own row of the outputs; the
+  interview engine called the invocable once per interview, so an action
+  reached through a subflow charged the transaction one call and one set of
+  SOQL queries per triggering record. A faultable call's failure routes every
+  parked interview through the element's fault connector, and Apex that
+  observes a parked interview through `getVariableValue`, `isPaused`, or
+  `wasExecuted` forces it to complete on its own. An Apex action's
+  automatically-stored output is now available as `<element>` and, for an
+  Apex-class output, `<element>.<field>`.
+- **A filter-criteria Update Records element queries once per trigger batch.**
+  In a lockstep handler flow, including a Process Builder action group updating
+  the record that started the process, the element issued its filter SOQL once
+  per interview, so an N-record trigger batch spent N queries where the Flow
+  runtime spends one.
+- **`ChatterFeeds.postFeedItem` is implemented.** The entry point removed after
+  API 31.0 threw `NotFoundException` unconditionally. It now inserts the same
+  `FeedItem` as `postFeedElement` for both the `FeedItemInput` and plain-text
+  forms, running the DML pipeline so subscriber triggers see the post, and
+  answers with a `ConnectApi.FeedItem` whose type and visibility are the
+  ConnectApi enums. Message bodies also flatten mention segments now, so
+  `postFeedElement`, `postComment`, and `postAnnouncement` accept a mention
+  rather than being text-only.
+- **A source-loaded report is owned by its folder.** sfapex models report
+  ownership through the `Folder` object, so a report deployed into a public
+  folder carries the folder's Id in `OwnerId`. aer defaulted it to the running
+  user, so `SeeAllData` code filtering `OwnerId != UserInfo.getUserId()` never
+  saw such reports.
+- **A permission set group naming a missing permission set is reported at load
+  time.** It previously failed deep inside VM pool initialization, long after
+  metadata loading. The fully merged schema is now validated up front, and the
+  error lists every broken group and all of its missing permission sets at once
+  instead of aborting on the first.
+- **A mock package survives `unpack` and `create` unchanged.** Rebuilding a
+  package built by `aer package mock` altered its schema: Location fields were
+  exported as Text with their halves as separate standard fields, person
+  account (`__pc`) fields lost their custom flag, custom metadata types gained
+  a `Name` field and had their standard fields defined three different ways,
+  picklists imported with no length instead of 255, an ampersand in a field
+  label or picklist value label came back as `&amp;`, a metadata
+  `<defaultValue>` was stored two different ways, custom settings got an
+  `OwnerId` and the wrong `Name` length, and global value sets and auto-number
+  name fields were dropped. Each is fixed, so the rebuilt package carries the
+  same fields as the original.
+- **DataWeave handles quoted dot-selector keys, ragged CSV, and format
+  directives.** The DataWeave engine now parses quoted keys in dot
+  selectors, accepts CSV rows whose field count differs from the header, and
+  parses temporal coercion format directives as Java `DateTimeFormatter`
+  patterns, including optional sections and the zone-less `LocalDateTime` and
+  `LocalTime` types.
 
 ## v1.2.40 — 2026-08-27
 
