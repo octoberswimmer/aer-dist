@@ -108,7 +108,7 @@
   `AccountingPeriod.EndDate` referenced by a `LegalEntyAccountingPeriod`
   becomes read-only.
 - **Server dev-tool pages share the landing page design.** The preview
-  (`/dev/lwc`, `/dev/uibundle`, `/dev/visualforce`), monitoring (`/dev/events`,
+  (`/dev/lwc`, `/dev/uibundle`), monitoring (`/dev/events`,
   `/dev/jobs`), and inspect (`/dev/explorer`, `/dev/mocks`) pages now use the
   same dark-default, light-override design as the redesigned landing page, with
   a persistent theme toggle whose choice follows the user across pages.
