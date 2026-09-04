@@ -1,6 +1,8 @@
 # Changelog
 
-## v1.4 (in development)
+## v1.4.0 — 2026-09-04
+
+Changes in v1.4.0 that are not part of the v1.2.x patch line.
 
 ### New capabilities
 
