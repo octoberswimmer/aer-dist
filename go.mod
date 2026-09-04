@@ -2,7 +2,7 @@ module aer
 
 go 1.26.0
 
-require github.com/octoberswimmer/aer v1.4.0-beta.6
+require github.com/octoberswimmer/aer v1.4.0
 
 require (
 	buf.build/gen/go/bufbuild/bufplugin/protocolbuffers/go v1.36.11-20250718181942-e35f9b667443.1 // indirect

@@ -965,8 +965,8 @@ github.com/nightlyone/lockfile v1.0.0 h1:RHep2cFKK4PonZJDdEl4GmkabuhbsRMgk/k3uAm
 github.com/nightlyone/lockfile v1.0.0/go.mod h1:rywoIealpdNse2r832aiD9jRk8ErCatROs6LzC841CI=
 github.com/nxadm/tail v1.4.4 h1:DQuhQpB1tVlglWS2hLQ5OV6B5r8aGxSrPc5Qo6uTN78=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
-github.com/octoberswimmer/aer v1.4.0-beta.6 h1:msXgsRi2zH4EXbfrbGNnGEqx5D3i+czgww80KnuKy/Y=
-github.com/octoberswimmer/aer v1.4.0-beta.6/go.mod h1:ZsDtieGtmK5GyAK7M8dP2Imd3Bx3cEzMXuB8f1In39Y=
+github.com/octoberswimmer/aer v1.4.0 h1:eXHGO2BY34Hkf3XO2FszCOtpQvBmTHyP1OBhOj+VDh8=
+github.com/octoberswimmer/aer v1.4.0/go.mod h1:ZsDtieGtmK5GyAK7M8dP2Imd3Bx3cEzMXuB8f1In39Y=
 github.com/octoberswimmer/antlr/v4 v4.13.1-octoberswimmer.3 h1:LQNXELq1U8IsyVp+mh9ZEWrHj68++spgnOV2P6oNqKY=
 github.com/octoberswimmer/antlr/v4 v4.13.1-octoberswimmer.3/go.mod h1:pHLfGz+l3a2OKxb2g1xTnLaOE4NvC9rX7AfzTCOyUVM=
 github.com/octoberswimmer/apexfmt v0.60.0 h1:LqV7rIbRswXAopLR1/MSc0e9snym9RQP/oLWA/B/aDQ=
