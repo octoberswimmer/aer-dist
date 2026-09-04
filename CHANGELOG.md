@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.4.1 — 2026-09-04
+
+- **A Get Records inside a subflow costs one query per batch, not one per
+  record.** A converted flow ran each triggering record's subflow through to
+  completion before the next record's had begun, so a Get Records inside the
+  subflow ran a separate SOQL query for every record and exceeded the query
+  limit. The interviews of a trigger batch now advance through a subflow in
+  lockstep the way the calling flow's own elements do, so a querying element
+  inside a subflow costs one query per element per batch. A subflow inside
+  a Loop still runs in place, as the Flow runtime does not bulkify loop bodies,
+  and interviews that Apex starts one at a time are never batched together, so
+  each still consumes its own query.
+
 ## v1.4.0 — 2026-09-04
 
 Changes in v1.4.0 that are not part of the v1.2.x patch line.
