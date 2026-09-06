@@ -1,5 +1,384 @@
 # Changelog
 
+## v1.6 (in development)
+
+### New capabilities
+
+- **The server serves a Lightning frontend, a screen flow runner, and
+  Visualforce pages.** `/lightning` renders record pages, list views, the home
+  page, and dashboards from the org's FlexiPages, layouts, and reports;
+  `/flow/{FlowApiName}` runs a screen flow and `/dev/flows` lists the org's
+  flows; `/apex/{PageName}` renders a Visualforce page and `/dev/visualforce`
+  lists the org's pages. The landing page links all three, and flow-type quick
+  actions, FlexiPage flow components, and Visualforce tabs open from the record
+  page. A FlexiPage component or Visualforce tag aer does not implement renders
+  a placeholder naming it and its attributes, so a page shows both what it
+  contains and what is missing from it. Each route requires a session and
+  redirects a browser without one through the OAuth authorize flow.
+- **Visualforce pages render their markup.** `apex:form` renders the `form`
+  element it produces, `apex:image` renders an `img` with the attributes the
+  tag carries, `apex:slds` links the Lightning Design System stylesheet the
+  server vendors, `apex:outputText` writes and escapes its value, and
+  `apex:inputField` renders the control the bound field's type calls for.
+  A lookup shows the name of the record it points at with the id in a companion
+  hidden control, and a field the record cannot write renders as text. Bindings
+  may name a field dynamically (`record[fieldName]`, where the bracket is any
+  expression), `$Resource.Name` resolves to the static resource URL,
+  `$Label.NAME` and `$Label[expression]` read a custom label in the executing
+  namespace, and the branching and boolean functions (`IF`, `AND`, `OR`, `NOT`)
+  are evaluated by the page. A binding that names no field, a field the object
+  does not have, a missing `value` attribute, and an unknown label or resource
+  are render errors.
+- **Submitting a Visualforce form runs the action its command button names.**
+- **Visualforce custom components render.**
+- **Lead conversion is available outside Apex.** The VM exposes `ConvertLead`,
+  which backs both the standard `convertLead` invocable action and a Convert
+  screen on the Lightning record page. The screen offers the account, contact,
+  and opportunity the conversion creates with the field values each keeps, and
+  Lead Settings configure it.
+- **Standard record page actions run.** Change Owner
+  (`/lightning/r/<Object>/<Id>/changeowner`) prefills the current owner and
+  searches users and, on objects with queues, the object's queues. Change Record
+  Type (`/lightning/r/<Object>/<Id>/changerecordtype`) lists the record types the
+  running user's profile can see, offering a business account only business types
+  and a person account only person types, and reopens the edit form with the
+  chosen type's layout and picklist values. View Account Hierarchy and View
+  Contact Hierarchy (`/lightning/r/<Object>/<Id>/hierarchy`) walk the record's
+  self-lookup to the topmost record and render a tree table. Send Email
+  (`/lightning/r/<Object>/<Id>/email`) opens a composer whose To is prefilled
+  from the record's email address and whose From offers the org-wide addresses
+  alongside the running user; sending delivers through the same sender
+  `Messaging.sendEmail` uses, so `--allow-email` decides between SMTP delivery
+  and a logged, discarded message, and writes an `EmailMessage` through the DML
+  pipeline. An action's button is disabled on an object it does not apply to.
+- **Global quick actions and the standard Chatter post action run on record
+  pages.**
+- **FlexiPage components rendered on record and home pages.**
+  `runtime_sales_pathassistant:pathAssistant` renders the object's sales path as
+  an SLDS path with the current stage's key fields and guidance, and an update
+  button that advances the record. `record_flexipage:dynamicHighlights` titles
+  the record header from its `primaryField` facet, supplies the key-field strip
+  from `secondaryFields` (including cross-object paths), and drives the header
+  actions from `actionNames` and `numVisibleActions`. `forceChatter:publisher`
+  renders a post composer that creates a `FeedItem`.
+  `runtime_sales_activities:todayTaskContainer` and `home:eventContainer` render
+  Today's Tasks and Today's Events cards, and the `NEWS` context of
+  `forceChatter:exposedFeed` renders the running user's What I Follow feed from
+  `EntitySubscription`, `CollaborationGroupMember`, and their own profile.
+  `console:relatedRecord` renders the current record when App Builder points its
+  lookup field at the record's own Id.
+- **A Potential Duplicates card with a merge wizard.** The
+  `runtime_sales_merge:mergeCandidatesPreviewCard` component runs the record's
+  active duplicate rules and lists the matched records; View Duplicates opens a
+  merge wizard that compares up to three same-object records field by field,
+  picks which value the survivor keeps and which record is the principal, and
+  merges. A new VM entry point, `MergeRecords`, drives the same pipeline as the
+  Apex `merge` statement and `Database.merge` for callers that are not executing
+  Apex. `aer server` now loads duplicate and matching rules from its source
+  paths, so `Datacloud.FindDuplicates` and duplicate-rule enforcement work under
+  the server and not only in `test` and `exec` runs.
+- **Record forms create related records, offer state and country picklists, and
+  show errors under the fields they name.** A lookup's typeahead offers
+  `+ New <Object>` when the target is createable, opening the target's create
+  form in a modal at any depth and filling the lookup with the created record.
+  Address State and Country render as their `StateCode` and `CountryCode`
+  picklists when State and Country Picklists are enabled, the state select
+  filtered by the country select, and the VM derives the text half from the
+  submitted code. A polymorphic lookup renders a target-object picker ahead of
+  its search input, so an owner field can select a user or a queue, a `WhoId` a
+  contact or a lead, and a `WhatId` any object that supports activity tracking. A
+  create form seeds `OwnerId` with the running user and preselects each
+  picklist's default. A save error whose field list names inputs on the form
+  renders under each of those fields with the SLDS error state and scrolls the
+  first into view. Compound name fields expand into their components, so a
+  person account and a new Contact in a person-accounts org render First Name
+  and Last Name inputs and keep them on save.
+- **The screen flow runner renders screen components and connects embedded LWC
+  outputs.** `flowruntime:toggle` renders an SLDS toggle switch and stores
+  `{value: <Boolean>}` so `{!Toggle.value}` resolves; `flowruntime:address`
+  renders per-part inputs whose submitted parts store as a map so
+  `{!Address.city}` resolves, erroring as required only when every part is blank;
+  `flowruntime:message` renders a themed SLDS notification with merge fields
+  interpolated; `flowruntime:lookup` searches the object its field references,
+  taking the search box's placeholder from that object's plural label, and its
+  `recordId` input preselects a record. An embedded custom LWC component's
+  `FlowAttributeChangeEvent`s reach the flow: a component with
+  `storeOutputAutomatically` exposes its attributes under the field name, and
+  explicit `outputParameters` assign each attribute to its target reference. A
+  screen evaluates display text, visibility rules, and defaults against the
+  components' current values, the flow's active stages render as an SLDS path or
+  progress dots, a Create Records element stores the created record's Id under
+  the element's name, and finishing a flow launched from a quick action returns
+  to the record.
+- **Task and Event field history is recorded in `ActivityFieldHistory`.**
+  Salesforce keeps activity field history in the `ActivityFieldHistory` big
+  object reached through `ActivityId` rather than in a `<Object>History` object.
+  The schema now defines it with the `ActivityFieldHistories` child relationship
+  on `Task` and `Event`, and updating a tracked field writes a row with
+  `FieldName` qualified by the object and using a lookup's relationship name
+  (`Task.Subject`, `Task.Owner`), the field's internal `DataType`, `Operation`
+  "update", `ChangedDate` at second precision, and the values in the `DataType`'s
+  typed column pair. Lookups store 15-character ids as text, checkboxes store
+  "0"/"1" text, and long text areas store no values and report `IsDataAvailable`
+  false. Tracking is gated on the field's `trackHistory` alone. No row is written
+  for the record's creation or for changes to `Task.ActivityDate`,
+  `Task.IsReminderSet`, and `Event.StartDateTime`, matching Salesforce. The
+  `runtime_sales_activities:activityRecordFieldHistory` component renders the
+  list.
+- **`SET OPTIONS` resolves field name conflicts between a package and its
+  subscriber.** A managed package and its subscriber can define custom fields
+  with the same API name, and package code had no way to name the subscriber's:
+  an unqualified `Age__c` bound the package's `ns__Age__c`. Salesforce API 68.0
+  addresses this with a `SET OPTIONS` clause naming a `Database.QueryOptions` bind
+  variable, and aer now accepts it in dynamic and inline SOQL alike.
+  `Database.QueryOptions` is built through `Database.QueryOptions.builder()`,
+  which returns `Database.QueryOptionsBuilder`; the builder chains and carries
+  `dataspace`, `explicitNamespace`, and `honorEmptyStrings`. With
+  `explicitNamespace`, an unqualified custom name in a field path resolves only
+  to the name as authored, so package code reading `Age__c` gets the subscriber's
+  field while its own stays reachable as `ns__Age__c`; a parent relationship
+  within a field path follows the same rule.
+- **`FORMULA()` is supported in a `WHERE` clause.** A class below API version
+  68.0 fails to compile when it uses `FORMULA()` there, as Salesforce rejects the
+  Beta feature below that version, and the type error is followed by a tip naming
+  the class and the version to raise it to.
+- **Dependency checking reports picklist values the source does not define as
+  active.**
+- **`--watch` deploys changed metadata and applies a rebuilt package.** Metadata
+  file changes are now detected alongside Apex and LWC changes and applied
+  through the metadata deployment pipeline, so the schema merges and storage
+  migrates exactly as a deploy would; deleted files are skipped, since
+  deployments do not delete metadata. A rebuilt package file is applied the way
+  an upgrade applies on the platform: the new version's schema merges into the
+  running org, its Apex and components replace the old ones, and the records
+  already stored are untouched. Nothing is removed, and a deleted package file is
+  reported rather than uninstalled. The page header shows an indicator while a
+  deployment is applying and becomes a reload prompt when one completes after the
+  page rendered; the status arrives over a server-sent-event stream, with one tab
+  per browser holding the stream and relaying to the others.
+- **Packages carry their Lightning web components.** `aer package create` stores
+  the authored bundles from a source tree, `aer package mock` stores a stub per
+  `LightningComponentBundle` (as a subscriber org hides a managed component's
+  source the way it hides Apex bodies), and `aer package unpack` writes them back
+  out. A server writes each loaded package's bundles out for LWC discovery and
+  registers them under the specifier subscriber code imports them by
+  (`<namespace>/<bundle>`). A subscriber component that extends a packaged one
+  and declares no template of its own now renders the packaged component's
+  template and inherits its `@api` properties.
+- **A page assignment screen explains how a record's or the home page's page was
+  chosen.** `/lightning/r/{Object}/{Id}/pageassignment` and
+  `/lightning/page/home/pageassignment`, linked from the render report's page
+  name, list every assignment that could name a page, in the order they are
+  consulted, with the app, profile, record type, and form factor each carries,
+  and say of each whether it was used, skipped and why, or never reached. Two
+  further sections on the record screen name where the highlights panel's key
+  fields come from and where the action buttons come from. The record and home
+  pages render from the same functions the screens report. Record, home, and
+  dashboard pages carry a render report in the footer bar naming the page that
+  rendered them, the component outcome counts, and the render time.
+- **Dashboards run their components' reports as the authenticated user.** The
+  `analytics/dashboards/<idOrDevName>` endpoint ran a `SpecifiedUser`
+  dashboard's reports as the running user its metadata names, who frequently
+  does not exist in a local database; it and the dashboard page both run them as
+  the authenticated user, and the new `--use-dashboard-running-user` server flag
+  asks for the metadata's running user instead. The dashboard page names the
+  user its components ran as, and a permission failure inside a component names
+  that same user.
+- **Dashboard components render tables and charts from their metadata.** A
+  `FlexTable` component draws a header of the report's grouping and aggregate
+  labels, one row per first-level grouping with the named aggregates
+  (`RowCount`, summary formula names, `a!Field` and `s!Field`) formatted to the
+  component's precision, and a Total row for aggregate columns that show one. A
+  component charts the grouping level its `groupingColumn` names, collapsing the
+  down dimension onto that level and recomputing the aggregates of values that
+  repeat under different parents. A funnel divides a fixed trapezoid by height in
+  proportion to each stage's share of the total, funnels, donuts and series
+  charts carry a legend headed with the grouping's label, and a component with
+  `useReportChart` renders the source report's own chart. Every component's
+  header links to the report behind it.
+- **The "Leads with converted lead information" report type runs.** A report
+  whose type is `OpportunityLead` failed with "sObject type 'OpportunityLead' is
+  not supported". It now runs on `Lead`, reading its opportunity and contact
+  columns through `ConvertedOpportunity` and `ConvertedContact`, including custom
+  fields addressed through a converted record. Column, grouping, and aggregate
+  labels come from the report type's own metadata rather than from the fields
+  they read.
+- **Report address line columns are derived.** The `ADDRESS1_LINE1` through
+  `ADDRESS2_LINE3` tokens, with any base or relationship prefix, are computed
+  from the street field the matching `ADDRESS<n>_STREET` token resolves to,
+  criteria on them are row filters, and the label follows the street field.
+- **The Reports and Dashboards tabs show a nested folder's full path.** Each
+  segment takes its name from the folder metadata, which is read in both source
+  and metadata format, the latter being a `Folder-meta.xml` file beside the
+  folder's directory.
+- **The app launcher lists the org's apps and tabs.**
+- **Platform cache rejects a qualified reference to a partition that does not
+  exist.** aer created one on demand. Reads and writes through the org and
+  session caches now validate the reference against the `PlatformCachePartition`
+  records and report the platform's messages. A partition belonging to the org is
+  addressable both as `local.name` and through the org's own namespace, and the
+  two spellings reach one store. A `.cachePartition` file passed to `aer test` is
+  loaded rather than skipped, so a run given files instead of a directory has its
+  partitions.
+
+### Fixes and performance
+
+- **Constructing a stdlib type that has no visible constructor is rejected.**
+  aer accepted `new` on any standard library type, so code that cannot compile in
+  Salesforce ran locally and failed at deployment: `new Database.SaveResult()`,
+  `new Schema.DescribeFieldResult()`, `new Database.QueryOptionsBuilder()`, and
+  `new` on an interface were all silently allowed. The type checker now rejects a
+  construction with no matching visible constructor, checking argument count
+  only.
+- **`BR()` in a formula field is the HTML line break the platform stores.** A
+  field whose formula is `A & BR() & B` reads back as `A<br>B`, which is why the
+  function is documented as being for fields displayed as HTML. Rendering it as a
+  newline ran a page's lines together, since HTML collapses one. The same formula
+  evaluated outside a formula field stays a newline.
+- **An inactive trigger does not run and an inactive flow version is never
+  executed.** An inactive trigger neither runs nor appears as an `ApexTrigger`
+  record, and only a flow's active version runs: the Draft, Obsolete, and
+  InvalidDraft versions a retrieve brings down are loaded as metadata and never
+  executed.
+- **A query reaching `EntityDefinition`, `FieldDefinition`, or `EntityParticle`
+  through a relationship returns rows.** Such a relationship compiles to a join
+  against the same tables a direct query reads, but the rows were only
+  materialized for a query selecting from those objects directly, so the join
+  read an empty table and the relationship came back null with no error. Field
+  paths in every clause that produces a join are considered, along with multi-hop
+  paths and child subqueries.
+- **Report filter fields resolve through the parent lookup field.** A criterion
+  on a parent path such as `Account.Total__c` resolved to no field at all, so the
+  value was typed by inference from the string alone, "1" was inferred as a
+  boolean, and PostgreSQL refused to encode a boolean parameter into the
+  comparison against a numeric column. The traversal had matched each
+  non-terminal segment against the lookup field's stored `RelationshipName`,
+  which holds the *child* relationship name — `Contact.AccountId` carries
+  "Contacts", so the "Account" segment never matched. Each segment now resolves
+  through the lookup field it names (`Account` through `AccountId`, `Program__r`
+  through `Program__c`). Report column labels and data types resolve through the
+  same function and were affected as well.
+- **Report columns on a joined custom child object resolve.** A child object with
+  two lookups back to the base object was treated as ambiguous and no join was
+  made, so the report's dotted columns resolved as a parent traversal and the
+  query failed with "Didn't understand relationship". The child's primary
+  master-detail relationship is now the join. The field-level security strip also
+  passed over joined-child columns, leaving them to the query's own enforcement,
+  which rejects the whole query rather than masking the field, so a child column
+  the running user cannot read failed the entire report with "No such column";
+  the strip now drops it as it already dropped an unreadable base-object field.
+- **A report component whose report failed a permission check names the object
+  or field the user cannot read.** It reported "sObject type 'X' is not
+  supported", which is also what a query naming an object that does not exist
+  produces. A `USER_MODE` denial now carries an `AccessDeniedError` naming the
+  object and fields, and a component whose grouping column the run stripped says
+  so rather than charting a grouping it was not asked for.
+- **Report date groupings bucket in the running user's time zone.** Datetimes
+  stored in UTC convert to the user's zone before bucketing, and date-only values
+  keep their calendar day.
+- **A report type in a namespaced source directory resolves its objects.** Such a
+  report type names its custom objects bare as authored, so the engine's strict
+  schema lookups found no fields on the unqualified object and typed every column
+  as text. The namespace pass now qualifies the objects a report type names
+  (`CustomEntity$`, `CustomEntityAuditHistory$`, `CustomEntityCustomEntity$`,
+  `<Standard>CustomEntity$`, and the join path after an `@`).
+- **Duplicate `FieldPermissions` rows are no longer inserted on every metadata
+  load.** The table has no unique constraint, so a database reused across
+  metadata reloads grew by a full duplicate set per load.  The load now reads
+  the parent's stored rows once and inserts only what is missing, and a row
+  whose access differs from the metadata is updated in place instead of never
+  reaching a database that already had it. `FieldPermissions` carries
+  a composite index on `ParentId` and `Field`, the shape every permission
+  lookup filters on.
+- **A persistent `--db` database attaches on restart instead of migrating and
+  seeding again.** The startup fingerprint of the merged schema, packages, and
+  bootstrap data changed on every server start, so the fast path never matched.
+- **Package merges are faster and no longer overwrite the org's own metadata
+  records.** A merge named an object's derived companions without the package
+  namespace, so a package's `Foo__Share` and `Foo__ChangeEvent` defined a second
+  object with its own table and id prefix; introducing a prefix demoted the
+  scoped post-merge migration to a full one. The merge also re-seeded the
+  built-in schema's default metadata records over the org's, so an org defining
+  its own `OpportunityStage` records ended up with the ten built-in ones and the
+  System Administrator profile's permission set carried the built-in name and
+  extra field permissions.
+- **A REST write no longer deadlocks after a metadata deploy.** The REST create,
+  update, and delete handlers resolved the requesting user while holding a pooled
+  VM; that resolution queries through its own pooled VM, and the nested
+  acquisition's schema reload waited on the request gate's write side against the
+  handler's own read hold once a deployment had bumped the schema version. The
+  user is now resolved before the VM is checked out.
+- **A source reload or Tooling API save no longer panics an in-flight request.**
+  A source watcher reload, a Tooling API `ApexClass` save or delete, and a
+  `MetadataContainer` deploy rebuilt the program while holding only the server
+  lock. The incremental path tried to quiesce request work with a `TryLock` that
+  fails exactly when a request is in flight, then fell back to the full rebuild,
+  which reloads the shared code registry in place while the in-flight VM executes
+  new ASTs against its stale resolved binding. Those entry points now take the
+  request gate's write side first.
+- **A redeployed object keeps its global value set's picklist values.** A
+  deployment parses its changed files on their own, so a redeployed object's
+  picklist fields arrive carrying only their global value set's name and the
+  merge replaced the field definitions wholesale, leaving every such field with
+  no options after any object redeploy. The values are now rebuilt from the sets
+  the schema holds after each deploy merge, which also lets a deployed set reach
+  the fields that reference it. A dependent picklist backed by a global value set
+  also keeps its `valueSettings`, which the object importer had attached only to
+  inline values, so every dependent value was offered under every controlling
+  value.
+- **Redeploying a profile no longer fails on a permission dependency.**
+- **Auto-detected features stay enabled across a metadata deploy.** The server
+  decided which optional-feature schema to apply from the `--feature` list alone,
+  ignoring what it had detected from the org's own Apex and metadata, and a
+  deploy that carries schema re-applies the feature set. For State and Country
+  Picklists the loss was active: the strip that runs for an org without the
+  picklists removed the `*StateCode` and `*CountryCode` components the Apex scan
+  had added, and every class reading one of those fields then failed the next
+  deploy's type check with "Variable does not exist".
+- **`--assign-perms` fails only on the name it was asked for.** A null
+  `NamespacePrefix` was formatted as the string `<nil>`, so every unpackaged
+  permission set was indexed as `<nil>__Name` instead of its bare `Name`.
+- **A `-meta.xml` API version change invalidates the workspace image.** The
+  image's source fingerprint now covers each class's and trigger's `-meta.xml`
+  sibling and stamps the API version onto the stored AST, so editing only that
+  file no longer restored an image carrying the old version and skipped type
+  check validation entirely.
+- **A blank `recordType` on a `profileActionOverride` is the master record type's
+  assignment.** It is not a profile-wide default covering every record type, so a
+  record whose record type has no profile assignment falls through to the
+  application default, and person-account record types match assignments recorded
+  under the `PersonAccount` object prefix.
+- **A standard object keeps its action overrides, compact layout, and custom tab
+  list when org metadata merges onto the built-in definition.** The merge carried
+  only fields, labels, record types, child relationships, validation rules, and
+  field sets, so an org that assigned a Lightning record page to a standard
+  object lost that assignment. A custom object was unaffected, being added whole.
+  `SObjectType` now records the assigned compact layout's name alongside its
+  fields.
+- **A record type's picklist values are percent-decoded.** Retrieved object
+  metadata percent-encodes the value names, while the value stored on records and
+  returned by describe is the decoded text; both record type import paths now
+  decode them, so the schema's values match real record data.
+- **A standard combobox field keeps its Combobox describe type.** The Metadata
+  API has no Combobox type, so such a field is retrieved as a picklist; the
+  builtin describe type now wins, and the field is offered as free text with the
+  picklist's values as suggestions.
+- **Layout field labels are distinct from describe labels.** A layout shows
+  "Assigned To" where the field describes as "Assigned To ID". Layout-facing
+  rendering resolves through the layout label, and
+  `DescribeFieldResult.getLabel()` still reports the describe label.
+- **Bootstrap data merges users on their username as well as their Id.** A
+  bootstrap file captured from an org carries that org's admin user, and merging
+  on Id alone left two users sharing a username once the target had assigned its
+  own admin a different Id.
+- **A failed insert names the field and the value the database rejected**
+  instead of reporting the bind parameter's position.
+- **State and country picklists resolve in both directions.** A code fills in its
+  label and a label fills in its code, each state resolved within the record's
+  own country. A label naming no state or country of the picklist is rejected,
+  and a state with no country raises the country-required error, naming the field
+  that carried the state.
+
 ## v1.4.1 — 2026-09-04
 
 - **A Get Records inside a subflow costs one query per batch, not one per
