@@ -22,7 +22,7 @@ GO_BUILD_FLAGS := -trimpath
 GO_LDFLAGS := -X main.version=$(VERSION) -s -w
 GO_LDFLAGS_WASM := -X main.wasmRuntimeVersion=$(VERSION) -s -w
 
-.PHONY: default install install-debug dist clean checksum release tag
+.PHONY: default install install-debug dist clean checksum release publish check-tag tag
 
 # Releases with an odd minor version or a pre-release suffix (e.g. v1.4.0-beta.1)
 # are published as pre-releases.
@@ -115,21 +115,20 @@ dist: $(VERSIONED_ZIPS)
 checksum: dist
 	shasum -a 256 $(VERSIONED_ZIPS) > SHA256SUMS-$(VERSION)
 
-release: checksum
-	@if ! command -v gh >/dev/null 2>&1; then \
-		echo "gh CLI is required for 'make $@'."; \
-		exit 1; \
-	fi
+# release builds the artifacts and records the release. publish gates on the
+# approval and publishes. They are separate targets because approving is a
+# decision a person makes between the two, and lodge approve exits unless
+# standard input is a terminal, so it cannot be called from either.
+#
+# The record is written here rather than in tag because a tag before the build
+# is a candidate, not a release. If tests fail after tagging, the tag is deleted
+# and recreated at a new commit; a record written at tag time would name the
+# abandoned commit, and records are written once under the version, so the
+# commit that actually shipped could never be recorded. The artifact checksums
+# do not exist until dist has run either.
+release: check-tag checksum
 	@if ! command -v lodge >/dev/null 2>&1; then \
 		echo "lodge is required for 'make $@' to record the release: go install github.com/octoberswimmer/lodge@latest"; \
-		exit 1; \
-	fi
-	@if [ "$(VERSION)" = "dev" ] || printf "%s" "$(VERSION)" | grep -q "dirty"; then \
-		echo "VERSION '$(VERSION)' is not a clean tag. Tag the commit or invoke 'make $@ VERSION=vX.Y.Z' with a published tag."; \
-		exit 1; \
-	fi
-	@if ! git rev-parse --verify "refs/tags/$(VERSION)" >/dev/null 2>&1; then \
-		echo "Tag '$(VERSION)' does not exist. Create the tag before running 'make $@'."; \
 		exit 1; \
 	fi
 	LODGE_REPO=octoberswimmer/evidence-store lodge release --product aer --version "$(VERSION)" \
@@ -137,9 +136,42 @@ release: checksum
 		--checksums-file "SHA256SUMS-$(VERSION)" \
 		--ci "built by make release from a clean tag" \
 		--channels "GitHub Releases$(if $(PRERELEASE_FLAG),, and the October Swimmer Homebrew tap)"
+	@echo
+	@echo "Recorded. Approve it, then run 'make publish VERSION=$(VERSION)':"
+	@echo "    lodge approve --product aer --version $(VERSION)"
+
+publish:
+	@if ! command -v gh >/dev/null 2>&1; then \
+		echo "gh CLI is required for 'make $@'."; \
+		exit 1; \
+	fi
+	@if ! command -v lodge >/dev/null 2>&1; then \
+		echo "lodge is required for 'make $@': go install github.com/octoberswimmer/lodge@latest"; \
+		exit 1; \
+	fi
+	@$(MAKE) --no-print-directory check-tag
+	@for asset in $(RELEASE_ASSETS); do \
+		if [ ! -f "$$asset" ]; then \
+			echo "$$asset is missing. Run 'make release VERSION=$(VERSION)' first."; \
+			exit 1; \
+		fi; \
+	done
+	LODGE_REPO=octoberswimmer/evidence-store lodge check --product aer --version "$(VERSION)" --require-approval
 	git push octoberswimmer "$(VERSION)"
 	gh release create "$(VERSION)" --title "aer $(VERSION)" --notes-from-tag --verify-tag $(PRERELEASE_FLAG) $(RELEASE_ASSETS)
 	@if [ -z "$(PRERELEASE_FLAG)" ]; then HOMEBREW_NO_AUTO_UPDATE=1 brew bump-cask-pr aer --version $(VERSION:v%=%); fi
+
+# check-tag refuses a version that is not a published tag, so the recorded
+# commit is the one the tag names rather than whatever is checked out.
+check-tag:
+	@if [ "$(VERSION)" = "dev" ] || printf "%s" "$(VERSION)" | grep -q "dirty"; then \
+		echo "VERSION '$(VERSION)' is not a clean tag. Tag the commit or invoke 'make $@ VERSION=vX.Y.Z' with a published tag."; \
+		exit 1; \
+	fi
+	@if ! git rev-parse --verify "refs/tags/$(VERSION)" >/dev/null 2>&1; then \
+		echo "Tag '$(VERSION)' does not exist. Create the tag before releasing."; \
+		exit 1; \
+	fi
 
 tag:
 	@set -euo pipefail; \
