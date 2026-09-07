@@ -379,6 +379,17 @@
   and a state with no country raises the country-required error, naming the field
   that carried the state.
 
+## v1.4.2 — 2026-09-07
+
+- **A user-mode update no longer skips the field-access check on a
+  master-detail field that a relationship field populated.** Querying
+  `Parent__c` together with a field reached through it, such as
+  `Parent__r.Name`, marked the lookup field as relationship-populated, and the
+  user-mode payload check treated it as a relationship container and left it
+  out, so an update of a non-reparentable master-detail field that sfapex
+  rejects succeeded. Whether a payload key is a relationship container is now
+  decided from the schema, so the master-detail field is checked either way.
+
 ## v1.4.1 — 2026-09-04
 
 - **A Get Records inside a subflow costs one query per batch, not one per
