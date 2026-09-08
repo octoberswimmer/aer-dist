@@ -952,3 +952,31 @@ jobs:
           version: ${{ env.AER_VERSION }}
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
+
+  # macOS runner images do not ship Go, so this job covers the action's own
+  # toolchain setup on a runner where the helper commands would otherwise
+  # fail to build.
+  universalmock-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout action
+        uses: actions/checkout@v6
+
+      - name: Fetch surajp/universalmock commit 1e04164
+        run: |
+          set -euo pipefail
+          root="oss/surajp-universalmock"
+          mkdir -p "${root}"
+          workdir=$(mktemp -d "${root}/repo.XXXXXX")
+          git clone https://github.com/surajp/universalmock.git "${workdir}"
+          cd "${workdir}"
+          git checkout 1e04164ca66258b21cc9bab9e614060ca3594b28
+          echo "UNIVERSALMOCK_SOURCE=${workdir}/force-app/main/default" >> "$GITHUB_ENV"
+
+      - name: Run aer test (surajp/universalmock commit 1e04164)
+        uses: ./
+        with:
+          source: ${{ env.UNIVERSALMOCK_SOURCE }}
+          version: ${{ env.AER_VERSION }}
+        env:
+          AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
