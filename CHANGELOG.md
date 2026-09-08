@@ -220,6 +220,77 @@
   two spellings reach one store. A `.cachePartition` file passed to `aer test` is
   loaded rather than skipped, so a run given files instead of a directory has its
   partitions.
+- **Visualforce pages render `<apex:sectionHeader>`, `<apex:outputLink>`,
+  `<apex:include>`, and `<apex:actionFunction>`.** An included page runs its own
+  controller and its action. An action function defines the JavaScript function
+  the page's script calls; calling it submits the form the tag sits in and runs
+  the action the postback names, writing each `<apex:param>` to the member its
+  `assignTo` names first.
+- **A generated SOAP stub calls a real endpoint outside a test.**
+  `WebServiceCallout.invoke` dispatched to a registered `WebServiceMock` and
+  threw the test-context error without one. It now serializes the request from
+  the type information the generated classes carry, sends it the way an
+  `HttpRequest` is sent, and binds the response element back into the generated
+  response class. A fault becomes a `CalloutException` carrying what it said.
+- **The Metadata API binding answers `listMetadata`, `createMetadata`,
+  `updateMetadata`, and `upsertMetadata`.** The four share one table of metadata
+  types that `describeMetadata` now reports as well, and a write is applied
+  through the same path a metadata deploy takes.
+- **Remote site settings and external credentials deploy.** Both are
+  configuration rather than queryable records, so they were never read from the
+  metadata and a deployment carrying them dropped them. A remote site setting is
+  read from the `.remoteSite` file the Metadata API stores it in, and a
+  deployment carrying only these counts as content, so the setting that permits
+  a callout takes effect when it is deployed.
+- **The Apex heap limits are the Winter '27 values, and `--heap-limit` sets
+  them.** A synchronous transaction gets 10 MB and an asynchronous one 25 MB, up
+  from 6 MB and 12 MB, so `Limits.getLimitHeapSize()` and the point a run aborts
+  both follow the current limits. `--heap-limit <synchronous>[/<asynchronous>]`,
+  in MB, on `aer test`, `aer exec`, and `aer server` restores the older pair with
+  `--heap-limit 6/12`, matching an org with "Enforce the Summer '26 Apex heap
+  limit" selected; giving only the synchronous value keeps the default
+  asynchronous limit.
+- **`aer cache` documents its environment variables and reports what a prune
+  would remove.** The command's help now gives `AER_CACHE_DIR`,
+  `AER_DISABLE_CACHE`, `AER_CACHE_MAX_AGE`, `AER_CACHE_MAX_BYTES`, and
+  `AER_CACHE_GC_INTERVAL` with each one's default, its accepted values, and which
+  cache root it applies to, and states that an unparseable or non-positive value
+  falls back to the default and that the LSP index cache follows
+  `XDG_CACHE_HOME`. `aer cache info -v` adds the age cutoff in effect and then
+  each stale entry with its size, how long it has gone unused, and whether the
+  age limit or `AER_CACHE_MAX_BYTES` is what would evict it, listing at most 20
+  entries under `-v` and every entry under `-vv`.
+- **A Lightning page's hidden items can be revealed from the render report.** A
+  field, component, or tab whose visibility rule failed was left out of the page
+  entirely, so nothing showed what the page defines but does not display for the
+  current record and user. Each now renders in its place inside a hidden wrapper
+  naming the component and the rule that hid it, with every criterion spelled out
+  and combined by the rule's boolean filter, and the render report on record and
+  home pages counts them and offers a checkbox that reveals them. A hidden field
+  keeps its grid column so the fields beside it stay aligned, and a hidden tab
+  keeps its place in the tabset without ever becoming the default tab. The choice
+  is remembered between visits.
+- **The standard Chatter tab renders the user's feeds.** An application listing
+  the `standard-Feed` tab showed a "Feed" tab linking to
+  `/lightning/o/Feed/list`, which failed with `Object "Feed" not found` because
+  no such object exists. `standard-Feed` is the Chatter tab: it is now labeled
+  "Chatter", carries the feed icon, and opens `/lightning/page/chatter`, which
+  renders a publisher posting to the running user's own feed and a selector,
+  chosen with `?feed=`, switching between What I Follow, To Me, and Company
+  Highlights. `/lightning/o/Feed/list` and `/lightning/o/Feed/home` redirect
+  there.
+- **The highlights panel renders where the Lightning page places it.** The panel
+  components were treated as a no-op and the record page always drew the header
+  at the top, so a panel placed inside a `flexipage:tab` left that tab empty.
+  `force:highlightsPanel`, `forcegenerated:highlightsPanel`, and
+  `record_flexipage:dynamicHighlights` now render at the position the page gives
+  them, and the record page draws the header at the top only when no Lightning
+  page applies or the page places no panel.
+- **`flexipage:blankSpace` renders as an empty field row.** It was drawn as a
+  "Component not supported yet" card taller than a field row, pushing the fields
+  in its column out of alignment with those in the neighbouring column. Inside a
+  field section it is now a field row with an empty label and value in the same
+  grid as the fields around it; outside one it is an empty gap.
 
 ### Fixes and performance
 
@@ -335,9 +406,6 @@
   picklists removed the `*StateCode` and `*CountryCode` components the Apex scan
   had added, and every class reading one of those fields then failed the next
   deploy's type check with "Variable does not exist".
-- **`--assign-perms` fails only on the name it was asked for.** A null
-  `NamespacePrefix` was formatted as the string `<nil>`, so every unpackaged
-  permission set was indexed as `<nil>__Name` instead of its bare `Name`.
 - **A `-meta.xml` API version change invalidates the workspace image.** The
   image's source fingerprint now covers each class's and trigger's `-meta.xml`
   sibling and stamps the API version onto the stored AST, so editing only that
@@ -378,6 +446,43 @@
   own country. A label naming no state or country of the picklist is rejected,
   and a state with no country raises the country-required error, naming the field
   that carried the state.
+- **Apex parses about twice as fast.** Every file was parsed with the parser's
+  most expensive prediction mode. Files are now parsed with the cheaper mode
+  first and re-parsed with the full one only when that fails, and `instanceof` no
+  longer makes every type name in the file more expensive to read. The language
+  aer accepts is unchanged, and syntax errors are reported as before.
+- **`<apex:pageMessages>` prints each message once.** It wrote every message's
+  summary and its detail, and a message built from a summary alone carries that
+  summary as its detail, so each sentence appeared twice. The summary alone is
+  shown unless the tag asks for the detail with `showDetail`. `escape` and
+  `rendered` are honored on both message tags, and `<apex:pageMessage>` renders
+  what it wraps.
+- **A `Decimal` argument no longer matches a `Double` parameter.** A `Decimal` is
+  assignable to a `Double` variable, but sfapex accepts no `Decimal` argument for
+  a `Double` parameter; aer converted it, so a call sfapex rejects compiled and
+  an overload it would not choose was selected. Arguments are now judged with
+  their own conversion table.
+- **A trigger reloaded after its file changed runs.** The server and watch mode
+  re-parse a changed trigger file and update the running program in place, but a
+  trigger loaded from source was reloaded without the name bindings it needs, so
+  the first DML that fired it crashed on `Trigger.isBefore`.
+- **Overlapping requests no longer fail on a SQLite server.** A read-only request
+  running alongside a writing one ran its queries on the writer's transaction and
+  failed the moment it committed, reporting "transaction has already been
+  committed or rolled back", "sql: statement is closed", "sql: Rows are closed",
+  or "bad parameter or other API misuse".  A request now holds the shared
+  storage for as long as it is serving. A PostgreSQL server gives each request
+  its own handle and was never affected.
+- **A PostgreSQL server no longer crashes under concurrent Apex REST requests.**
+  Concurrent REST requests could stop the server with "concurrent map read and
+  map write" because two lookups read the class registry while a program reload
+  was rewriting it.
+- **A report criterion's comma-separated value is split before it is bound.**
+  `equals ,0` against a number field compared the raw text `,0`, which PostgreSQL
+  cannot encode as a number, and a list of date literals became an `IN` list
+  bound as text rather than the ranges the literals name. A single entry binds
+  directly, a value that is nothing but separators compares against null, and a
+  list containing a date literal becomes one comparison per entry.
 
 ## v1.4.2 — 2026-09-07
 
