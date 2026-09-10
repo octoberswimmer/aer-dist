@@ -716,12 +716,12 @@ github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646/go.mod h1:jpp1/29i3P1S
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
 github.com/nxadm/tail v1.4.4 h1:DQuhQpB1tVlglWS2hLQ5OV6B5r8aGxSrPc5Qo6uTN78=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
-github.com/octoberswimmer/aer v1.4.2 h1:8gV0XI92i9p5UAJgiek7TcMp/skFoY2z/Gl+Pfwl1oE=
-github.com/octoberswimmer/aer v1.4.2/go.mod h1:WZVsW9wyGo/lUcRaydDxM+dxr9vCljJeBfOCMvSWl0I=
+github.com/octoberswimmer/aer v1.4.3 h1:sfhwxIUA9KOTyns9IWaKzzzrp952cMiu9RCJBECm1gs=
+github.com/octoberswimmer/aer v1.4.3/go.mod h1:CAv8K60XYHJTg+ysCKfYhSq2yO1FahY8oMnk2fIvwto=
 github.com/octoberswimmer/antlr/v4 v4.13.1-octoberswimmer.3 h1:LQNXELq1U8IsyVp+mh9ZEWrHj68++spgnOV2P6oNqKY=
 github.com/octoberswimmer/antlr/v4 v4.13.1-octoberswimmer.3/go.mod h1:pHLfGz+l3a2OKxb2g1xTnLaOE4NvC9rX7AfzTCOyUVM=
-github.com/octoberswimmer/apexfmt v0.60.0 h1:LqV7rIbRswXAopLR1/MSc0e9snym9RQP/oLWA/B/aDQ=
-github.com/octoberswimmer/apexfmt v0.60.0/go.mod h1:+ZcL3jpPbdw9B6eYfqSch8HxMxlu4B9vtVKuLO8gZHU=
+github.com/octoberswimmer/apexfmt v0.66.0 h1:/2f86dkrwCdlCa1m+5EVMz6lLe9inX9njGuSramiY2A=
+github.com/octoberswimmer/apexfmt v0.66.0/go.mod h1:gvLk7k7LJA4YibjYUR2RrSpRkzkzXnPRz0sIkxUEvA0=
 github.com/octoberswimmer/digger v0.26.0 h1:Iu48oRx9ujMQUop8nHN6JBetJotSOCO5qYWknf/hPdQ=
 github.com/octoberswimmer/digger v0.26.0/go.mod h1:AA7cTaYg5XVrxtEefW2ikTqkChsLfHF29Nw830aj9w0=
 github.com/octoberswimmer/libc v1.67.7-octoberswimmer.7 h1:gE+3YfB+K9kCN5trTL/X2w4r1gRpnu9KXeZfrB3BKh0=
