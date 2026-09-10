@@ -291,6 +291,82 @@
   in its column out of alignment with those in the neighbouring column. Inside a
   field section it is now a field row with an empty label and value in the same
   grid as the fields around it; outside one it is an empty gap.
+- **Create, edit, and clone forms follow the Lightning record page's Dynamic
+  Forms.** When the Lightning record page assigned to the record places field
+  sections, the form is built from the page: its regions in order, tabs and
+  other containers descended, one column per `flexipage:column`, blank spaces
+  kept, and each field's `uiBehavior` applied. The page's visibility rules are
+  evaluated once, when the form opens, against the saved record and the running
+  user, so a hidden tab's sections, a hidden section, and a hidden field are
+  left out. A page without field sections keeps the page layout. Each form
+  carries a render report naming the page or layout it was built from, the
+  record type, a New override the form stands in for, and the fields rendered
+  as inputs, as read-only text, and omitted. Submitting with a required lookup
+  empty shows "Complete this field." beneath it, and the record type prompt
+  keeps the parameters a related list's New passes, so a contact created from
+  an account keeps the account.
+- **The Object Manager lists an object's list views, each with a page
+  describing it.** A List Views section below Record Types links each view to
+  `ObjectManager/<Object>/ListViews/<DeveloperName>/view`, which shows the
+  view's scope, order, filter logic, filters, and columns with a link that
+  renders it. The list page carries a render report naming the view shown, the
+  object's list view count, the records shown, the page number, and the stored
+  filters the query could not apply.
+  A view's filters resolve the legacy field tokens: `WON`, `ACTIVE`, `UNREAD`,
+  `PRIVATE`, and `TASK` name `IsWon`, `IsActive`, `IsUnreadByOwner`,
+  `IsPrivate`, and `IsTask`; `URL`, `PHONE2`, and `CAMPAIGN_TYPE` name
+  `Website`, `Fax`, and `Type`; `CREATEDBY_USER` and `UPDATEDBY_USER` name the
+  creating and last-modifying user's name; and `OBJECT_ID`, which a filter on
+  the Record ID column stores, names `Id`. Each resolves only when the field
+  exists on the object. A numeric value with a thousands separator, such as
+  `1,000`, is one number, and a value that is not a number is reported by
+  field name. A view whose filter logic names a filter it does not have, such
+  as `1 AND 2 AND 6` on a view with five filters, renders with the missing
+  filter treated as satisfied and a warning above the table naming the logic,
+  the number, and the view's filter count.
+- **Visualforce quick actions run in a frame at their page's own `/apex/`
+  address**, with the record id and the action's configured height, so the
+  page's stylesheets, scripts, and form stay inside the frame; a classic
+  record URL the page navigates to becomes the record's Lightning route.
+  `URLFOR` is evaluated, taking a file path inside a static resource archive
+  and turning an `[name=value]` inputs map into the query string.
+  `apex:outputLabel`, `apex:inputText` (bound to a controller property, an
+  Apex object member, or an SObject field, with the submitted text converted
+  to the member's type), `apex:actionStatus`, and `apex:outputPanel` render.
+  Elements are named by the ids of the components containing them
+  (`page:form:panel`), with a generated `j_idN` for a component without an id,
+  so a page's script finds them, and only void HTML elements self-close.
+- **The Sharing Hierarchy standard button opens on record pages.** A layout's
+  `RecordShareHierarchy` button opens
+  `/lightning/r/<Object>/<Id>/sharinghierarchy`, listing the record's owner
+  first and then the active users in each role above the owner's, nearest role
+  first, each linked to the user record with its role and reason; a
+  queue-owned record lists the queue alone. The button is left out, like
+  Sharing, on objects whose sharing model allows no manual sharing, and the
+  page assignment screen reports why.
+- **The standard File and Link Chatter actions post on record pages.**
+  `FeedItem.ContentPost` uploads its file as a `ContentVersion` on the record
+  and posts a `ContentPost` naming it, rendered in the feed as a download link,
+  and `FeedItem.LinkPost` posts a `LinkPost` with the link name as its title.
+  Poll and Question are not implemented.
+- **`LightningWebComponent` quick actions run on record pages.** A screen
+  action embeds the component with `recordId` and `objectApiName`, and its
+  `CloseActionScreenEvent` returns to the record. A headless action mounts the
+  component hidden and calls its `invoke()` once, so a reload from the
+  component does not run the action again. `ShowToastEvent`s from an embedded
+  component appear as toasts on the record page. An action whose component the
+  LWC runtime does not serve is disabled.
+- **The Object Manager shows Data Cloud object kinds and field attributes.**
+  Data Lake (`__dll`) and Data Model (`__dlm`) objects are labelled Custom
+  (Data Lake) and Custom (Data Model), and each field in an object's field
+  list links to a field detail page listing the field's properties, including
+  its Data Cloud attributes and picklist values.
+- **The render report offers the object's other Lightning record pages.** The
+  report's page entry is a select listing every Lightning record page the org
+  defines for the object, the assigned outcome first, each labelled with the
+  apps, profiles, record types, and form factors assigned to it or
+  "unassigned". Choosing one reloads the record with a `flexipage` query
+  parameter naming the page; a page the object does not define is a 404.
 
 ### Fixes and performance
 
@@ -474,6 +550,23 @@
   bound as text rather than the ranges the literals name. A single entry binds
   directly, a value that is nothing but separators compares against null, and a
   list containing a date literal becomes one comparison per entry.
+- **`aer server` restarts faster over unchanged sources.** The server parsed,
+  canonicalized, type checked, and resolved every Apex source on each start,
+  which on one org took 34 of a 42 second start. A restart over unchanged
+  sources, metadata, packages, and options now restores the checked program and
+  its symbol resolution from the workspace image the test command already
+  keeps, and deploys and watch reloads keep taking the incremental path. A
+  server started with an in-memory schema or an unmanaged `.pkg` among its
+  source paths still parses.
+- **An `IMAGE` formula field describes as HTML formatted.**
+  `DescribeFieldResult.isHtmlFormatted()` returned `false` for it, where
+  Salesforce returns `true`. The record page renders its value as markup.
+- **Data Cloud `DataSource` files no longer warn when metadata loads.** They
+  share the `.dataSource` suffix with `ExternalDataSource` files, and every one
+  produced "expected element type <ExternalDataSource> but have <DataSource>".
+  Data source files are now identified by their root element, and a file that
+  is not an external data source is skipped in source loading, `aer test`, and
+  the reference deploy.
 
 ## v1.4.3 — 2026-09-09
 
