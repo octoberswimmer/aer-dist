@@ -568,6 +568,83 @@
   is not an external data source is skipped in source loading, `aer test`, and
   the reference deploy.
 
+## v1.4.4 — 2026-09-10
+
+- **SOSL `LIMIT` clauses apply to fixed search results.** A top-level `LIMIT`
+  and a `LIMIT` inside a `RETURNING` clause were parsed and then ignored, so
+  `Search.query`, `Search.find`, and an inline `[FIND ...]` returned every
+  record set with `Test.setFixedSearchResults`. The per-object limit now caps
+  that object's results after its `WHERE` and `ORDER BY`, and the top-level
+  limit caps the total across all returned objects, filling each object one
+  record at a time in `RETURNING` order. A `:bind` in either limit is
+  evaluated.
+- **Dynamic SOQL rejects expression binds and reports unknown binds the way
+  sfapex does.** `Database.query`, `countQuery`, `getQueryLocator`, the
+  cursor methods, and their `AccessLevel` variants accepted any Apex expression
+  as a bind, so a query string containing `:record.Id` or `:new List<Id>{...}`
+  ran on aer and failed on sfapex. A bind is now read as an identifier:
+  `:new ...` throws `System.QueryException` "unexpected token: 'new'", a dotted
+  path such as `:record.Id` or `:this.value` throws "Variable does not exist:
+  record.Id", a bare `:this` reports "Variable does not exist: this", and a
+  bind naming no variable throws "Variable does not exist: nope" instead of an
+  internal error. Inline SOQL and `queryWithBinds` are unchanged.
+- **Every standard object that supports record types reports the Master
+  record type.** `getRecordTypeInfos()`, `getRecordTypeInfosByDeveloperName()`,
+  and the other record type accessors returned nothing for Case, Opportunity,
+  Campaign, Contract, Order, Product2, Asset, Quote, and several hundred other
+  standard objects when the org defined no record types for them, so
+  `.get('Master')` returned null. Each now reports the synthetic Master record
+  type (Id `012000000000000AAA`), matching sfapex, while `RecordTypeId`
+  stays out of the describe field map, SOQL, and `FieldDefinition` until the
+  org defines a record type for the object.
+- **A Get Records filter can compare against a `$Flow` system variable.** A
+  record-triggered flow whose lookup filter used a value such as
+  `$Flow.CurrentDateTime` failed at runtime with "bind expression evaluation
+  failed: undefined variable: $Flow", on the synchronous path and the
+  asynchronous path alike. The value is now computed before the query and
+  bound as a typed variable.
+- **Apex sharing reasons shipped in a managed package work.** A package's
+  sharing reasons were dropped when the package was merged, so
+  `Schema.Obj__Share.RowCause.Reason__c` failed with "Variable does not exist:
+  Reason__c". A packaged reason is now namespaced like a custom field: in a
+  namespaced org the token evaluates to `ns__Reason__c` whether written bare,
+  qualified, or in a different case, the share row stores that value, and the
+  share object's `RowCause` picklist lists it. `RowCause.manual` evaluates to
+  `Manual`.
+- **A future method invoked from a queueable runs after the test method, not
+  inside `Test.stopTest()`.** `Test.stopTest()` ran every job a job enqueued,
+  so a queueable that invoked a future method drained the whole chain before
+  the test's assertions ran. Matching sfapex, a future invoked from a
+  queueable, a finalizer, or a trigger fired by the queueable's DML now runs
+  once the test method returns, together with any job it enqueues; a future
+  the test body invokes still runs inside `stopTest`. A future called from a
+  batch job's `execute()` or from another future throws the catchable
+  `System.AsyncException` with sfapex's message naming the class and
+  method, and a future called from `finish()` throws `System.LimitException`
+  "Too many future calls: 1".
+- **An inherited field shadows an enclosing class's field of the same name.**
+  An inner class extending a class that declares a field, inside an outer
+  class declaring a field with the same name, bound a bare reference to the
+  outer class's field whenever the inherited field came from a superclass, so
+  a method call on it failed with "Method does not exist". The superclass
+  chain is now searched before the enclosing classes, as in Apex.
+- **Submitting a record whose object has no approval process fails with
+  `NO_APPLICABLE_PROCESS`.** Such a submission was recorded as an ad hoc
+  request to the given next approver and succeeded. Matching sfapex,
+  `Approval.process` now throws "Process failed. First exception on row 0;
+  first error: NO_APPLICABLE_PROCESS, No applicable approval process was
+  found.: []", and with `allOrNone=false` returns a failed `ProcessResult` with
+  that error and writes no `ProcessInstance`.
+- **`aer package create` resolves inner types reached through a superclass and
+  class arguments of generic types.** A class extending an inner class can
+  name that class's sibling inner types unqualified, and a class extending a
+  top-level class can name its inner types unqualified; `aer package create`
+  rejected both with "Invalid type" or "unknown type" although `aer test`
+  accepted them. A declared type mixing an SObject and a package class, such as
+  `Map<Generator, List<Account>>`, was reported as "Illegal assignment from
+  Map<ns.Generator, List<Account>> to Map<Generator, List<Account>>". Both
+  shapes now build.
+
 ## v1.4.3 — 2026-09-09
 
 - **An instance field declared as a single SObject and initialized from a query
