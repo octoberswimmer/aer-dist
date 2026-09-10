@@ -446,11 +446,6 @@
   own country. A label naming no state or country of the picklist is rejected,
   and a state with no country raises the country-required error, naming the field
   that carried the state.
-- **Apex parses about twice as fast.** Every file was parsed with the parser's
-  most expensive prediction mode. Files are now parsed with the cheaper mode
-  first and re-parsed with the full one only when that fails, and `instanceof` no
-  longer makes every type name in the file more expensive to read. The language
-  aer accepts is unchanged, and syntax errors are reported as before.
 - **`<apex:pageMessages>` prints each message once.** It wrote every message's
   summary and its detail, and a message built from a summary alone carries that
   summary as its detail, so each sentence appeared twice. The summary alone is
@@ -462,10 +457,6 @@
   a `Double` parameter; aer converted it, so a call sfapex rejects compiled and
   an overload it would not choose was selected. Arguments are now judged with
   their own conversion table.
-- **A trigger reloaded after its file changed runs.** The server and watch mode
-  re-parse a changed trigger file and update the running program in place, but a
-  trigger loaded from source was reloaded without the name bindings it needs, so
-  the first DML that fired it crashed on `Trigger.isBefore`.
 - **Overlapping requests no longer fail on a SQLite server.** A read-only request
   running alongside a writing one ran its queries on the writer's transaction and
   failed the moment it committed, reporting "transaction has already been
@@ -483,6 +474,66 @@
   bound as text rather than the ranges the literals name. A single entry binds
   directly, a value that is nothing but separators compares against null, and a
   list containing a date literal becomes one comparison per entry.
+
+## v1.4.3 — 2026-09-09
+
+- **An instance field declared as a single SObject and initialized from a query
+  holds the row, not a list.** A field such as
+  `User user = [SELECT MobilePhone FROM User WHERE Id = :UserInfo.getUserId()];`
+  held the whole one-element result list, while assignments, local declarations,
+  and static field initializers already took the single row.
+- **`$Organization` fields resolve in formulas, and a bare Id reference in a
+  text formula renders as the 15-character Id.** `$Organization.Id` evaluated
+  to the whole `$Organization` object, so a formula field such as
+  `CASESAFEID($Organization.Id)` displayed "$Organization:[Id=..., Name=...]";
+  each field now reads from the org's `Organization` record, including fields
+  `UserInfo` does not expose. A text formula whose whole expression is an Id or
+  lookup field returned the 18-character Id while the same field inside a
+  concatenation was already trimmed to 15 characters; both now render the
+  15-character Id, matching Salesforce, for `$User.Id` and `$Organization.Id` as
+  well as record fields, and a queried value agrees with a filtered one. A
+  formula field referencing `$Organization` can be filtered on; it previously
+  evaluated to null in a `WHERE` clause.
+- **A formula field that reads through a polymorphic type qualifier can be
+  filtered on.** Filtering on a formula such as
+  `IF(ISBLANK(Parent__r.Owner:Queue.QueueName), …)` failed with "unsupported
+  ISBLANK argument type", because the `Owner:Queue` segment was not recognized
+  when the formula's field path was typed. Equals and `LIKE` filters on such a
+  formula now work.
+- **A DateTime subtraction against a `$CustomMetadata` value can be filtered on
+  under PostgreSQL.** A formula subtracting a DateTime custom metadata value
+  from a DateTime field failed with "cannot cast type interval to numeric" on
+  PostgreSQL and silently gave 0 on SQLite, because a `$`-prefixed reference was
+  typed as unknown. `$CustomMetadata` and `$Setup` references are typed from the
+  referenced object's field and `$Label` references as text, so the subtraction
+  yields a difference in days on both. The custom metadata record's developer
+  name is matched exactly: Salesforce rejects a formula whose record segment
+  differs in case from the record, and aer no longer accepts it either.
+- **Same-named profiles and permission sets from several source directories
+  merge entry by entry.** When two source directories both defined a profile,
+  such as a base profile plus an overlay adding field permissions, the later
+  directory's entry lists replaced the earlier one's.  A profile file is a
+  partial representation, so the entries now merge by key the way a deploy
+  does: the earlier directory's entries are kept, a later directory's entry
+  replaces the one with the same object, field, record type, tab, or permission
+  name, and a later default record type clears the earlier default for that
+  object.
+- **A null text value compares as the empty string in formula equality.** A
+  comparison between a null text value and non-blank text returned null, so a
+  validation rule such as `Parent__r.Text__c <> 'x'` never fired through a null
+  `Parent__c` lookup and `Note__c <> 'x'` never fired for a blank text field.
+  Matching Salesforce, `<> 'x'` is true, `= 'x'` is false, and `= ''` is true
+  for a null text value. A numeric comparison with a blank operand still yields
+  null.
+- **A trigger reloaded after its file changed runs.** The server and watch mode
+  re-parse a changed trigger file and update the running program in place, but a
+  trigger loaded from source was reloaded without the name bindings it needs, so
+  the first DML that fired it crashed on `Trigger.isBefore`.
+- **Apex parses about twice as fast.** Every file was parsed with the parser's
+  most expensive prediction mode. Files are now parsed with the cheaper mode
+  first and re-parsed with the full one only when that fails, and `instanceof` no
+  longer makes every type name in the file more expensive to read. The language
+  aer accepts is unchanged, and syntax errors are reported as before.
 
 ## v1.4.2 — 2026-09-07
 
