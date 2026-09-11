@@ -568,6 +568,24 @@
   is not an external data source is skipped in source loading, `aer test`, and
   the reference deploy.
 
+## v1.4.5 — 2026-09-11
+
+- **`ConnectApi.ChatterFeeds` batch reads return stored feed items and
+  comments.** `getFeedElementBatch`, `getCommentBatch`, and the pre-31.0
+  `getFeedItemBatch` reported every Id as "Resource not found.", so a
+  `FeedItem` inserted through DML in a `SeeAllData` test could be read with
+  `getFeedElement` but not in a batch. Each Id is now answered in the order
+  given: a stored `FeedItem` or `FeedComment` is a success result, an Id whose
+  key prefix is not the batch's object is an error result "Invalid identifier:
+  <id>", and an Id with the right prefix that names no record is "Resource not
+  found.". A stored feed item is a `ConnectApi.FeedItem` from every entry point
+  that returns a `ConnectApi.FeedElement`, so casting the result to
+  `ConnectApi.FeedItem` succeeds.
+- **`Crypto.generateDigest` computes SHA3 digests.** Passing `SHA3-256`,
+  `SHA3-384`, or `SHA3-512` threw `System.SecurityException` "SHA3-512
+  MessageDigest not available"; each now returns the digest as on Salesforce,
+  in any spelling Salesforce accepts.
+
 ## v1.4.4 — 2026-09-10
 
 - **SOSL `LIMIT` clauses apply to fixed search results.** A top-level `LIMIT`
