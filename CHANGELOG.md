@@ -568,6 +568,54 @@
   is not an external data source is skipped in source loading, `aer test`, and
   the reference deploy.
 
+## v1.4.6 — 2026-09-11
+
+- **A list custom setting's `getAll()` returns its records in creation order in
+  a read-only map.** The map was built by iterating an Id-keyed map, so two
+  consecutive `getAll()` calls in one test method could return differently
+  ordered key sets. The map now iterates in creation order as on sfapex: a
+  bulk insert keeps its list order, later inserts append, updating or renaming a
+  record keeps its position, and deleting a Name and reinserting it moves it to
+  the end; `values()` follows `keySet()` order. The returned map is also
+  read-only: `put`, `putAll`, `remove`, and `clear` throw an uncatchable
+  `System.FinalException` "Collection is read-only", matching sfapex. A copy
+  made with the `Map` constructor stays mutable.
+- **A rejected update no longer breaks the next update of the same record.** An
+  explicitly nulled field was remembered against the record's Id and reapplied
+  to later saves, so after `Database.update(new Contact(Id = id, LastName =
+  null), false)` was rejected, an unrelated `Description`-only update of that
+  same Contact failed with `REQUIRED_FIELD_MISSING` for `LastName` even though
+  the stored `LastName` was still populated. Explicit nulls now travel only on
+  the record being saved, so a sparse update touches only the fields it sets,
+  and a lookup cleared by a successful update stays cleared.
+- **REST queries with a child subquery return only the fields the subquery
+  selected.** A query such as `SELECT Id, (SELECT LastName FROM Contacts) FROM
+  Account` answered with every field on the root record and, on each child
+  record, every field aer had populated, the Id, the foreign key, and a nested
+  copy of the parent, with no `attributes` on the child. Child records are now
+  narrowed to the subquery's own field list and carry `attributes` (`type` and
+  `url`), the root record is narrowed to its own selection, and a subquery that
+  matches no rows answers `null`. `Profile` also gained its `Users`,
+  `MobileSettingsAssignments`, and `OrgEmailAddressSecurityItems` child
+  relationships, so `SELECT Id, (SELECT Username FROM Users) FROM Profile` type
+  checks.
+- **Packaged lookup filters, field sets, list views, and global-variable
+  formulas resolve to the package's own fields.** These reference package fields
+  by their bare names, and the package merge left them unqualified. Loading such
+  a package into source developed in its own namespace (`--default-namespace
+  app`) applied the consumer's namespace to them instead and failed with
+  "unresolvable lookup filter references"; without a consumer namespace, a
+  packaged list view reported the unprefixed object name, a field set member
+  path read the unprefixed field, and a formula reaching a package field through
+  `$CustomMetadata`, `$Setup`, `$ObjectType`, `$User`, `$Profile`,
+  `$Organization`, or `$UserRole` evaluated to null. Each reference is now
+  qualified with the owning package's namespace when the package defines the
+  object or field it names. A packaged formula referencing a geolocation or
+  address component (`Site__Latitude__s`) now loads, and a packaged Activity
+  formula referencing a standard field only the sibling activity object defines,
+  such as `CallDurationInSeconds` on the Event copy, no longer keeps the package
+  from loading.
+
 ## v1.4.5 — 2026-09-11
 
 - **`ConnectApi.ChatterFeeds` batch reads return stored feed items and
