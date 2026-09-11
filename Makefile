@@ -261,8 +261,14 @@ tag-%:
 	trap - EXIT; \
 	rm -rf "$$tmpdir"
 
+# Attributions for third-party material vendored into the aer repository that
+# is not a Go module dependency, so go-licenses cannot find it by walking the
+# module graph.
+AER_MODULE_DIR = $(shell go list -m -f '{{.Dir}}' github.com/octoberswimmer/aer)
+
 third-party-licenses.txt: go.mod licenses.tpl
 	go tool go-licenses report ./... --ignore aer --ignore github.com/octoberswimmer --template licenses.tpl > $@
+	@if ls $(AER_MODULE_DIR)/licenses/*.txt >/dev/null 2>&1; then cat $(AER_MODULE_DIR)/licenses/*.txt >> $@; fi
 
 test:
 	ghproxy --repo octoberswimmer/aer-dist -- act
