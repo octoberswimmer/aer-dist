@@ -2,7 +2,7 @@ module aer
 
 go 1.26.0
 
-require github.com/octoberswimmer/aer v1.4.4
+require github.com/octoberswimmer/aer v1.4.5
 
 require (
 	git.sr.ht/~jackmordaunt/go-toast v1.1.2 // indirect
