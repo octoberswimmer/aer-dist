@@ -2,12 +2,12 @@ module aer
 
 go 1.26.0
 
-require github.com/octoberswimmer/aer v1.4.6
+require github.com/octoberswimmer/aer v1.4.7
 
 require (
 	git.sr.ht/~jackmordaunt/go-toast v1.1.2 // indirect
 	github.com/ForceCLI/force v1.9.0 // indirect
-	github.com/ForceCLI/force-md v0.49.1 // indirect
+	github.com/ForceCLI/force-md v0.53.2 // indirect
 	github.com/ForceCLI/inflect v0.0.0-20130829110746-cc00b5ad7a6a // indirect
 	github.com/adrg/xdg v0.5.3 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
