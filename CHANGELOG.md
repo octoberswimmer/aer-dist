@@ -568,6 +568,14 @@
   is not an external data source is skipped in source loading, `aer test`, and
   the reference deploy.
 
+## v1.4.7 — 2026-09-16
+
+- **`aer test` no longer hangs at startup on Windows.** When a permission set
+  or custom application file was empty or could not be identified as metadata,
+  aer searched the file's parent directories without stopping at the drive
+  root, so a run given an absolute path stayed at "startup: building schema..."
+  with no further output. The search now stops at the root of the drive.
+
 ## v1.4.6 — 2026-09-11
 
 - **A list custom setting's `getAll()` returns its records in creation order in
