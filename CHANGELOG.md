@@ -568,6 +568,35 @@
   is not an external data source is skipped in source loading, `aer test`, and
   the reference deploy.
 
+## v1.4.8 — 2026-09-16
+
+- **Reopening a persistent database no longer duplicates `FieldPermissions`
+  rows.** Every full startup against an existing `--db` database ran the profile
+  and permission set seeding again and inserted each field permission a second
+  time. Seeding now skips a field that already has a row for the parent and
+  updates the row only when its read or edit flag differs, so a database opened
+  twice holds the same `FieldPermissions` rows as one opened once.
+- **Class loading against a shared PostgreSQL database no longer reads the
+  whole `ApexClass` table once per class.** The first VM to load into a
+  PostgreSQL pool treated every class as already having a row and looked each
+  one up with a full table read, so a project with several thousand classes
+  spent minutes in "startup: loading classes" where SQLite took under two
+  seconds. Classes not yet in the table are now inserted directly, and the
+  `ApexTypeImplementor` table is read once per load instead of once per class.
+  The skipped lookup also matched names loosely and bound a namespaced class to
+  an unnamespaced `ApexClass` row of the same name; the namespaced class now
+  gets its own row.
+- **Built-in Revenue Cloud contract types are seeded only into empty tables.**
+  Every full startup against an existing `--db` database inserted the built-in
+  `ContractTypeConfig` records again and wrote the built-in `ContractType` and
+  `ContextUseCaseMapping` field values back over user edits. A database copied
+  in with `--bootstrap-db` whose contract type has a DeveloperName other than
+  `Default` gained a second, seeded Default type with its own configs, and a
+  database holding more than one `ContractType` could take the wrong one as the
+  default. The built-in records are now written only when the type's table is
+  empty. The default `ContractType` is resolved by DeveloperName, and the
+  built-in `ContractTypeConfig` records are skipped when no Default type exists.
+
 ## v1.4.7 — 2026-09-16
 
 - **`aer test` no longer hangs at startup on Windows.** When a permission set
