@@ -568,6 +568,30 @@
   is not an external data source is skipped in source loading, `aer test`, and
   the reference deploy.
 
+## v1.4.9 — 2026-09-17
+
+- **`aer package mock` captures a package's custom permissions.** A subscriber
+  permission set or permission set group that enables a managed package's
+  custom permission (`pkg__Can_Unmerge`) failed to load with "In field:
+  customPermission - no CustomPermission named ... found" when the package came
+  from `aer package mock`, which never queried `CustomPermission`. The mock now
+  stores the namespace's custom permissions and the grants each of the
+  package's permission sets holds. `aer package list` shows a Custom
+  Permissions section, and `aer package unpack` writes
+  `customPermissions/<Name>.customPermission-meta.xml` and the
+  `<customPermissions>` entries in each permission set.
+- **`--skip-errors` no longer drops validation rules on `Task` and `Event` that
+  reference custom fields defined on `Activity`.** With `--skip-errors`, rules
+  with unresolvable references were pruned before the `Activity` fields were
+  copied onto `Task` and `Event` and before `RecordTypeId` gained its
+  `RecordType` relationship. Rules are now checked after those fields exist,
+  and every removed piece of metadata is reported once under an "invalid
+  metadata" header.
+- **A validation rule whose name is longer than 40 characters is rejected.**
+  Salesforce refuses such a rule at deploy ("Value too long for field:
+  fullName maximum length is:40"); aer now reports it during startup whether
+  or not the rule is active, and drops it under `--skip-errors`.
+
 ## v1.4.8 — 2026-09-16
 
 - **Reopening a persistent database no longer duplicates `FieldPermissions`
