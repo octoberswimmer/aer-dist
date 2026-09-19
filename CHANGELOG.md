@@ -568,6 +568,76 @@
   is not an external data source is skipped in source loading, `aer test`, and
   the reference deploy.
 
+## v1.4.10 — 2026-09-19
+
+- **An order's products are locked by the status category, not the literal
+  `Draft` status.** A custom Order Status value grouped under Draft in the
+  `OrderStatus` standard value set (for example "Order Processing") was treated
+  as activated, and inserting an `OrderItem` on such an order failed with
+  `ENTITY_IS_LOCKED`. `Order.StatusCode` is now derived from the Status value's
+  category, and products are locked only when that category is Activated.
+  Inserting an order whose status category is Activated fails with
+  `FAILED_ACTIVATION` on `Status`, as in sfapex. `OrderStatus` records are
+  queryable and follow the `Order.Status` value set, and the System
+  Administrator profile holds `ActivateOrder` and `EditActivatedOrders`;
+  neither permission lifts the lock.
+- **Assignment rules are loaded from source and run on `Case` and `Lead`
+  saves.** `assignmentRules` files were not read, so a query for an active
+  `AssignmentRule` returned no rows and the assignment rule header on
+  `Database.DMLOptions` had no effect. Each rule now has an `AssignmentRule`
+  record. With `useDefaultRule` the object's active rule runs, and with
+  `assignmentRuleId` the named rule runs whether or not it is active; setting
+  both fails the DML with an uncatchable `UnexpectedException`. The first
+  matching entry's queue or user becomes the owner, a matching entry with no
+  assignee keeps the owner, and a record no entry matches goes to the org's
+  default user.
+- **`FlowOrchestrationInstance` and `FlowInterview` have their full field
+  sets without Health Cloud metadata.** `FlowOrchestrationInstance` carried
+  only `Id`, `Name`, and the audit fields unless the org's source included
+  Health Cloud, so `new FlowOrchestrationInstance(TriggeringRecord = ...)`
+  failed with "Variable does not exist: TriggeringRecord".
+- **A property read through a `Schema.SObjectType.<Object>` chain has its own
+  type.** Every expression starting with `Schema.SObjectType.` was typed as
+  `Schema.DescribeSObjectResult`, so assigning
+  `Schema.SObjectType.Contact.RecordTypeInfosByName.get('X').RecordTypeId` to
+  an `Id` failed with "Illegal assignment from Schema.DescribeSObjectResult to
+  Id".
+- **Multi-currency is detected from validation rules and formula fields, and
+  roll-up summaries describe with the type of the field they summarize.** A
+  validation rule or formula field referencing `CurrencyIsoCode` was rejected
+  at startup, or dropped under `--skip-errors`, because the field did not exist
+  yet; such a reference now enables multi-currency in `aer test`, `aer exec`,
+  and `aer server`. An object whose only currency field is a roll-up summary
+  now receives `CurrencyIsoCode`. A `SUM`, `MIN`, or `MAX` roll-up of a
+  currency, percent, date, or datetime field describes as `CURRENCY`,
+  `PERCENT`, `DATE`, or `DATETIME`, and a `COUNT` describes as `DOUBLE` with
+  precision 18 and scale 0, where roll-ups were previously typed as double or
+  string from the operation alone. `aer server` also applies a detected feature
+  to objects loaded or deployed after the detection.
+- **`OrderShare` has `OrderId` and `OrderAccessLevel` when Order's sharing
+  model is Private or Public Read Only.** `OrderShare` carried the
+  custom-object share fields `ParentId` and `AccessLevel`, so code written for
+  an org with a private Order failed with "Variable does not exist: OrderId"
+  and "Didn't understand relationship 'Order' in field path". It now has
+  `OrderId`, `OrderAccessLevel`, `UserOrGroupId`, and `RowCause`, with `OrderId`
+  traversed as `Order` in SOQL. When Order is Public Read/Write, `OrderShare`
+  does not exist, as in sfapex.
+- **`MiddleName` and `Suffix` are available on `User`.** Referencing either
+  field on `Lead` or `Contact` enabled it, but `new User(MiddleName = ...)`
+  failed with "Variable does not exist: MiddleName". A reference on `User` in a
+  constructor, a field access, or a SOQL field path now enables the fields on
+  `User`, `Contact`, and `Lead`.
+- **A lookup filter comparing two checkboxes matches, and a lookup filter
+  failure reports `FIELD_FILTER_VALIDATION_EXCEPTION`.** A filter item
+  comparing a checkbox on the source record to a checkbox on the target never
+  matched, so a filter joining such an item with AND rejected every record with
+  "Lookup filter failed for field <name>". Checkbox items are now compared as
+  Booleans. A failed filter surfaced as `UNKNOWN_EXCEPTION` in a
+  `DmlException`, or `STORAGE_FAILED` in a `Database.Error`, with no field
+  names. It now reports `FIELD_FILTER_VALIDATION_EXCEPTION`, names the lookup
+  field, and carries the filter's error message, or "Value does not exist or
+  does not match filter criteria." when the filter defines none.
+
 ## v1.4.9 — 2026-09-17
 
 - **`aer package mock` captures a package's custom permissions.** A subscriber
