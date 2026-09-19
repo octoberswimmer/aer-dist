@@ -2,12 +2,12 @@ module aer
 
 go 1.27.0
 
-require github.com/octoberswimmer/aer v1.5.2
+require github.com/octoberswimmer/aer v1.5.3
 
 require (
 	git.sr.ht/~jackmordaunt/go-toast v1.1.2 // indirect
 	github.com/ForceCLI/force v1.9.0 // indirect
-	github.com/ForceCLI/force-md v0.52.0 // indirect
+	github.com/ForceCLI/force-md v0.54.0 // indirect
 	github.com/ForceCLI/inflect v0.0.0-20130829110746-cc00b5ad7a6a // indirect
 	github.com/adrg/xdg v0.5.3 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
@@ -56,7 +56,7 @@ require (
 	github.com/octoberswimmer/digger v0.26.0 // indirect
 	github.com/octoberswimmer/libc v1.67.7-octoberswimmer.7 // indirect
 	github.com/octoberswimmer/memory v1.11.0-octoberswimmer.7 // indirect
-	github.com/octoberswimmer/sformula v0.18.0 // indirect
+	github.com/octoberswimmer/sformula v0.19.0 // indirect
 	github.com/octoberswimmer/skyfire v0.6.0 // indirect
 	github.com/octoberswimmer/sqlite v1.46.1-octoberswimmer.6 // indirect
 	github.com/otiai10/copy v1.6.0 // indirect
