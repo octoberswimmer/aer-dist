@@ -278,7 +278,9 @@
   renders a publisher posting to the running user's own feed and a selector,
   chosen with `?feed=`, switching between What I Follow, To Me, and Company
   Highlights. `/lightning/o/Feed/list` and `/lightning/o/Feed/home` redirect
-  there.
+  there. `standard-Chatter`, the token a Lightning application uses for the same
+  tab, resolves the same way, and `/lightning/o/Chatter/list` and
+  `/lightning/o/Chatter/home` redirect there too.
 - **The highlights panel renders where the Lightning page places it.** The panel
   components were treated as a no-op and the record page always drew the header
   at the top, so a panel placed inside a `flexipage:tab` left that tab empty.
@@ -298,13 +300,16 @@
   kept, and each field's `uiBehavior` applied. The page's visibility rules are
   evaluated once, when the form opens, against the saved record and the running
   user, so a hidden tab's sections, a hidden section, and a hidden field are
-  left out. A page without field sections keeps the page layout. Each form
-  carries a render report naming the page or layout it was built from, the
-  record type, a New override the form stands in for, and the fields rendered
-  as inputs, as read-only text, and omitted. Submitting with a required lookup
-  empty shows "Complete this field." beneath it, and the record type prompt
-  keeps the parameters a related list's New passes, so a contact created from
-  an account keeps the account.
+  not shown. The render report's "show" checkbox reveals each one in its place,
+  disabled and labelled with the component and rule that hid it; nothing
+  entered in a revealed field is saved, and a default field value for a hidden
+  field still reaches the new record. A page without field sections keeps the
+  page layout. Each form carries a render report naming the page or layout it
+  was built from, the record type, a New override the form stands in for, and
+  the fields rendered as inputs, as read-only text, and omitted. Submitting
+  with a required lookup empty shows "Complete this field." beneath it, and the
+  record type prompt keeps the parameters a related list's New passes, so a
+  contact created from an account keeps the account.
 - **The Object Manager lists an object's list views, each with a page
   describing it.** A List Views section below Record Types links each view to
   `ObjectManager/<Object>/ListViews/<DeveloperName>/view`, which shows the
@@ -367,6 +372,121 @@
   apps, profiles, record types, and form factors assigned to it or
   "unassigned". Choosing one reloads the record with a `flexipage` query
   parameter naming the page; a page the object does not define is a 404.
+- **Flow approval processes and orchestrations run.** A flow whose
+  `processType` is `ApprovalWorkflow` or `Orchestrator` starts an orchestration
+  run when a record save meets its entry criteria, or when
+  `Flow.Interview.createInterview` starts an autolaunched one. The run inserts
+  a `FlowOrchestrationInstance` (and an `ApprovalSubmission` for an approval
+  process), enters the first stage, runs its background steps' autolaunched
+  flows inside the save, and waits at an approval or interactive step with a
+  `FlowOrchestrationWorkItem` (plus an `ApprovalWorkItem` for an approval step)
+  assigned to the resolved user, group, or queue. Stage and step runs are
+  recorded as `FlowOrchestrationStageInstance` and
+  `FlowOrchestrationStepInstance` rows, and a run that faults fails the save
+  with `CANNOT_EXECUTE_FLOW_TRIGGER`. The `reviewApprovalWorkItem`,
+  `overrideApprovalWorkItem`, `reassignApprovalWorkItem`,
+  `recallApprovalSubmission`, and `cancelApprovalSubmission` standard actions
+  work as flow action elements and through
+  `Invocable.Action.createStandardAction`, each recorded as an
+  `ApprovalSubmissionDetail`. A run continues after a review at
+  `Test.stopTest()` in a test and after the execution commits otherwise, until
+  the submission is Approved or Rejected; a recall runs the recall path, and a
+  cancel runs nothing. While an approval step with `shouldLock` is in progress,
+  `Approval.isLocked` reports the record locked and an update fails with
+  `ENTITY_IS_LOCKED` unless the user has Modify All Data or is the step's
+  assignee and the step has `canAssigneeEdit`. `aer exec` and the server write
+  `FlowOrchestrationLog` rows; a test writes none. Such a flow previously
+  converted to a generated class that failed with "Method does not exist:
+  do_Recall". A scheduled flow whose scheduled path targets an element aer does
+  not convert now fails its conversion naming the element.
+- **Orchestration work items can be completed from the server.**
+  `/dev/workitems` lists the session user's open work items. An interactive
+  step's work item runs the step's screen flow with the step's inputs and
+  completes the step with the flow's outputs, an approval work item offers
+  Approve and Reject, and a record page's
+  `interaction_orchestrator:workGuide` component renders the record's open work
+  item. A flow deployed through the Metadata API is registered like one loaded
+  from source.
+- **The Submit for Approval standard button runs on record pages.** The
+  layout's Submit button is labelled "Submit for Approval" and opens
+  `/lightning/r/<Object>/<Id>/submitforapproval`, a dialog with the submitter's
+  comments and, when the step the record enters takes a manually chosen
+  approver, a required Next Approver user lookup. A record no active process
+  accepts, or one already in a process, shows that failure instead of the form.
+  The Process Approvals REST resource,
+  `POST /services/data/vXX.X/process/approvals`, accepts `actionType` `Submit`
+  and returns results shaped like `Approval.ProcessResult`; `Approve`, `Reject`,
+  and `Removed` are reported as unsupported.
+- **Setup has an Anonymous Apex console with a debugger.**
+  `/lightning/setup/AnonymousApex/home` runs the block in its editor on Execute
+  or Ctrl+Enter and shows the compile problem with its line and column, the
+  exception with its stack trace and the log written before it, or the debug
+  log of a block that succeeded. The `apex` query parameter seeds the editor.
+  With the Debug checkbox set, the block stops at its first statement and the
+  page shows the source with the current line marked, the call stack, the
+  scopes and their variables, and the log as it is written, with Continue, Step
+  Over, Step In, Step Out, and Stop. Clicking a line number toggles a
+  breakpoint, which is placed on the next line the debugger can stop on, and an
+  Open box shows a workspace class or trigger by name so a breakpoint can be
+  set in it before the block runs. Batch, queueable, and future jobs the block
+  enqueues run inside the debug session, so breakpoints in them are reached;
+  `aer exec --debug` runs a block's jobs before the session ends as well. The
+  source is highlighted with the language server's semantic tokens. A debug
+  session ends after 15 minutes.
+- **Setup has an Apex Jobs page.** `/lightning/setup/AsyncApexJobs/home` lists
+  every async job with its status, type, class, times, and errors, kept current
+  as jobs run, with Pause and Resume for the async worker, Run for a queued job
+  while the worker is paused, and Debug, which opens the Anonymous Apex console
+  on that job. `/dev/jobs` links each queued job to the console as well.
+- **Setup has query, record count, email template, and validation rule pages,
+  and lists the server's options.** `/dev/query` and
+  `/lightning/setup/QueryEditor/home` are a SOQL editor that renders the
+  records as a grid whose columns follow the `SELECT` clause: a parent
+  relationship as `Owner.Name`, a subquery as a nested grid, and an unaliased
+  aggregate under its function text; a checkbox routes the query through the
+  Tooling API. `/dev/data` and `/lightning/setup/RecordCounts/home` list the
+  objects holding records with their counts, each linked to the query editor.
+  `/lightning/setup/CommunicationTemplatesEmail/home` lists every
+  `EmailTemplate`, each linked to a page showing its attributes and bodies.
+  `ObjectManager/<Object>/ValidationRules/<Name>/view`, linked from the
+  object's rule list, shows a rule's formatted error condition formula, error
+  message, description, and where the error appears. Setup Home's Server
+  Options table gives each `aer server` option in effect with the flag that
+  sets it, omitting options left at their defaults and never printing the
+  password, a session token, or a certificate's key.
+- **The Tooling API serves Apex symbols, and `aer doc` shows standard library
+  documentation.** `GET /services/data/vXX.0/tooling/symbols` reports Apex type
+  metadata as a `typeStubs` array. The required `category` parameter selects
+  `builtin` (the standard library), `database` (the org's authored Apex), or
+  `dynamic` (the triggers and classes generated from record-triggered flows),
+  and `namespace` and `name` filter the result. The standard library now
+  carries the documentation from Salesforce's apex-language-support project on
+  1853 types, which the endpoint reports and `aer doc` prints for classes,
+  interfaces, enums, and methods. `aer doc` also lists a class's fields, and a
+  trailing name segment resolves to a field when no method matches, so
+  `aer doc ConnectApi.Comment.body` reports that field's type and
+  documentation.
+- **Reports shipped in a package run, as do custom-entity report types that join
+  a child object.** A report or custom report type in a `.pkg` or in a source
+  directory loaded with `@ns` is merged into the org with every custom name it
+  references qualified by the package namespace: the report type, columns,
+  filters, groupings, sort and chart columns, bucket sources, cross filters,
+  aggregates, and the column references inside summary and row-level formulas.
+  The report's developer name stays as authored, which is how dashboards and
+  report charts name it. In an "A with B" custom-entity report type, the
+  `CHILD_NAME` token and the other `CHILD_*` tokens resolve as columns of the
+  joined child, and a lookup join hosted on the joined child resolves its
+  `FK_*` columns through the child. The Reports API names an
+  `FK_$Target.Field` column `FK_Target.Field`, and runtime filters accept
+  either spelling.
+- **Console applications render.** A `CustomApplication` with `navType`
+  `Console` renders an item switcher dropdown of its navigation items in place
+  of the tab bar and a workspace tab strip: records open as workspace tabs, or
+  as subtabs of the parent a `workspaceConfig` mapping's `fieldName` names, with
+  close buttons. The app's `UtilityBar` FlexiPage is docked at the bottom of the
+  page, and `console:history` lists the session's recent records. A namespaced
+  application's tab references take the namespace, so they resolve to its
+  `CustomTab` records.
 
 ### Fixes and performance
 
@@ -567,6 +687,34 @@
   Data source files are now identified by their root element, and a file that
   is not an external data source is skipped in source loading, `aer test`, and
   the reference deploy.
+- **A package's Apex REST resources are served under its namespace.** Every
+  `@RestResource` class was served at the `urlMapping` its annotation gives,
+  whether it came from subscriber source or a loaded package, so a packaged
+  resource answered at an address the org does not use and returned 404 at the
+  one it does. A packaged resource is now served at
+  `/services/apexrest/<namespace>/<urlMapping>`, covering the `urlMapping` and
+  `urlMappings` forms and the class-name default, and the landing page's
+  endpoint browser lists it there. A subscriber class keeps its authored
+  mapping.
+- **Submitting a record whose object has no active approval process fails with
+  `NO_APPLICABLE_PROCESS`.** aer recorded an ad hoc submission to the request's
+  next approver. sfapex rejects it the same way it rejects a record that
+  meets no process's entry criteria.
+- **`aer server` keeps subscriber source unnamespaced when it is loaded beside a
+  `dir@ns` path.** The server treated the one namespace as the default for every
+  source path, so the subscriber's custom tabs were stored as `ns__Tab` and an
+  application's navigation showed only Home. The single-namespace shorthand now
+  applies only when every source path is namespaced, as it does in `aer test`
+  and `aer exec`.
+- **`Owner.Name` and `Owner.Type` resolve for records the default user owns.**
+  The default user had no `Name` object row, so both read null for every record
+  it owned and a record page linked the owner as a group. The row is written
+  when the default user is created, and a database opened without one is
+  repaired.
+- **Stepping in the debugger reaches the right lines in an anonymous block.**
+  Frames in an anonymous block were reported two lines low and breakpoints
+  were set two lines high, and Step In and Step Over skipped the first
+  statement of a method when it shares the call's line number.
 
 ## v1.4.10 — 2026-09-19
 
