@@ -716,6 +716,36 @@
   were set two lines high, and Step In and Step Over skipped the first
   statement of a method when it shares the call's line number.
 
+## v1.4.12 — 2026-09-21
+
+- **`TimeZone.getDisplayName()` returns sfapex's display names.** It
+  returned the time zone Id, such as `America/Los_Angeles`, or `UTC` for GMT.
+  It now returns the current GMT offset, the long name for the season in
+  effect, and the Id, as in `(GMT-07:00) Pacific Daylight Time
+  (America/Los_Angeles)`.
+- **US time zones keep their standard and daylight abbreviations in formatted
+  datetimes.** From 2026-11-01 `America/Vancouver` stays on UTC-7, and aer
+  rendered that period as `MST` in `format('z')` and `formatLong()`. These now
+  render `PST`, as sfapex does.
+- **`Type.forName` returns null for an SObject the calling class's API version
+  does not have.** For example, `Type.forName('FlowDefinitionView')` returns
+  null in a class before API 46.0. `JSON.deserialize(json, null)` now throws
+  `NullPointerException`, as in sfapex.
+- **Exceptions thrown by a `StubProvider` from `toString` reach the caller.**
+  `String.valueOf(stub)`, `+`, and `+=` on a stub whose type overrides
+  `toString` returned the default stub string when the provider threw. The
+  exception now propagates.
+- **Async jobs still queued when a test method returns are run.** A batch,
+  queueable, or `@future` job enqueued without a following
+  `Test.stopTest()` was dropped. It now runs at the end of the test method, and
+  an uncaught exception from the job fails the test with the exception's own
+  message.
+- **Reading an unselected parent lookup on a subquery child row throws.** A
+  child row from a parent-to-child subquery returned the parent Id for its
+  lookup back to the parent even when the subquery did not select it. Reading
+  that field with dot notation or `get()` now throws `SObjectException`, as in
+  sfapex, and `getPopulatedFieldsAsMap()` still includes it.
+
 ## v1.4.11 — 2026-09-21
 
 - **Queues can own Orders, and queue ownership rules are enforced.** Setting
