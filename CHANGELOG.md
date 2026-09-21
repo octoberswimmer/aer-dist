@@ -716,6 +716,55 @@
   were set two lines high, and Step In and Step Over skipped the first
   statement of a method when it shares the call's line number.
 
+## v1.4.11 — 2026-09-21
+
+- **Queues can own Orders, and queue ownership rules are enforced.** Setting
+  `Order.OwnerId` to a queue failed with `FIELD_INTEGRITY_EXCEPTION`, "Owner
+  ID: id value of incorrect type"; `Order.OwnerId` and `Macro.OwnerId` now
+  accept a queue or a user, and `ApprovalWorkItem` has an `OwnerId` field. On
+  insert and on an update that changes the owner, after before triggers run, a
+  queue that does not list the record's object fails with `INVALID_OPERATION`,
+  "Queue not associated with this SObject type", and any other group type fails
+  with `INVALID_CROSS_REFERENCE_KEY`; an Order accepts any group as its owner.
+  Previously the check ran only on insert, before before triggers, and was
+  skipped for `Database.insert` with `allOrNone` set to `false`.
+- **Deleting a queue or its `QueueSobject` row is refused while the queue owns
+  records.** Deleting a `QueueSobject` row while its queue owns records of that
+  object, or deleting a queue that owns records of an object it lists, fails
+  with `DELETE_FAILED` and names up to five of the records, ordered by Id, as
+  sfapex does. Deleting a group also deletes its `GroupMember` and
+  `QueueSobject` rows, where it previously failed. A queue-owned record other
+  than an Order is reassigned to the deleting user when it is deleted, and an
+  undeleted record keeps its stored owner.
+- **Queue-owned Cases and Orders give the queue read access to their
+  Account.** A group that owns a Case or an Order on an Account gets an
+  `AccountShare` row with `RowCause` `ImplicitParent` and Read access, which is
+  added, moved, and removed as the record's owner or Account changes and as the
+  record is deleted and undeleted.
+- **`Opportunity.ExpectedRevenue` is calculated.** The field was always null,
+  so a filter on it matched no rows. It is now `Amount * (Probability / 100)`
+  on every save, computed in double arithmetic without rounding to two decimal
+  places (12345.67 at 7% is `864.1969000000001`, as in Salesforce), recomputed
+  after before-save automation changes either value, and updated when line item
+  totals change `Amount`.
+- **Exceptions thrown by static property setters reach the caller.** A static
+  property setter that threw had its exception discarded and the assigned value
+  was stored anyway. The exception now propagates and the property keeps its
+  previous value.
+- **A Visualforce component property setter that throws fails the email
+  render.** When a component controller's setter threw while an `assignTo`
+  attribute was applied, the render finished with the property unset.
+  `Messaging.renderStoredEmailTemplate` now throws
+  `System.EmailTemplateRenderException` with the original message under
+  `EMAIL_TEMPLATE_MERGEFIELD_ERROR`, as sfapex does. The attribute value
+  also no longer overwrites what the setter stored.
+- **Approval process and orchestration flows no longer break the test run.** A
+  flow with process type `ApprovalWorkflow` or `Orchestrator` generated a class
+  that failed to compile (for example "Method does not exist: do_Recall" for an
+  approval recall path). These flows now do nothing when their entry criteria
+  are met.  Support for Approval Process and Orchestration flows will be added
+  in v1.6.
+
 ## v1.4.10 — 2026-09-19
 
 - **An order's products are locked by the status category, not the literal
