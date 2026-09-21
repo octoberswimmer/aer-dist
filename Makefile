@@ -19,8 +19,15 @@ VERSIONED_ZIPS := $(addsuffix _$(VERSION).zip,$(basename $(ALL))) $(WASM_ZIP) $(
 RELEASE_ASSETS := $(VERSIONED_ZIPS) SHA256SUMS-$(VERSION)
 
 GO_BUILD_FLAGS := -trimpath
-GO_LDFLAGS := -X main.version=$(VERSION) -s -w
-GO_LDFLAGS_WASM := -X main.wasmRuntimeVersion=$(VERSION) -s -w
+# RELEASE_DATE is the commit time of the release, in UTC. aer compares it with
+# the cutoff in a business continuity licence to decide whether the licence
+# covers this build. The linker ignores -X for a variable that does not exist,
+# so this is harmless with an aer version that predates it.
+RELEASE_DATE := $(shell TZ=UTC git log -1 --format=%cd --date=format-local:%Y-%m-%dT%H:%M:%SZ 2>/dev/null)
+RELEASE_DATE_LDFLAG := -X github.com/octoberswimmer/aer/cmd.releaseDate=$(RELEASE_DATE)
+
+GO_LDFLAGS := -X main.version=$(VERSION) $(RELEASE_DATE_LDFLAG) -s -w
+GO_LDFLAGS_WASM := -X main.wasmRuntimeVersion=$(VERSION) $(RELEASE_DATE_LDFLAG) -s -w
 
 .PHONY: default install install-debug dist clean checksum release publish check-tag tag
 
