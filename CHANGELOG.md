@@ -716,6 +716,17 @@
   were set two lines high, and Step In and Step Over skipped the first
   statement of a method when it shares the call's line number.
 
+## v1.4.13 — 2026-09-21
+
+- **Child subqueries without `ORDER BY` return rows in insertion order.** They
+  were sorted by `CreatedDate` descending, to the second, so two children
+  inserted in different seconds came back newest first. They now come back in
+  the order they were inserted, as in sfapex.
+- **The `TZ` environment variable sets the default user's time zone on every
+  run.** With no `--timezone` configured, the default user takes its time zone
+  from `TZ`, but a run reused the cached database built under an earlier run's
+  `TZ`, so a changed `TZ` was ignored.
+
 ## v1.4.12 — 2026-09-21
 
 - **`TimeZone.getDisplayName()` returns sfapex's display names.** It
