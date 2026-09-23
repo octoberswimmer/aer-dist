@@ -289,8 +289,8 @@ github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/ForceCLI/force v1.9.0 h1:tfZkky9zAtqQXWoJQW/lH89U+t5WM63d+oQio+5OIgI=
 github.com/ForceCLI/force v1.9.0/go.mod h1:vZhTNH4A1cgnFV21igwqwMRy01TXYsquzdXF4LnrZB8=
-github.com/ForceCLI/force-md v0.54.0 h1:vf9MMJT5vtekLUzcBjY+K4yB83WJdxRUwenVPYko+/Q=
-github.com/ForceCLI/force-md v0.54.0/go.mod h1:lu6WWu5xyw2QzK8KEMPOiQfJRJOQAGcI4qIASfmsie0=
+github.com/ForceCLI/force-md v0.54.1 h1:9ow0OO2C6ECW5WjCyLT5uOvFDQhKurndq2aWBqs4mvs=
+github.com/ForceCLI/force-md v0.54.1/go.mod h1:lu6WWu5xyw2QzK8KEMPOiQfJRJOQAGcI4qIASfmsie0=
 github.com/ForceCLI/inflect v0.0.0-20130829110746-cc00b5ad7a6a h1:mMd54YgLoeupNpbph3KdwvF58O0lZ72RQaJ2cFPOFDE=
 github.com/ForceCLI/inflect v0.0.0-20130829110746-cc00b5ad7a6a/go.mod h1:DGKmCfb9oo5BivGO+szHk2ZvlqPDTlW4AYVpRBIVbms=
 github.com/GoogleCloudPlatform/grpc-gcp-go/grpcgcp v1.5.0/go.mod h1:dppbR7CwXD4pgtV9t3wD1812RaLDcBjtblcDF5f1vI0=
@@ -373,6 +373,8 @@ github.com/cwarden/mergo v0.3.12-0.20210528180603-9b708ca2c584 h1:XSEGteLsF2wBKv
 github.com/cwarden/mergo v0.3.12-0.20210528180603-9b708ca2c584/go.mod h1:EKrIwxq7vAFm5c42qpRoClmx16ahAuLuVnEXbXTobpE=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+github.com/dlclark/metaphone3 v0.0.0-20190903202417-5fe87fcdd547 h1:OORe7CarEOHLaNLEGqaCthCiNCkdE1ONQq8bykPwWmc=
+github.com/dlclark/metaphone3 v0.0.0-20190903202417-5fe87fcdd547/go.mod h1:qDxEB58K1Kb5fD+Rk8joPpQTiGWobSxPFCyc79M2a1o=
 github.com/dlclark/regexp2 v1.11.5 h1:Q/sSnsKerHeCkc/jSTNq1oCm7KiVgUMZRDUoRu0JQZQ=
 github.com/dlclark/regexp2 v1.11.5/go.mod h1:DHkYz0B9wPfa6wondMfaivmHpzrQ3v9q8cnmRbL6yW8=
 github.com/docopt/docopt-go v0.0.0-20180111231733-ee0de3bc6815/go.mod h1:WwZ+bS3ebgob9U8Nd0kOddGdZWjyMGR8Wziv+TBNwSE=
@@ -716,8 +718,8 @@ github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646/go.mod h1:jpp1/29i3P1S
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
 github.com/nxadm/tail v1.4.4 h1:DQuhQpB1tVlglWS2hLQ5OV6B5r8aGxSrPc5Qo6uTN78=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
-github.com/octoberswimmer/aer v1.5.3 h1:UxsstfajAtJ6DFyHzkAAILIe/27BX36E8p/2qpmKx9g=
-github.com/octoberswimmer/aer v1.5.3/go.mod h1:IzpGIbv1rlv+uCwCIq6Zg7ONqenuRAjcuex84CzoDsk=
+github.com/octoberswimmer/aer v1.5.4 h1:ZBlSqwyMjsyqD5vk0dY7yQyuN3AoNqMvRebgppwI/og=
+github.com/octoberswimmer/aer v1.5.4/go.mod h1:5x/WREFShY8/TOq7OVfW64iAdqkUrTMQ6mUWUrN3H4U=
 github.com/octoberswimmer/antlr/v4 v4.13.1-octoberswimmer.3 h1:LQNXELq1U8IsyVp+mh9ZEWrHj68++spgnOV2P6oNqKY=
 github.com/octoberswimmer/antlr/v4 v4.13.1-octoberswimmer.3/go.mod h1:pHLfGz+l3a2OKxb2g1xTnLaOE4NvC9rX7AfzTCOyUVM=
 github.com/octoberswimmer/apexfmt v0.66.0 h1:/2f86dkrwCdlCa1m+5EVMz6lLe9inX9njGuSramiY2A=
