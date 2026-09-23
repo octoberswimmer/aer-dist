@@ -791,6 +791,53 @@
   returns `JSON_PARSER_ERROR` for text in none of them. Record forms show and
   accept date/time values in the running user's time zone.
 
+## v1.4.15 — 2026-09-23
+
+- **DataWeave scripts can call functions from the org's other DataWeave
+  resources.** A call such as `exampleDataWeaveUtils::generate(true, order,
+  textParam)` failed with `DataWeaveScriptException: undefined variable`; the
+  module is now loaded from the DataWeave resource of that name, as in
+  sfapex. XML output keeps elements in declaration order, includes the XML
+  declaration, and honors the `skipNullOn` and `indent` writer properties, and
+  an Apex `Map` input is written in insertion order.
+- **Related records in subquery rows carry their own Ids.** A subquery row
+  took each related record's Id from the first relationship the subquery
+  joined, so selecting a formula that references the parent together with
+  `Product2.Name` in an `OrderItems` subquery gave `Product2` the Order's Id,
+  and `Owner` in a `Contacts` subquery that also selected `Account.Name` got
+  the Account's Id. A relationship two levels deep (`Account.Owner`) had no Id.
+  A selected parent lookup no longer appears twice in the row.
+- **Name-pointing relationships behave as `Name` records.** `Task.What`,
+  `Task.Who`, and the `Owner` of Task, Case, and Lead are typed as `Name`, both
+  at compile time and at run time: `getSObjectType()` returns `Name`,
+  `String.valueOf` prints `Name:{Id=..., Name=...}`, `JSON.serialize` types
+  them as `Name`, and casting one to `Account` throws a `TypeException`.
+  Assigning, casting, and `instanceof` against an object the relationship can
+  point at still compile. When test data isolation hides the related record,
+  such as the running user, the relationship is left out of the queried record
+  even if only its Id was selected, as in sfapex.
+- **Queried related records print their fields in `SELECT` order.** Related
+  records printed as `Account:{}`; they now print the Id and then the selected
+  fields in the order the query named them.
+- **`JSON.serialize` writes a subquery row's parent lookup first.** A child
+  row's lookup to its parent (`AccountId`, `WhatId`) is written first, whether
+  or not the subquery selected it, as in sfapex.
+- **SObject type mismatches fail to compile.** Passing an SObject of another
+  type, the `SObject` base type, or a `Name` record where a specific SObject
+  type is expected is a compile error, as is returning a final primitive with
+  no conversion to the return type. `instanceof` between two different concrete
+  SObject types is reported as always false and a cast between them as
+  incompatible. Collection types in error messages print without spaces between
+  type arguments (`Map<Id,Account>`).
+- **Undeleting a list with records of several types runs each type's triggers
+  on its own records.** Every type's triggers received the whole list, so an
+  Account trigger saw Opportunities.
+- **Changing a class or trigger's `-meta.xml` file takes effect on the next
+  run.** A changed API version in a meta file was ignored until another file
+  changed.
+- **Flows reading a field through a polymorphic branch
+  (`Owner:User.CreatedDate`) read it from the branch's object.**
+
 ## v1.4.14 — 2026-09-22
 
 - **`Datacloud.FindDuplicates` reports match confidence the way sfapex
