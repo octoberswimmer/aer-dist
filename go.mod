@@ -2,7 +2,7 @@ module aer
 
 go 1.26.0
 
-require github.com/octoberswimmer/aer v1.4.14
+require github.com/octoberswimmer/aer v1.4.15
 
 require (
 	git.sr.ht/~jackmordaunt/go-toast v1.1.2 // indirect
@@ -14,7 +14,6 @@ require (
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.10.0 // indirect
 	github.com/buger/jsonparser v1.1.2 // indirect
-	github.com/clbanning/mxj/v2 v2.7.0 // indirect
 	github.com/cwarden/mergo v0.3.12-0.20210528180603-9b708ca2c584 // indirect
 	github.com/dlclark/metaphone3 v0.0.0-20190903202417-5fe87fcdd547 // indirect
 	github.com/dlclark/regexp2 v1.11.5 // indirect
@@ -54,7 +53,7 @@ require (
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 // indirect
 	github.com/nxadm/tail v1.4.4 // indirect
 	github.com/octoberswimmer/apexfmt v0.66.0 // indirect
-	github.com/octoberswimmer/digger v0.26.0 // indirect
+	github.com/octoberswimmer/digger v0.27.0 // indirect
 	github.com/octoberswimmer/libc v1.67.7-octoberswimmer.7 // indirect
 	github.com/octoberswimmer/memory v1.11.0-octoberswimmer.6 // indirect
 	github.com/octoberswimmer/sformula v0.18.0 // indirect
