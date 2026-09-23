@@ -2,7 +2,7 @@ module aer
 
 go 1.26.0
 
-require github.com/octoberswimmer/aer v1.4.13
+require github.com/octoberswimmer/aer v1.4.14
 
 require (
 	git.sr.ht/~jackmordaunt/go-toast v1.1.2 // indirect
@@ -16,6 +16,7 @@ require (
 	github.com/buger/jsonparser v1.1.2 // indirect
 	github.com/clbanning/mxj/v2 v2.7.0 // indirect
 	github.com/cwarden/mergo v0.3.12-0.20210528180603-9b708ca2c584 // indirect
+	github.com/dlclark/metaphone3 v0.0.0-20190903202417-5fe87fcdd547 // indirect
 	github.com/dlclark/regexp2 v1.11.5 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/emirpasic/gods v1.12.0 // indirect

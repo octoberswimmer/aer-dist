@@ -373,6 +373,8 @@ github.com/cwarden/mergo v0.3.12-0.20210528180603-9b708ca2c584 h1:XSEGteLsF2wBKv
 github.com/cwarden/mergo v0.3.12-0.20210528180603-9b708ca2c584/go.mod h1:EKrIwxq7vAFm5c42qpRoClmx16ahAuLuVnEXbXTobpE=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+github.com/dlclark/metaphone3 v0.0.0-20190903202417-5fe87fcdd547 h1:OORe7CarEOHLaNLEGqaCthCiNCkdE1ONQq8bykPwWmc=
+github.com/dlclark/metaphone3 v0.0.0-20190903202417-5fe87fcdd547/go.mod h1:qDxEB58K1Kb5fD+Rk8joPpQTiGWobSxPFCyc79M2a1o=
 github.com/dlclark/regexp2 v1.11.5 h1:Q/sSnsKerHeCkc/jSTNq1oCm7KiVgUMZRDUoRu0JQZQ=
 github.com/dlclark/regexp2 v1.11.5/go.mod h1:DHkYz0B9wPfa6wondMfaivmHpzrQ3v9q8cnmRbL6yW8=
 github.com/docopt/docopt-go v0.0.0-20180111231733-ee0de3bc6815/go.mod h1:WwZ+bS3ebgob9U8Nd0kOddGdZWjyMGR8Wziv+TBNwSE=
@@ -716,8 +718,8 @@ github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646/go.mod h1:jpp1/29i3P1S
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
 github.com/nxadm/tail v1.4.4 h1:DQuhQpB1tVlglWS2hLQ5OV6B5r8aGxSrPc5Qo6uTN78=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
-github.com/octoberswimmer/aer v1.4.13 h1:hPFbgjtobXSBK5B7aBXdRBFYjRPDIGTcBlOqwK9XIok=
-github.com/octoberswimmer/aer v1.4.13/go.mod h1:UWrNcATfrjPL3n36C5XlHZ3djQtVK+FPIVa55EXbn5s=
+github.com/octoberswimmer/aer v1.4.14 h1:kBc1eIguZHNhi9YsUU71nboLml3wnczKFuDJNZIxRoU=
+github.com/octoberswimmer/aer v1.4.14/go.mod h1:7wYsrG/dJ8A3tfu+oPNFe7zx2Fpl9k8Xw8AwtZEm0m4=
 github.com/octoberswimmer/antlr/v4 v4.13.1-octoberswimmer.3 h1:LQNXELq1U8IsyVp+mh9ZEWrHj68++spgnOV2P6oNqKY=
 github.com/octoberswimmer/antlr/v4 v4.13.1-octoberswimmer.3/go.mod h1:pHLfGz+l3a2OKxb2g1xTnLaOE4NvC9rX7AfzTCOyUVM=
 github.com/octoberswimmer/apexfmt v0.66.0 h1:/2f86dkrwCdlCa1m+5EVMz6lLe9inX9njGuSramiY2A=
