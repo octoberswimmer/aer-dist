@@ -487,6 +487,63 @@
   page, and `console:history` lists the session's recent records. A namespaced
   application's tab references take the namespace, so they resolve to its
   `CustomTab` records.
+- **Aura components run in the browser.** An Aura component's markup,
+  controller, helper, and renderer run in the page, which re-renders when
+  `component.set` changes an attribute. The runtime evaluates Aura expressions,
+  binds attributes both ways, renders `aura:if`, `aura:iteration`, facets, and
+  inherited components, runs the init, change, render, and destroy handlers,
+  fires component and application events, calls `aura:method`s, and supports
+  `$A.createComponent` and the `$Label`, `$Resource`, `$Browser`, and `$Locale`
+  providers. The `lightning:` and `ui:` base components render, including
+  inputs with validation, datatable, tree, tabs, the record forms, and
+  `force:recordData`. An Aura component is served wherever Salesforce serves
+  one: a FlexiPage component, an Aura tab, a utility bar item, a quick action
+  (receiving `recordId` and `sObjectName`), a New, View, or Edit action
+  override, `/lightning/cmp/c__Name` for a component implementing
+  `lightning:isUrlAddressable`, and `/c/Name.app` for an application. `.pkg`
+  packages carry Aura bundles, served under the package's namespace. An
+  `AuraHandledException` reports the message it was given.
+- **Components showing the same record refresh each other.** A Lightning web
+  component announcing a record change with `notifyRecordUpdateAvailable` or a
+  `RefreshEvent`, or an Aura component firing `force:refreshView`, makes the
+  other components on the page re-read the record, and the record page's
+  related lists reload.
+- **Visualforce renders page blocks and PDFs, and escapes merge fields.**
+  `apex:pageBlock`, `apex:pageBlockButtons`, `apex:pageBlockSection`,
+  `apex:pageBlockSectionItem`, `apex:outputField`, `apex:inputTextarea`,
+  `apex:panelGrid`, and `apex:panelGroup` render with the standard and
+  Lightning stylesheets; an output field shows a lookup, URL, or email as a
+  link, a picklist value by its label, and a date or number in the running
+  user's locale. A page with `renderAs="pdf"`, `PageReference.getContent()`,
+  and `getContentAsPDF()` produce a PDF through
+  [`ufo`](https://github.com/octoberswimmer/ufo), a separate program
+  implementing the Flying Saucer renderer Salesforce uses, found through
+  `AER_UFO_PATH`, beside the aer executable, or on `PATH`.  Save, quicksave,
+  cancel, edit, delete, and view run on the standard controller when the page's
+  controller and extensions do not define them, and a command button's
+  `oncomplete` handler runs.
+- **Setup has Apex Classes and Apex Triggers pages.**
+  `/lightning/setup/ApexClasses/home` lists every Apex class with its name,
+  namespace prefix, API version, and size without comments, and each class's
+  page shows its attributes, source file, and highlighted body. Run, on a test
+  class and each test method, runs the test and reports the result; Debug opens
+  the Anonymous Apex console on the test, running its `@TestSetup` and rolling
+  back its data when it finishes; and Execute, on a static method, opens the
+  console on a call to it. An object's Object Manager page lists its triggers
+  with the events each fires on, each linked to a page showing its body.
+- **Auto-response rules, escalation rules, and entitlement processes run on
+  Case saves.** aer reads `autoResponseRules`, `escalationRules`,
+  `entitlementProcesses`, and `milestoneTypes` metadata. An insert with
+  `EmailHeader.triggerAutoResponseEmail` set runs the active auto-response rule
+  after assignment rules, recording a completed email Task and, for a Case, a
+  sent `EmailMessage`. An escalation rule entry with static business hours sets
+  the case's business hours. A case saved with an entitlement whose process is
+  active gets `SlaStartDate`, `MilestoneStatus`, and a `CaseMilestone` for each
+  milestone whose criteria it meets, with its target computed within the case's
+  business hours; a milestone completes when its `CompletionDate` is not in the
+  future, and `StopStartDate` follows `IsStopped`. A new case gets the org's
+  default business hours. `SlaProcess` and `MilestoneType` records are created
+  from the metadata, and reference runs deploy all four types.
 
 ### Fixes and performance
 
@@ -678,9 +735,12 @@
   keeps, and deploys and watch reloads keep taking the incremental path. A
   server started with an in-memory schema or an unmanaged `.pkg` among its
   source paths still parses.
-- **An `IMAGE` formula field describes as HTML formatted.**
-  `DescribeFieldResult.isHtmlFormatted()` returned `false` for it, where
-  Salesforce returns `true`. The record page renders its value as markup.
+- **A formula field that calls `HYPERLINK`, `IMAGE`, or `BR` holds HTML.**
+  `DescribeFieldResult.isHtmlFormatted()` returns `true` for it, as in
+  sfapex. The markup those functions return is kept as written, and every
+  other piece of text in the value has `& < > " '` escaped once, so
+  `'A & B' & BR()` reads back as `A &amp; B<br>`. The record page renders
+  the value as the link, image, or line breaks.
 - **Data Cloud `DataSource` files no longer warn when metadata loads.** They
   share the `.dataSource` suffix with `ExternalDataSource` files, and every one
   produced "expected element type <ExternalDataSource> but have <DataSource>".
@@ -715,6 +775,21 @@
   Frames in an anonymous block were reported two lines low and breakpoints
   were set two lines high, and Step In and Step Over skipped the first
   statement of a method when it shares the call's line number.
+- **Report totals appear under the columns they summarize.** Every total
+  rendered as "0: 0", joined into one cell spanning the table. The grand total
+  and each group subtotal are now a row with each aggregate in its column,
+  prefixed "Avg:", "Max:", or "Min:" where applicable, and an aggregate with no
+  rows shows "-". Matrix cells and dashboard tables name their aggregates the
+  same way.
+- **Report columns resolve the same way on every run.** On an object with both
+  a standard `Tasks` and a custom `Tasks__r` child relationship, a report's
+  joined columns resolved to either one, so the same report showed different
+  columns and dropped filters from run to run. A base-object column written
+  with the report type's `$` (`Project__c$Status__c`) now has a label, and a
+  filter on it is applied.
+- **The REST API parses the ISO 8601 date/time forms Salesforce accepts** and
+  returns `JSON_PARSER_ERROR` for text in none of them. Record forms show and
+  accept date/time values in the running user's time zone.
 
 ## v1.4.14 — 2026-09-22
 
