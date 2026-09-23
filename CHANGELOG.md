@@ -716,6 +716,26 @@
   were set two lines high, and Step In and Step Over skipped the first
   statement of a method when it shares the call's line number.
 
+## v1.4.14 — 2026-09-22
+
+- **`Datacloud.FindDuplicates` reports match confidence the way sfapex
+  computes it.** Every match previously reported a confidence of 100.0.
+- **Duplicate results carry the engine, errors and additional information.**
+  A `DuplicateResult` serializes with camelCase keys as in sfapex, and
+  includes `matchEngine` (`ExactMatchEngine` when every rule item is exact,
+  `FuzzyMatchEngine` otherwise), `errors` and `additionalInformation`, with one
+  field diff per differing field. `isAllowSave` follows the rule's insert or
+  update action according to whether the record has an Id.
+- **`JSONParser` reads fields in the order they were written.**
+  `JSON.createParser` returned an object's fields in an arbitrary order, and
+  `skipChildren()` stopped early when objects and arrays were nested inside
+  each other.
+- **A reference to an undefined name that starts with an uppercase letter
+  fails to compile.** Such a name, for example a constant a class no longer
+  declares, compiled and failed only when the line ran. It now reports
+  "Variable does not exist" at compile time, as does an undefined name inside
+  a map literal's keys or values.
+
 ## v1.4.13 — 2026-09-21
 
 - **Child subqueries without `ORDER BY` return rows in insertion order.** They
