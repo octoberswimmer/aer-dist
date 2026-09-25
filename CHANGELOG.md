@@ -791,6 +791,74 @@
   returns `JSON_PARSER_ERROR` for text in none of them. Record forms show and
   accept date/time values in the running user's time zone.
 
+## v1.4.16 — 2026-09-24
+
+- **Apex values reach DataWeave in the forms sfapex passes them.** A `Map`
+  kept only its `String`-keyed entries, an Apex object's fields came out in an
+  arbitrary order, `Decimal` values lost precision, a `Datetime` did not work
+  with the temporal operators, and `Set`, `Time`, `Date`, `Id` and enum values
+  were not converted. Map keys are now converted to text, object fields are
+  written in name order, and each type arrives as its DataWeave equivalent.
+  Inputs read as `application/json`, `application/xml`, `application/csv` or
+  `text/plain` accept only a `String`, `Id` or `Blob` and fail other values with
+  sfapex's error, and selecting a collection held by a `Map` passed as
+  `application/java` fails as in sfapex. Numbers are formatted with the
+  Java locale data sfapex uses, and `now()` reads the clock in GMT.
+- **A comment after an input directive's MIME type no longer breaks a
+  DataWeave script.** A header line such as
+  `input message application/java // accepts both XML and JSON` failed with
+  `undefined variable: accepts`.
+- **User-mode upsert reports field access failures like insert and update.**
+  `Database.upsert` with `AccessLevel.USER_MODE` threw `SecurityException`
+  "Access to entity ... denied" when a record wrote a field the running user
+  cannot edit. It now throws a `DmlException` with
+  `CANNOT_INSERT_UPDATE_ACTIVATE_ENTITY` when `allOrNone` is true, and with
+  `allOrNone=false` returns a failed `UpsertResult` for each failing row while
+  the other rows are upserted. Missing create or edit access on the object
+  still throws `SecurityException`.
+- **Single-record user-mode DML with `allOrNone=false` returns a failed
+  `SaveResult`.** `Database.insert` and `Database.update` with
+  `AccessLevel.USER_MODE` threw a `DmlException` for a single record that
+  wrote a field the running user cannot edit, even with `allOrNone=false`.
+- **Assigning a permission set to a user twice fails with `DUPLICATE_VALUE`.**
+  A second `PermissionSetAssignment` for the same user and permission set was
+  inserted; it now fails as in sfapex, and with `allOrNone=false` only the
+  duplicate row fails.
+- **Each site has a guest user.** `Site.GuestUserId` was null. Each site now
+  has a guest user with `UserType` `Guest`, no role, and the site's guest
+  profile ("<site label> Profile"), which is created with the Guest license
+  when source does not define it.
+- **Guest users cannot have a role.** Inserting a guest user with a
+  `UserRoleId`, or adding a role to an existing guest user, fails with
+  `FIELD_INTEGRITY_EXCEPTION` "Guest Users cannot have a user role". Moving a
+  user who is not a guest user onto a guest profile fails with
+  `FIELD_INTEGRITY_EXCEPTION` "Changing User Type from ... is not allowed".
+- **SOQL `INCLUDES` and `EXCLUDES` follow sfapex's semantics.** An item
+  naming several values joined by semicolons (`INCLUDES ('AAA;DDD')`) matches a
+  record that selected all of them in any order; it matched only when the
+  values were stored next to each other in that order. `EXCLUDES` returns
+  records with nothing selected, while `NOT (... INCLUDES ...)` does not. A
+  null bind inside the parentheses matches records with nothing selected. The
+  following forms are now rejected with the platform's errors: a value list
+  supplied as a bare literal or bind instead of written in parentheses in the
+  query, a `List` or `Set` bound inside the parentheses, and `INCLUDES` on a
+  field that is not a multi-select picklist. A SOQL syntax error in
+  `Database.queryWithBinds` is reported as a `QueryException`.
+- **External Service registration fixes.** A schema with a `$ref` naming
+  nothing the schema declares failed to load and printed library log lines in
+  the middle of `aer test` output. The operations that use such a reference are
+  now dropped, each reported as a registration warning, and the rest of the
+  service class is generated; the error names each unresolvable pointer and its
+  line. A `$ref` into another document or a `trace` operation fails the
+  registration, as in Salesforce. `HEAD` and `OPTIONS` operations are
+  generated, a class is generated only for a definition an operation uses, and
+  an operation with no parameters and no request body has no `_Request` type or
+  method argument.
+- **Coverage counts the `return` line of `return [SELECT ...]`.** When the
+  query started on the line after `return [`, or the query was followed by a
+  method call or field access (`return [SELECT ...].size()`), the return line
+  was reported uncovered even when it ran.
+
 ## v1.4.15 — 2026-09-23
 
 - **DataWeave scripts can call functions from the org's other DataWeave
