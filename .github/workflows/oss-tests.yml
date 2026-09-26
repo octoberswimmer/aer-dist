@@ -447,6 +447,7 @@ jobs:
         uses: ./
         with:
           source: ${{ env.APEX_RECIPES_SOURCE }}
+          flags: --assign-perms Apex_Recipes
           version: ${{ env.AER_VERSION }}
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
