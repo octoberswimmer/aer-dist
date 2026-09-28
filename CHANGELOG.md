@@ -791,6 +791,355 @@
   returns `JSON_PARSER_ERROR` for text in none of them. Record forms show and
   accept date/time values in the running user's time zone.
 
+## v1.4.17 — 2026-09-28
+
+- **Approval locks are stored and enforced.** `Approval.lock` and
+  `Approval.unlock` returned success without recording anything, and
+  `Approval.isLocked` always returned false. Locks are now stored, count as DML
+  statements and rows, roll back with savepoints, and honor `allOrNone`.
+  Locking a deleted record fails with `ENTITY_IS_DELETED`, and locking an Id
+  with no record fails with `INSUFFICIENT_ACCESS_ON_CROSS_REFERENCE_ENTITY`.
+  Submitting a record for approval locks it, and final approval, final
+  rejection, and recall keep or release the lock as the approval process's
+  `recordEditability`, `finalApprovalRecordLock`, and
+  `finalRejectionRecordLock` settings direct. Updating or deleting a locked
+  record fails with `ENTITY_IS_LOCKED` unless the running user has Modify All
+  Data or Modify All on the object, or is the current approver when the
+  process allows it.
+- **Sharing applies to parent records reached through relationship fields.**
+  A query run with sharing returned every field of a parent record the running
+  user cannot read. As in sfapex, the lookup Id is still returned, but the
+  relationship holds only the parent's Id and name field when the query selects
+  the name field, and is null otherwise.
+- **`Database.delete` enforces record sharing.** A user could delete a record
+  they cannot access through `Database.delete`, although the `delete`
+  statement refused it. Every form now fails with
+  `INSUFFICIENT_ACCESS_OR_READONLY`, in system mode as well, as a
+  `DmlException` when `allOrNone` is true and a failed `DeleteResult`
+  otherwise.
+- **User-mode queries report relationship access failures as sfapex
+  does.** Selecting `Parent__r.Secret__c` with an unreadable `Secret__c`
+  failed with "No such column 'Parent__c'", and a path through an unreadable
+  lookup returned rows. An unreadable field now fails with "No such column
+  '<field>' on entity '<object that holds it>'", a path through an unreadable
+  lookup fails with "No such relation '<relationship>' on entity '<object>'",
+  and a path to an unreadable object fails with "Didn't understand
+  relationship '<relationship>' in field path". The first failure in query
+  order is reported, and `getInaccessibleFields()` names the object that holds
+  what the user cannot read.
+- **Record type defaults and availability follow the running user's
+  profile and permission sets.** An insert without `RecordTypeId` on an object
+  with one active record type got that record type even when the user's
+  profile made none visible; it now stays Master unless the profile assigns a
+  default or exactly one visible record type is available. Describe's default
+  mapping is Master when the profile assigns no default.
+  `RecordTypeInfo.isAvailable()` is true only for record types the user's
+  profile or an assigned permission set makes visible, and changes under
+  `System.runAs`. Setting `RecordTypeId` to null explicitly on insert fails
+  the row with `INVALID_CROSS_REFERENCE_KEY` before triggers run, and an
+  update that sets it to null keeps the stored record type.
+- **`getRecordTypeInfos()` lists record types in label order with Master
+  last.** The order changed from run to run. The `ByDeveloperName`, `ByName`,
+  and `ById` maps iterate in the same order.
+- **New records take the running user's currency in multi-currency orgs.** A
+  source tree containing `objects/Order/fields/CurrencyIsoCode.field-meta.xml`
+  left new Orders with a null `CurrencyIsoCode` and describe with no picklist
+  values, and without that file new records took USD even with `--currency
+  EUR`. `CurrencyIsoCode` is now set on insert from the running user's
+  `DefaultCurrencyIsoCode`, then the corporate currency, before triggers run;
+  an `OpportunityLineItem` takes its Opportunity's currency and an `OrderItem`
+  its Order's. `UserInfo.getDefaultCurrency()` reads the same value, a new
+  User without a `DefaultCurrencyIsoCode` gets the corporate currency, and
+  describe lists the org's active currencies with the user's currency as the
+  default.
+- **Every custom object and custom setting has `CurrencyIsoCode` in a
+  multi-currency org.** A query of `CurrencyIsoCode` on a custom object
+  without a currency field failed, directly and in a subquery. Custom
+  metadata types, platform events, and History, Feed, and Share objects do not
+  get the field, as in sfapex.
+- **`--timezone` and `--locale` set the organization's time zone and
+  locale.** They set only the default user's; `Organization.TimeZoneSidKey`
+  and `DefaultLocaleSidKey` stayed `America/Los_Angeles` and `en_US`. Users
+  created by `System.runAs` take them too.
+- **Platform event triggers run as separate subscribers and honor
+  `PlatformEventSubscriberConfig`.** A config's `<user>` was ignored and every
+  trigger ran as the Automated Process user; all triggers of an event ran
+  together, so a `RetryableException` in one redelivered the batch to all of
+  them. Each trigger now receives events as its own subscriber, as the config's
+  user or the Automated Process user, with fresh governor limits and its own
+  retry count and `EventBusSubscriber` position. Outside tests a trigger
+  receives batches of its config's `batchSize`, or 2,000. A config naming a
+  user that does not exist runs the trigger as the Automated Process user and
+  prints a warning. In a test, fewer than 500 events can be published: the
+  chunk of 200 that would reach 500 fails with `LIMIT_EXCEEDED`.
+- **`PlatformEventUsageMetric` is available.** The object is queryable, and
+  `aer server` records hourly and daily rows for custom platform events and
+  change events published and delivered to CometD, Pub/Sub API, and `empApi`
+  clients. A test sees the rows only with `SeeAllData`.
+- **Long fields are typed as `Long`.** A queried long field came back as a
+  `String`, and assigning one to an `Integer` or `String` compiled.
+- **Aggregate operators on fields that do not support them fail to compile.**
+  Inline SOQL such as `SELECT SUM(Name) ...` now fails with "field <name> does
+  not support aggregate operator SUM", following relationship paths and
+  covering `HAVING`; dynamic SOQL raises the same error at run time. Grouping
+  by a non-groupable field and `USING SCOPE mine_and_my_groups` on an object
+  other than `ProcessInstanceWorkItem` raise an `UnexpectedException` that no
+  `catch` block handles, as in sfapex.
+- **`NOT ... LIKE` keeps records whose field is null.** `NOT Field__c LIKE
+  'x%'` left out records with a null `Field__c`. An empty pattern written in
+  the query text is now rejected with "invalid LIKE value: ", at compile time
+  for static SOQL and as a `QueryException` for dynamic SOQL; a bound empty
+  pattern matches a null field.
+- **Cursor governor limits are charged.** `Limits.getApexCursors`,
+  `getApexPaginationCursors`, and `getApexPaginationCursorRows` always
+  returned 0. A cursor and its rows are now charged when it opens, with no
+  SOQL query counted then, and each `Cursor.fetch` and
+  `PaginationCursor.fetchPage` counts a fetch call, a SOQL query, and the rows
+  it returns. Both cursor kinds are limited to 50 per transaction and
+  pagination cursors to 100,000 rows, with sfapex's `LimitException`
+  messages. `getCursorWithBinds` and `getPaginationCursorWithBinds` with
+  `AccessLevel.USER_MODE` now enforce object access.
+- **A pagination cursor for a query with no results is empty.**
+  `Database.getPaginationCursor` and `getPaginationCursorWithBinds` threw for
+  a query that matched no records; they now return a cursor whose
+  `getNumRecords()` is 0.
+- **`JSON.serialize` of a `DescribeSObjectResult` writes every attribute and
+  the `urls` map.** Only nine attributes were written. All 46 are now written
+  in sfapex's order, followed by the object's REST resource URLs, so code
+  that reads the org's API version from them finds it. Child relationship and
+  record type entries use sfapex's keys.
+- **`JSONParser` reads its input as a stream.** Invalid JSON produced no
+  tokens, so a `nextToken()` loop never ended. The parser now returns the
+  tokens before the invalid part and then throws a `JSONException` naming the
+  problem and its location, and reads several top-level values separated by
+  whitespace.
+- **JSON deserialization into Apex classes skips transient fields.**
+  `JSON.deserialize` and `JSONParser.readValueAs` set transient fields and ran
+  transient property setters. `JSON.deserializeStrict` rejects a key that
+  names no field with "Unknown field: <Class>.<key>" and one that names a
+  transient field with "Field is not deserializable: <Class>.<field>",
+  including in nested objects.
+- **JSON deserialization into an SObject drops unknown keys ending in `Id`.**
+  A key such as `entryId` became a field, and a later update failed.
+  `JSON.deserializeStrict` now rejects it with "No such column".
+- **Property getters run when a method called by an accessor reads the
+  property.** A setter that called a helper reading the property gave the
+  helper null instead of running the getter, for instance and static
+  properties alike. Inside an accessor body the property name, `this.<name>`,
+  and `<Class>.<name>` refer to the backing field.
+- **Cast failures name types as sfapex does, and collection casts are
+  checked.** "Invalid conversion from runtime type" messages omitted the
+  namespace of built-in types (`System.SelectOption`); they now use
+  sfapex's spelling, which code that parses the message depends on.
+  Casting a value that is not a `String` or `Id` to `Id` throws "Invalid id".
+  A list cast now requires a compatible element type, a set cast the same
+  element type, and a map cast the same key type, so casting a
+  `List<SelectOption>` to `List<Url>` fails. Casts between `List<Schema.X>`
+  and `List<X>` succeed, and deserializing into an inner class named like an
+  SObject (`List<Outer.AuthSession>`) produces instances of the class.
+- **Casting a list to an SObject type follows the operand's static type.** A
+  list typed `Object`, such as a value from `getPopulatedFieldsAsMap()`, no
+  longer converts to its single row; it throws "Invalid conversion from
+  runtime type List<Contact> to SObject". `(Contact) parent.Contacts`
+  compiles. `instanceof` judges a list by its declared element type rather
+  than its first element. `getPopulatedFieldsAsMap()` leaves out a child
+  subquery that matched no rows, and `isSet()` throws "Invalid field" for a
+  child relationship name.
+- **Strings in `Id`-typed collections are converted where they are read.** A
+  `Map<Id, String>` passed as a `Map<Id, Id>`, or a `List<String>` cast to
+  `List<Id>`, now yields 18-character Ids when elements are read through the
+  `Id` type and throws "Invalid id" for one that is not an Id.
+  `new Set<Id>(m.values())` on such a map no longer throws "Invalid
+  initializer type". `Map<Id, V>` methods and map literals reject a `String`
+  key that is not an Id with "Invalid id: <key>". "Illegal assignment" errors
+  print generic types without spaces (`Map<String,String>`).
+- **Numeric return values take the declared return type.** An `Integer`
+  returned from a method declared `Decimal` still divided as an `Integer`, so
+  `days / 7` gave 1 instead of 1.428571.
+- **Decimal arithmetic fixes.** `Decimal.valueOf('18') * 0.18` was rounded to
+  3.2 instead of 3.24. `stripTrailingZeros()` left `45.0` unchanged; it now
+  follows `java.math.BigDecimal`, so `4500.0` becomes `4.5E+3` and
+  `toPlainString()` prints `4500`.
+- **Dates and Datetimes support `+=` and `-=` with a day count.** Adding
+  whole days to a `Datetime` adds 24 hours per day, as sfapex does, so a
+  day crossing a daylight saving change no longer comes out as 23 or 25 hours.
+- **A `Date` is accepted where a built-in method takes a `Datetime`.**
+  `TimeZone.getOffset`, `Datetime.isSameDay`, `JSONGenerator.writeDateTime`,
+  and `Map.put` into a `Map<String, Datetime>` failed for a `Date` argument;
+  it is converted to midnight GMT. `JSONGenerator.writeDateTime` writes
+  milliseconds, as `JSON.serialize` does.
+- **`Datetime.format` pads numeric fields to the pattern's letter count.**
+  `HHH` rendered `077` instead of `007` and `ddd` rendered `21` instead of
+  `021`. The `W`, `D`, `k`, and `K` letters are now supported.
+- **`TimeZone.getTimeZone` returns GMT for an unknown Id.** `getID()` returned
+  the Id passed in; it now returns `GMT`, which code checks to detect invalid
+  input.
+- **`Formula.builder()` fixes.** In a static method of a class with an
+  instance field named `formula`, `Formula.builder()` resolved to the field
+  and failed to compile. `build()` now throws `FormulaValidationException` for
+  a reference to a field the context type does not have. In code running in a
+  namespace, bare custom field names in the formula resolve to the
+  namespace's fields.
+- **Formula `=` and `<>` with a blank date, datetime, time, or number are
+  null.** Two blank dates compared as equal, so a validation rule such as
+  `Date_End__c = Date_Start__c` rejected a record with both blank. Blank text
+  still compares as the empty string.
+- **Formula Time arithmetic is in milliseconds.** `Time - Time` gave
+  fractional days and `Time + Number` shifted by days. The difference is now
+  in milliseconds wrapped within a day, and a number shifts a Time by
+  milliseconds, in selected values and in `WHERE`, `ORDER BY`, and aggregates.
+- **Formula comparisons of a DateTime with `NOW()` work in `WHERE` clauses.**
+  `Stamp__c <= NOW()` matched no rows and `Stamp__c > NOW()` matched every row
+  on the same day, although the selected values were correct.
+- **Formula fields filtered on `ISBLANK` over `$Setup` or `$CustomMetadata`
+  can be queried.** Filtering on such a field failed with "unsupported ISBLANK
+  argument type".
+- **Roll-up summary filters on formula fields are evaluated.** A roll-up
+  whose filter named a child formula field always came out 0. Undeleting a
+  child queried with only its Id now recalculates its parent's roll-ups.
+- **A formula field that declares a default value is rejected** with "Can not
+  specify a defaultValue for CustomFields that have a formula".
+- **`$Setup` and `$CustomMetadata` in field default values are evaluated.** A
+  default of `$Setup.Setting__c.Field__c` was stored as the formula text, and
+  inserts that left a Number field unset failed. The default now reads the
+  running user's effective setting value, and takes the namespace in packages
+  and namespaced source. `aer package edit field` has a `--default-value` flag.
+- **`getPopulatedFieldsAsMap()` in before-insert triggers matches
+  sfapex.** It listed fields set to null and null formula fields, and left
+  out Checkbox fields; it now leaves out nulls and includes every Checkbox.
+- **Time fields in child subquery rows are `Time` values.** They came back as
+  their stored text, so `hour()` failed.
+- **Writing a field on a grandchild subquery row keeps its other fields
+  readable.** Reading another queried field threw "SObject row was retrieved
+  via SOQL without querying the requested field".
+- **`SObject.isSet` resolves field names without regard to case** and throws
+  "Invalid field: <name>" for a name that is not a field.
+- **`putSObject` checks the relationship.** Putting a record of a type the
+  lookup cannot reference throws "Illegal assignment from <type> to <type>",
+  and putting a record on a custom metadata relationship throws "Relationship
+  <name> is not editable".
+- **`getOrgDefaults()` without an org-level record has no populated fields.**
+  `SetupOwnerId` was set to the org Id.
+- **Custom metadata relationships to `EntityDefinition` and `FieldDefinition`
+  hold durable ids.** A custom object's relationship held its API name, so a
+  join against `EntityDefinition.DurableId` found no match; it now holds the
+  15-character `01I` id, as in sfapex. A record naming an object or field
+  the schema lacks is reported as invalid metadata, or skipped under
+  `--skip-errors`. In user mode, `FieldDefinition` and `EntityParticle` leave
+  out fields the running user cannot read, a custom metadata query leaves out
+  records whose `FieldDefinition` relationship names such a field, and an
+  `EntityDefinition` query that does not select `QualifiedApiName` no longer
+  returns no rows.
+- **Permission set group assignments point at the group's permission set.** An
+  assignment inserted with only `PermissionSetGroupId` had a null
+  `PermissionSetId`, so `PermissionSet.Name` on it was null. A group inserted
+  from Apex has the `Updated` status, and adding a component marks it
+  `Outdated`.
+- **`Type.forName` resolves bare names only in `System` and `Schema`.**
+  `Type.forName('test')` returned null; it now returns `System.Test`, and a
+  bare name from another namespace (`SaveResult`) returns null.
+  `Type.forName('string')` returns `String` and `Type.forName('int')` null.
+- **A static field read through a qualified type name binds like the
+  unqualified form.** `System.RestContext.request` failed with "undefined
+  static field" when nothing had been assigned.
+- **Built-in class fields are checked at compile time.** Reading a field a
+  built-in class does not declare fails with "Variable does not exist" rather
+  than at run time. About 100 missing fields and 200 superclasses of built-in
+  classes were added or corrected, among them `defaultValue` and `url` on
+  `ConnectApi.PicklistValues`. `ConnectApi` objects print their fields in
+  sfapex's order. `ConnectApi.RecordUi.getPicklistValuesByRecordType` sets
+  `defaultValue` and `url`, throws `INVALID_TYPE` for an object the user cannot
+  read, leaves out unreadable fields, and returns `controllerValues` and
+  `validFor` for dependent picklists.
+- **`ApexClass` field describes match sfapex.** `ApiVersion` and
+  `LengthWithoutComments` are not nillable, and `NamespacePrefix` is not
+  createable or updateable.
+- **`User` has the `DelegatedUsers` child relationship.**
+- **`System.AccessLevel` values compare by identity and print as sfapex
+  does.** An `AccessLevel` carried through a queueable is distinct from the
+  original in `==`, `equals`, sets, and map keys, and `String.valueOf` renders
+  its fields.
+- **`Quiddity.RUN_INTEGRATION_TESTS` is available.** Anonymous Apex runs as
+  `ANONYMOUS`, `@IntegrationTest` methods run as `RUN_INTEGRATION_TESTS` with
+  a 25 MB heap limit, `Quiddity.values()` uses the org's order, and
+  `getQuiddityShortCode` returns the org's code for every constant.
+- **`AsyncInfo` reports the configured queueable delay and maximum depth in
+  tests.** They were null for every queueable run by `Test.stopTest()`.
+- **A failed async job's `AsyncApexJob` keeps its phase status in a test.** A
+  queueable that throws during `Test.stopTest()` stays `Processing`, and a
+  batch keeps the status of the phase that threw, as in sfapex; aer wrote
+  `Failed`. "No more than one executeBatch can be called from within a test
+  method" cannot be caught.
+- **One round of deferred async work runs after a test method.** A queueable
+  → future → queueable chain started in `Test.stopTest()` ran every hop and a
+  long chain failed with "Too many async jobs enqueued". A future method's
+  exception stack trace starts at the future method.
+- **Queueables may implement `Database.RaisesPlatformEvents` and
+  `Messaging.InboundEmailHandler`.** `System.enqueueJob` threw
+  `AsyncException` for them.
+- **Cache partitions are validated.** `Cache.Org.getPartition` and
+  `Cache.Session.getPartition` created a partition for any name; an undefined
+  partition now throws sfapex's "Invalid partition" exception. A bare name
+  such as `'Default'` is qualified with the running code's namespace, or
+  `local`. A cache partition passed to `aer test` as a single file is loaded.
+- **`Matcher.replaceAll` and `replaceFirst` read Java replacement syntax.** An
+  escaped `\$` was kept as a backslash, and `$1x` was read as a group named
+  `1x` rather than group 1 followed by `x`.
+- **An unclosed character class inside a group throws `StringException`.**
+  `Pattern.compile('([a')` crashed the run.
+- **`TriggerOperation.valueOf` throws `NoSuchElementException`** for a name
+  that matches no constant.
+- **Compound assignments work as constructor arguments.** `new
+  Counter(depth += 1)` failed to compile.
+- **`new List<Item>(arr)` copies an inner-class array element by element.** It
+  returned a one-element list holding the array.
+- **`Messaging.renderStoredEmailTemplate` fails for deleted records** with
+  `EmailTemplateRenderException` "ENTITY_IS_DELETED".
+- **Flow Send Email actions honor their recipient and logging inputs.**
+  `recipientId`, `relatedRecordId`, `logEmailOnSend`, `recipientAddresses`,
+  and `emailAddressesArray` were ignored, so a logged email created no Task.
+  An action with no recipients faults with "0 recipients". A flow email no
+  longer counts toward `Limits.getEmailInvocations()`.
+- **Record-triggered flow apex actions run in element order and batch across
+  the trigger.** An action that ended a flow ran once per record; each action
+  now runs once with the requests of every interview that reaches it, in
+  element order, and an invocable method without parameters runs once per
+  batch. Output parameter mappings (`outputParameters`) are assigned to their
+  flow variables.
+- **A record-triggered flow fault from an apex action is a `DmlException`.**
+  An exception an action threw reached the DML caller as its own type; it is
+  now wrapped in the `CANNOT_EXECUTE_FLOW_TRIGGER` `DmlException` sfapex
+  raises.
+- **An after-save flow's Custom Error element fails the save** with
+  `FIELD_CUSTOM_VALIDATION_EXCEPTION` and rolls back, or fails only that record
+  in a partial save.
+- **Flow fixes.** A loop's `assignNextValueToReference` variable is assigned
+  on each iteration. `Flow.Interview.getVariableValue` returns a list of the
+  class for an Apex-defined collection, with the class's field names. In
+  namespaced source, a record variable holds the namespaced object type.
+  `Flow.Interview.createInterview(namespace, name, inputs)` finds flows by
+  namespace, including a packaged flow from subscriber code.
+- **Package files must be named for a namespace.** A file such as
+  `ns1-patched.pkg` loaded under the namespace `ns1-patched`, and every
+  reference to it failed. Loading or writing such a file is now an error that
+  explains how to name it, and a type check failure naming an unregistered
+  namespace adds a tip listing the registered ones.
+- **`aer package mock` accepts Activity formula fields that reference a field
+  only Task or Event has.**
+- **A subscriber's `Outer.Inner` reference stays the subscriber's class** when
+  a package loaded from source (`path@ns`) declares a class of the same name.
+- **Classes nested in a test class are left out of coverage totals.**
+- **`Task.Owner` and `Case.Owner` resolve for the default user outside
+  tests.**
+- **DataWeave additions.** Type directives, `is`, `as`, `dw::core::Types`,
+  parameter defaults, overloaded functions, `Key` values,
+  `multipart/form-data`, doctype declarations, and the `dw::module::Mime`,
+  `dw::module::Multipart`, `dw::xml::Dtd`, and `dw::Runtime` introspection
+  functions are supported. Writing a `Key` as `application/apex` fails as in
+  sfapex. Keys written to an Apex class match its fields without regard to
+  case, an undeclared key fails with "Invalid field", and an `Integer` field
+  takes whole numbers only.
+
 ## v1.4.16 — 2026-09-24
 
 - **Apex values reach DataWeave in the forms sfapex passes them.** A `Map`
