@@ -791,6 +791,67 @@
   returns `JSON_PARSER_ERROR` for text in none of them. Record forms show and
   accept date/time values in the running user's time zone.
 
+## v1.4.18 — 2026-09-29
+
+- **A subscriber class may share its name with an installed package's
+  namespace.** An org with a subscriber class `Pkg` holding an inner class
+  `Widget` and a package `pkg` holding a top-level class `Widget` failed to load
+  with "duplicate class declaration". Both classes now load, and a reference
+  written `Pkg.Widget` resolves in the order the Apex compiler uses: an inner
+  type in the executing namespace, then a namespace and top-level type, then an
+  inner type with no namespace. This applies in every position a type is
+  written, including array types such as `Pkg.Widget[]`, so JSON
+  deserialization into such a field creates the subscriber's class.
+- **`Type.forName` follows the documented namespace rules.** The two-argument
+  `Type.forName(namespace, name)` treats its first argument only as a
+  namespace, so `Type.forName('Garage', 'Car')` returns null even when an inner
+  class `Garage.Car` exists. From package code, the one-argument form does not
+  return a type of an org with no namespace, while the two-argument form with an
+  empty or null namespace does.
+- **A `catch` of an inner exception type inside `System.runAs` catches it.**
+  A `catch (Outer.InnerException e)` inside a `System.runAs` block did not
+  match the thrown exception.
+- **Edit Read Only Fields lets a user edit read-only fields.** A user whose
+  profile or permission sets grant Edit Read Only Fields, as the System
+  Administrator profile does, can now edit every field they can read, including
+  fields whose `FieldPermissions` deny edit. Describe,
+  `Security.stripInaccessible`, and user-mode DML all honor it. Modify All Data
+  now grants object access in user-mode DML and SOQL when no
+  `ObjectPermissions` row exists, as it already did in describe.
+- **An Admin profile in source adds to the builtin profile's permissions.** A
+  profile file for a standard profile replaced the builtin profile's field and
+  object permission lists, so an Admin profile naming a single field made the
+  builtin read-only fields editable. The file's entries are now merged into the
+  builtin lists by field or object, as a deploy does.
+- **SOQL rejects `LIKE`, `INCLUDES`, and `EXCLUDES` on id fields** with
+  "invalid operator on id field", at compile time for inline SOQL and as a
+  `QueryException` for dynamic SOQL. Errors in subqueries and `HAVING` clauses
+  are reported with sfapex's text. A misplaced `NOT` in dynamic SOQL fails
+  with "unexpected token: 'NOT'" after `AND`, `OR`, or `NOT`, and with "missing
+  value at" or "unexpected token" for a connector after the negated condition.
+- **`MAX()` on a picklist field skips blank values.** A group containing a row
+  with a blank picklist value returned null; it now returns the highest
+  non-blank value, as Salesforce does.
+- **Exceptions keep an empty or null message.** An exception constructed with
+  `''` or a null `String` returned "Script-thrown exception" from
+  `getMessage()` once thrown. It now returns `''` or null, and only an exception
+  constructed without a message gets the default text. An uncaught exception
+  prints "WidgetException: " or "WidgetException: null", `setMessage(null)` stores
+  null, and `toString()` prints a custom exception by its simple class name,
+  such as `WidgetException:[]: `.
+- **A test failing on a permission denial for the default user prints a
+  tip.** A `USER_MODE` or `WITH SECURITY_ENFORCED` query naming a custom field
+  fails with "No such column" when the running user has no permission on the
+  field, and the default test user's System Administrator profile has no
+  permissions on custom fields. When a test fails on such a denial outside
+  `System.runAs`, the run summary is followed by a tip listing the ways to
+  grant access: an Admin profile in the project, `--assign-perms` or
+  `--assign-psg`, or `System.runAs` as a user who has the access.
+- **User-mode `EventBus.publish` without Create access reports a status
+  code.** The `SaveResult` failed with "No access to entity: X" and no status
+  code. It now fails with `CANNOT_INSERT_UPDATE_ACTIVATE_ENTITY` and "Access to
+  entity 'X' denied", as sfapex does.
+
 ## v1.4.17 — 2026-09-28
 
 - **Approval locks are stored and enforced.** `Approval.lock` and
