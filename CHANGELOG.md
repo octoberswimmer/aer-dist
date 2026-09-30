@@ -896,6 +896,49 @@
   `lightning/empApi` mock's `subscribe()` now resolves with the subscription's
   `channel`, and `unsubscribe()` calls its callback.
 
+## v1.4.19 — 2026-09-30
+
+- **Typed JSON deserialization reports member errors with sfapex's
+  messages.** A value that did not fit its member's type failed with Go's error
+  text, such as `strconv.ParseInt: parsing "x": invalid syntax`. An Integer
+  member given text that is not a number now fails with `For input string:
+  "x"`, and one given an object or array with "Illegal value for primitive". A
+  class, List, Set, or Map member given a value of the wrong shape fails with
+  "Expected <type> but found <token>", and an enum member with an unknown value
+  fails with "The type <enum> does not have an enum value BLUE". Each message
+  carries the member's location, as the date and datetime member errors do.
+- **Messages name inner types with a dot and match sfapex's text.**
+  `Type.newInstance()` on an abstract class or an interface fails with "X cannot
+  be constructed", and on an enum with "X does not have a no-arg constructor";
+  the interface and enum cases returned an object. `Enum.valueOf()` with an
+  unknown value fails with "No enum value found called BLUE", and
+  `@JsonAccess(...='never')` fails with "Type cannot be serialized" or "Type
+  cannot be deserialized". `Assert.isInstanceOfType` and `isNotInstanceOfType`
+  name the type with its namespace, as `Type.getName()` does. An object created
+  by `JSON.deserialize` prints like one created with `new`
+  (`Counter:[count=42]`). `++` and `--` on a null variable, field, or list
+  element throw a `NullPointerException`. Stack traces, conversion errors,
+  `Map.put` store errors, and the debugger render an inner type as
+  `Outer.Inner` rather than `Outer$Inner`, and the debugger can step into an
+  inner class constructor.
+- **Inner exception types are named with a dot.**
+  `BatchApexErrorEvent.ExceptionType`, `AsyncApexJob.ExtendedStatus`,
+  `ConnectApi.BatchResult.getErrorTypeName()`, trigger "caused by" text, and
+  test failure lines named an inner exception `FailingBatch$WidgetException`.
+  They now give `FailingBatch.WidgetException`, the name `getTypeName()`
+  returns, so code comparing `ExceptionType` with
+  `WidgetException.class.getName()` finds a match.
+- **`Type.getName()` of an inner enum in a namespace names the namespace
+  once.** It returned `ns.ns.Outer.Color`; it now returns `ns.Outer.Color`.
+- **Trigger coverage is reported for source loaded into a namespace.** With
+  `--default-namespace` every trigger reported 0% coverage.
+- **`aer test` can be paused without failing tests on the timeout.** Stopping
+  a run with Ctrl-Z kept each test's deadline running, so every test in
+  progress failed with "Apex CPU time limit exceeded" when the run resumed.
+  Time spent stopped no longer counts toward the deadline. Sending `SIGUSR2`
+  pauses the tests while the process keeps running, and a second `SIGUSR2`
+  resumes them.
+
 ## v1.4.18 — 2026-09-29
 
 - **A subscriber class may share its name with an installed package's
