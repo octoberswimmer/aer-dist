@@ -431,8 +431,11 @@
   set in it before the block runs. Batch, queueable, and future jobs the block
   enqueues run inside the debug session, so breakpoints in them are reached;
   `aer exec --debug` runs a block's jobs before the session ends as well. The
-  source is highlighted with the language server's semantic tokens. A debug
-  session ends after 15 minutes.
+  source is highlighted with the language server's semantic tokens. While the
+  block is stopped, the Evaluate field evaluates an expression in the frame
+  selected in the call stack and lists each result above the earlier ones,
+  expanding a list, map, or object like a variable; Up and Down recall earlier
+  expressions. A debug session ends after 15 minutes.
 - **Setup has an Apex Jobs page.** `/lightning/setup/AsyncApexJobs/home` lists
   every async job with its status, type, class, times, and errors, kept current
   as jobs run, with Pause and Resume for the async worker, Run for a queued job
@@ -544,6 +547,56 @@
   future, and `StopStartDate` follows `IsStopped`. A new case gets the org's
   default business hours. `SlaProcess` and `MilestoneType` records are created
   from the metadata, and reference runs deploy all four types.
+- **`aer test --sandbox-post-copy <Class>` runs a `SandboxPostCopy` class before
+  the tests.** The class runs once as the default user, outside a test, so its
+  DML commits, and the async jobs it enqueues run before the first test. The
+  flag implies `--sandbox`, and a class that does not exist or does not
+  implement `SandboxPostCopy` fails.
+- **`aer test --debug` and `aer exec --debug` debug in the browser.** Run from
+  a terminal, both start an `aer server` on the command's sources on a free
+  local port, print its address, and open the Anonymous Apex console in the
+  default browser, already signed in; the server runs until Ctrl+C.
+  `aer exec --debug` opens the console on the code with the Debug box checked.
+  `aer test --debug` opens it on the one test class or test method that `-f`,
+  `--skip`, `--for`, `--critical`, and `--filter-path` select, and reports any
+  other selection as an error listing the selected methods; `--suite` and
+  `--integration-tests` are rejected. The commands no longer write
+  `.vscode/launch.json` or `settings.json`, install a VS Code extension, or
+  open VS Code. When an editor launches aer as its debug adapter, with stdin a
+  pipe, aer still speaks the Debug Adapter Protocol over stdin and stdout.
+- **Setup has Platform Events, Change Data Capture, and Event Manager pages.**
+  `/lightning/setup/EventObjects/home` lists the org's custom platform events
+  with their publish behavior, each linked to its Object Manager page.
+  `/lightning/setup/CdcObjectEnablement/home` lists the objects whose change
+  events the org exposes, with each event's channel; none is shown as
+  selected, since aer does not publish change events for record changes.
+  `/lightning/setup/EventManager/home` lists the Real-Time Event Monitoring
+  event types.
+- **FlexiPages label the components that run the org's own code.** A card
+  holding a custom Lightning web component, an Aura component, or a screen
+  flow ends with a caption naming the kind (LWC, Aura, Flow) and the component
+  or flow. Pointing at the card darkens the caption, and pointing at the
+  caption outlines the card. A modal opened by an embedded component is
+  centered in the visible part of the page, and a link without a target opens
+  in the page rather than inside the component.
+- **More Lightning base components render in the LWC preview and on pages.**
+  `lightning-vertical-navigation` with its section, item, item-icon,
+  item-badge, and overflow components, `lightning-button-icon-stateful`, and
+  `lightning-formatted-rich-text` render. `lwc:inner-html` sets the element's
+  sanitized markup. `lightning-datatable` renders `button` and `button-icon`
+  columns, which fire `rowaction`, and a long value scrolls inside the table
+  instead of widening its column and the page.
+- **The metadata explorer shows reports and report types.** `/dev/explorer`
+  lists reports, custom report types, and standard report types with their
+  columns, filters, joins, and sections, and links each report to the fields
+  it reads in its detail columns, groupings, filters, cross filters, bucket
+  sources, and row-level formulas. A report type Salesforce
+  generates from object names, such as `CustomEntityCustomEntity$A__c$B__c`,
+  is named by its base object and the relationships it joins through. The
+  explorer's call graph now includes calls made from property accessors,
+  field initializers, static and instance blocks, and triggers, attributes
+  calls to overloaded methods and same-named classes in different namespaces
+  correctly, and is the same on every run.
 
 ### Fixes and performance
 
@@ -790,6 +843,58 @@
 - **The REST API parses the ISO 8601 date/time forms Salesforce accepts** and
   returns `JSON_PARSER_ERROR` for text in none of them. Record forms show and
   accept date/time values in the running user's time zone.
+- **Report boolean filter logic may combine base, joined-object, and bucket
+  criteria.** Logic such as an OR between a base criterion and a joined child's
+  criterion, or any logic that references a bucket field, failed with "report
+  boolean filter logic across joined-object or bucket columns is not
+  supported". aer now evaluates such logic once per report row, as Salesforce
+  does. On a "with or without" report type, an OR between a child criterion
+  and a base or bucket criterion throws
+  `reports.InvalidReportMetadataException`, as does logic that references a
+  filter the report does not have, and a
+  childless parent row is kept however the child criteria evaluate. The
+  report types Salesforce generates for "A with B"
+  (`CustomEntityCustomEntity$A__c$B__c` and `<Standard>CustomEntity$B__c`)
+  join the child as an inner join, so a parent with no children is left out.
+  `NOT` is accepted in filter logic.
+- **Field Service objects exist only with the `FieldService` or `Scheduler`
+  feature.** The builtin schema included 55 objects a plain Enterprise Edition
+  org does not have, including `ServiceResource`, `ServiceTerritory`,
+  `OperatingHours`, `TimeSlot`, `Shift`, `AssignedResource`, `WorkType`,
+  `MaintenancePlan`, `ProductRequest`, `ReturnOrder`, and the `WorkPlan` and
+  `WorkStep` objects, together with the Field Service lookups on `WorkOrder`,
+  `WorkOrderLineItem`, `Account`, `Entitlement`, and `Location`. They are now
+  added by `--feature FieldService`, `--feature Scheduler`, and
+  `--feature HealthCloud`, and a static reference to one of them in the source
+  enables `FieldService`. `WorkOrder` and `WorkOrderLineItem` remain
+  available without a feature. A polymorphic lookup lists only the target
+  objects the schema defines.
+- **`aer test` finds a test file's dependencies without a project file.** When
+  a file or directory named on the command line failed to resolve references,
+  aer loaded the surrounding workspace only when an `sfdx-project.json` or
+  `package.xml` was above it, so a test class in a `classes` directory without
+  either was checked alone and its classes and objects stayed missing. A file
+  or directory in a `classes`, `triggers`, or `flows` directory now expands to
+  that directory's parent, as the language server does.
+- **A platform event inserted through the REST API no longer blocks other
+  requests.** The insert held the server's storage lock while publishing the
+  event, and delivering the event to its triggers waited for that lock, so
+  every later request waited behind it. `empApi` and CometD subscribers now
+  receive a platform event's `CreatedDate` as an ISO 8601 UTC string, as
+  Salesforce sends it, rather than as epoch seconds that clients read as a
+  1970 date.
+- **Building the `EntityDefinition`, `FieldDefinition`, and `EntityParticle`
+  rows no longer counts toward the Apex CPU limit.** The first query of those
+  objects in a run writes the rows, and the time that took was charged to the
+  transaction. When the transaction that wrote them rolled back, later queries
+  found no rows; the rows are now written again.
+- **Lightning web component fixes.** A comment containing an apostrophe inside
+  a class field initializer or a `@wire` configuration value made the served
+  module fail in the browser with "Unexpected identifier", and a field
+  initializer continued on the next line was cut off. A comment between an
+  `lwc:if` element and its `lwc:else` dropped the `lwc:else` branch. The
+  `lightning/empApi` mock's `subscribe()` now resolves with the subscription's
+  `channel`, and `unsubscribe()` calls its callback.
 
 ## v1.4.18 — 2026-09-29
 
