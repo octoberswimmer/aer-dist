@@ -2,19 +2,20 @@ module aer
 
 go 1.27.0
 
-require github.com/octoberswimmer/aer v1.5.4
+require github.com/octoberswimmer/aer v1.5.5
 
 require (
+	bitbucket.org/creachadair/stringset v0.0.11 // indirect
+	codeberg.org/TauCeti/mangle-go v0.5.0 // indirect
 	git.sr.ht/~jackmordaunt/go-toast v1.1.2 // indirect
 	github.com/ForceCLI/force v1.9.0 // indirect
-	github.com/ForceCLI/force-md v0.54.1 // indirect
+	github.com/ForceCLI/force-md v0.57.1 // indirect
 	github.com/ForceCLI/inflect v0.0.0-20130829110746-cc00b5ad7a6a // indirect
 	github.com/adrg/xdg v0.5.3 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.10.0 // indirect
 	github.com/buger/jsonparser v1.1.2 // indirect
-	github.com/clbanning/mxj/v2 v2.7.0 // indirect
 	github.com/cwarden/mergo v0.3.12-0.20210528180603-9b708ca2c584 // indirect
 	github.com/dlclark/metaphone3 v0.0.0-20190903202417-5fe87fcdd547 // indirect
 	github.com/dlclark/regexp2 v1.11.5 // indirect
@@ -54,11 +55,11 @@ require (
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 // indirect
 	github.com/nxadm/tail v1.4.4 // indirect
 	github.com/octoberswimmer/apexfmt v0.66.0 // indirect
-	github.com/octoberswimmer/digger v0.26.0 // indirect
+	github.com/octoberswimmer/digger v0.36.1 // indirect
 	github.com/octoberswimmer/libc v1.67.7-octoberswimmer.7 // indirect
 	github.com/octoberswimmer/memory v1.11.0-octoberswimmer.7 // indirect
 	github.com/octoberswimmer/sformula v0.19.0 // indirect
-	github.com/octoberswimmer/skyfire v0.6.0 // indirect
+	github.com/octoberswimmer/skyfire v0.7.0 // indirect
 	github.com/octoberswimmer/sqlite v1.46.1-octoberswimmer.6 // indirect
 	github.com/otiai10/copy v1.6.0 // indirect
 	github.com/pb33f/jsonpath v0.8.2 // indirect
@@ -81,9 +82,9 @@ require (
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/src-d/gcfg v1.4.0 // indirect
 	github.com/tadvi/systray v0.0.0-20190226123456-11a2b8fa57af // indirect
-	github.com/tidwall/jsonc v0.3.2 // indirect
 	github.com/xanzy/ssh-agent v0.2.1 // indirect
 	go.opencensus.io v0.24.0 // indirect
+	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v4 v4.0.0-rc.4 // indirect
 	golang.org/x/crypto v0.55.0 // indirect
 	golang.org/x/exp v0.0.0-20260112195511-716be5621a96 // indirect
