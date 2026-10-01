@@ -109,6 +109,10 @@ require (
 
 replace github.com/antlr4-go/antlr/v4 => github.com/octoberswimmer/antlr/v4 v4.13.1-octoberswimmer.3
 
+// mangle-go v0.5.0 merges each semi-naive round's new facts one round late,
+// losing recursive joins of facts first derived in the same round.
+replace codeberg.org/TauCeti/mangle-go => github.com/octoberswimmer/mangle v0.5.0-octoberswimmer.1
+
 // Force newer split genproto modules to avoid ambiguous import conflicts
 // // Required until github.com/sourcegraph/scip updates its dependencies
 replace google.golang.org/genproto => google.golang.org/genproto v0.0.0-20240903143218-8af14fe29dc1

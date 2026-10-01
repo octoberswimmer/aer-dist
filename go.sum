@@ -282,8 +282,6 @@ cloud.google.com/go/vpcaccess v1.8.0/go.mod h1:7fz79sxE9DbGm9dbbIdir3tsJhwCxiNAs
 cloud.google.com/go/webrisk v1.10.0/go.mod h1:ztRr0MCLtksoeSOQCEERZXdzwJGoH+RGYQ2qodGOy2U=
 cloud.google.com/go/websecurityscanner v1.7.0/go.mod h1:d5OGdHnbky9MAZ8SGzdWIm3/c9p0r7t+5BerY5JYdZc=
 cloud.google.com/go/workflows v1.13.0/go.mod h1:StCuY3jhBj1HYMjCPqZs7J0deQLHPhF6hDtzWJaVF+Y=
-codeberg.org/TauCeti/mangle-go v0.5.0 h1:JYYaEAu5iqgemIoFRGBK8nnR6D5+llqz5HcpAQSjiWg=
-codeberg.org/TauCeti/mangle-go v0.5.0/go.mod h1:vRyMW+12BnLtDKYrN3YsbktLZKOyuLmRrEW5pnZz/Xs=
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
 gioui.org v0.0.0-20210308172011-57750fc8a0a6/go.mod h1:RSH6KIUZ0p2xy5zHDxgAM4zumjgTw83q2ge/PI+yyw8=
 git.sr.ht/~jackmordaunt/go-toast v1.1.2 h1:/yrfI55LRt1M7H1vkaw+NaH1+L1CDxrqDltwm5euVuE=
@@ -730,6 +728,8 @@ github.com/octoberswimmer/digger v0.36.1 h1:AvljxRvwSze/8iLr00xQyWHVcfh/fttTbI+7
 github.com/octoberswimmer/digger v0.36.1/go.mod h1:gNAks190kBOj7KIFW51hTlrN5Oe5QK+Q7Mga0dLR96A=
 github.com/octoberswimmer/libc v1.67.7-octoberswimmer.7 h1:gE+3YfB+K9kCN5trTL/X2w4r1gRpnu9KXeZfrB3BKh0=
 github.com/octoberswimmer/libc v1.67.7-octoberswimmer.7/go.mod h1:nfj5e+9K77S6nKCbt5sVeAt5Be1AVxhd7jooGVJR7Dk=
+github.com/octoberswimmer/mangle v0.5.0-octoberswimmer.1 h1:uvQnxPR1JnI6rEBOlhbGwMiuCQXWLwQAd92HhKlZCL8=
+github.com/octoberswimmer/mangle v0.5.0-octoberswimmer.1/go.mod h1:vRyMW+12BnLtDKYrN3YsbktLZKOyuLmRrEW5pnZz/Xs=
 github.com/octoberswimmer/memory v1.11.0-octoberswimmer.7 h1:DAF5fgaur3pfNy1ZBK3VOnIIHpL6I/MXx8mRDP6c9tk=
 github.com/octoberswimmer/memory v1.11.0-octoberswimmer.7/go.mod h1:qAxvZaeFZnTB98TgFzMYVAawXSSXNHRdgf8fSS47svc=
 github.com/octoberswimmer/sformula v0.19.0 h1:KVuSHr5WNiVjPc12lgZvEsv6lm1DDwRpdTFTZHqu5Ts=
