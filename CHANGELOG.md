@@ -896,6 +896,72 @@
   `lightning/empApi` mock's `subscribe()` now resolves with the subscription's
   `channel`, and `unsubscribe()` calls its callback.
 
+## v1.4.20 — 2026-10-01
+
+- **Trigger bodies and inline SOQL binds are type checked when source loads.**
+  An undefined variable in a trigger failed only when the trigger fired, and a
+  bind in an inline query that named an undefined variable, called an
+  undefined method, or passed the wrong argument type failed when the query ran
+  or did not fail at all.  aer now reports them as compile errors.
+- **`with sharing` applies in batch and queueable jobs.** A job started inside
+  `System.runAs` runs as the user who submitted it, but its queries applied no
+  record sharing, so a `with sharing` batch received every row from the
+  `QueryLocator` its `start` method returned. `with sharing` queries in a
+  batch's `start`, `execute`, and `finish` methods and in a queueable now
+  apply the submitter's sharing, and a batch's locator query applies it when
+  the class that created the locator is `with sharing`. A `QueryLocator`
+  created in an API 67.0 or later class runs its query in user mode. A
+  user-mode query applies the running user's sharing in a class declared
+  `without sharing` too, as sfapex does.
+- **`ObjectPermissions.SobjectType` requires the object's exact API name.**
+  Namespaced code inserting a row with a bare custom object name succeeded;
+  it now fails with the restricted picklist `DmlException`, as it does in a
+  namespaced org.
+- **User-mode DML by a user who can read the object throws `TypeException`.**
+  A user with Read but without the permission the operation needs got
+  `System.SecurityException: Access to entity 'X' denied`, which sfapex
+  raises only when the user cannot read the object. `Database.insert`,
+  `update`, and `delete` and the `as user` keyword forms now throw
+  `System.TypeException: DML operation INSERT not allowed on X` (or `UPDATE`
+  or `DELETE`). With `allOrNone=false` nothing is thrown: each record fails
+  with `CANNOT_INSERT_UPDATE_ACTIVATE_ENTITY`, or with `DELETE_FAILED` for a
+  delete. A user-mode undelete by a user without Delete fails with "Entity
+  type is not undeletable" instead of restoring the record. A user-mode upsert
+  checks field access before object access, so an upsert that only inserts
+  records needs only Create. `Database.delete(record, AccessLevel.USER_MODE)`
+  ignored the access level and ran in system mode below API 67.0.
+- **A user-mode update accepts a queried read-only field that is null.**
+  Updating a record whose query populated a read-only field with null failed
+  with "Operation failed due to fields being inaccessible". sfapex accepts
+  the update and rejects it only when the field holds a value or the code
+  assigned it.
+- **`Database.update` with `allOrNone=true` keeps the error's field names.**
+  When a trigger called `addError` on a field, the `DmlException`'s
+  `getDmlFieldNames()` returned an empty list and its message ended in
+  `: []`. It now lists the fields, as `Database.insert` and the `update`
+  keyword do.
+- **Aggregate queries count their rows in the query's own access mode and
+  scope.** A `SYSTEM_MODE` `MIN()`, `MAX()`, `SUM()`, or `AVG()` query from an
+  API 67.0 or later class that filtered on a field the running user cannot
+  read failed with "No such column"; it now returns the aggregate. An
+  aggregate with `USING SCOPE mine` charged every row matching its `WHERE`
+  clause to the query-row limit rather than only the rows the user owns.
+- **`System.abortJob` requires Modify All Data.** Aborting a batch, future, or
+  queueable job by its `AsyncApexJob` Id now throws `System.SecurityException`
+  ("User must have modify all data permission") for a user without Modify All
+  Data, even for a job the same user enqueued. Passing the `AsyncApexJob` Id
+  of a scheduled job throws a `StringException` directing the caller to the
+  `CronTrigger` Id and leaves the schedule in place. Aborting a schedule by its
+  `CronTrigger` Id, and a batch aborting its own job, need no permission.
+- **A method named `void` can be called with a qualifier.** Calls written
+  `obj.void(x)` or `Cls.void(x)` failed to parse, so `aer test` refused to
+  load the source.
+- **Test runs with `--db` release memory under system memory pressure.** On a
+  host with no cgroup memory limit, a `--db postgresqltest://` run kept every
+  test VM and its PostgreSQL connections open while available memory fell to a
+  few GiB. aer now closes a returning VM when system memory usage reaches 90%
+  and creates no new VM while projected usage is above 80%.
+
 ## v1.4.19 — 2026-09-30
 
 - **Typed JSON deserialization reports member errors with sfapex's
