@@ -54,7 +54,7 @@ require (
 	github.com/ncruces/go-strftime v1.0.0 // indirect
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 // indirect
 	github.com/nxadm/tail v1.4.4 // indirect
-	github.com/octoberswimmer/apexfmt v0.66.0 // indirect
+	github.com/octoberswimmer/apexfmt v0.67.0 // indirect
 	github.com/octoberswimmer/digger v0.36.1 // indirect
 	github.com/octoberswimmer/libc v1.67.7-octoberswimmer.7 // indirect
 	github.com/octoberswimmer/memory v1.11.0-octoberswimmer.7 // indirect

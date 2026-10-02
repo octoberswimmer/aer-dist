@@ -379,7 +379,7 @@ jobs:
       - name: Checkout action
         uses: actions/checkout@v6
 
-      - name: Fetch ZackFra/Salesforce-Moxygen commit 687f30f
+      - name: Fetch ZackFra/Salesforce-Moxygen commit 51d085e
         run: |
           set -euo pipefail
           root="oss/salesforce-moxygen"
@@ -387,12 +387,10 @@ jobs:
           workdir=$(mktemp -d "${root}/repo.XXXXXX")
           git clone https://github.com/ZackFra/Salesforce-Moxygen.git "${workdir}"
           cd "${workdir}"
-          # Fix for broken test: https://github.com/ZackFra/Salesforce-Moxygen/pull/315
-          git fetch origin pull/315/head
-          git checkout FETCH_HEAD
+          git checkout 51d085e40c7020b6143f14ae18405ab5a862d730
           echo "MOXYGEN_SOURCE=${workdir}/moxygen" >> "$GITHUB_ENV"
 
-      - name: Run aer test (ZackFra/Salesforce-Moxygen commit 687f30f)
+      - name: Run aer test (ZackFra/Salesforce-Moxygen commit 51d085e)
         uses: ./
         with:
           source: ${{ env.MOXYGEN_SOURCE }}
