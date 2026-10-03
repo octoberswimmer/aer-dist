@@ -896,6 +896,66 @@
   `lightning/empApi` mock's `subscribe()` now resolves with the subscription's
   `channel`, and `unsubscribe()` calls its callback.
 
+## v1.4.21 — 2026-10-02
+
+- **`Limits.getHeapSize()` counts Strings returned by String methods.** Only
+  Strings built with `+` and `+=` were counted, so `'x'.repeat(200000)`,
+  `String.join()`, and `substring()` added nothing to the reported heap, and
+  code that stops storing data near the heap limit never saw its usage grow.
+  Every String now counts at its length plus a few bytes, as on sfapex, and
+  stops counting once nothing refers to it: after the variable is reassigned
+  or set to null, a list element is replaced, or the loop body that declared
+  it ends.
+- **SOQL supports `HOUR_IN_DAY`, and `convertTimezone()` applies inside every
+  date function.** A query using `HOUR_IN_DAY` failed with "unsupported
+  function". `convertTimezone()` was ignored inside any date function other
+  than `DAY_ONLY`, so `HOUR_IN_DAY(convertTimezone(CreatedDate))` returned the
+  GMT hour. `convertTimezone()` also used the running user's offset on the
+  current date, so a record dated in the other half of the year was off by an
+  hour where daylight saving time applies; it now uses the offset in effect at
+  each record's own date and time.
+- **Assertion failures print the values of a map with non-String keys.**
+  `Assert.areEqual` rendered a `Map<Integer, Integer>` holding `{14=2}` as
+  `{14=null}` in its failure message.
+- **`getPopulatedFieldsAsMap()` omits null fields on every trigger record.** A
+  field the DML set to null was left out of the map in before insert but
+  included in after insert, before update, and after update. It is now left
+  out in every trigger context, as on sfapex.
+- **A Text formula field keeps its surrounding spaces on trigger records.** A
+  formula such as `Label__c + ' ' + Parent__r.Name` with both fields blank
+  read as null on a `Trigger.new` record. sfapex holds the untrimmed `' '`
+  there and trims the value only when a query reads it; aer now does the same.
+- **A flow's Update Records element saves all of the triggering records in one
+  DML statement when another element follows it.** When a record-triggered
+  flow ran an Update Records element followed by another element, such as one
+  in a subflow that then calls an Apex action, the update was saved once per
+  record. The updated object's triggers ran once per record and the action was
+  called once per record. Five inserted records now reach the update as one
+  DML statement of five records and the action as one call with five requests.
+- **A future method called by a queueable enqueued in `@TestSetup` does not
+  run.** aer ran it, so a queueable and a future method that enqueue each
+  other repeated until every test method of the class failed with
+  `LimitException: Too many async jobs enqueued for this apex test context`.
+  As on sfapex, the queueable runs before the test methods and the future
+  method it calls does not. A future method called directly in `@TestSetup`
+  still runs, as does a queueable it enqueues.
+- **Code coverage includes lines run by `@TestSetup`.** Lines executed by a
+  setup method and the async jobs it started were not recorded. They now count
+  toward the coverage of every test method of the class.
+- **DataWeave `contains`, `startsWith`, and `endsWith` accept Datetime, Date,
+  Number, and Boolean values.** A script testing a Datetime field with
+  `contains "T"` failed with "contains expects array or string as first
+  argument". These values are now read as their text, as on sfapex, and a
+  null, object, or function argument fails with DataWeave's "You called the
+  function" message.
+- **An Apex object built by a DataWeave script keeps its fields after a
+  write.** After Apex code assigned one field of an object a script created
+  with `as Object {class: ...}`, every other field read back as null.
+- **Filtered roll-up summaries are calculated for a package loaded from a
+  source directory.** With a package directory loaded as `path@ns`, a roll-up
+  summary field with filter criteria stayed 0. Packages loaded from a `.pkg`
+  file were not affected.
+
 ## v1.4.20 — 2026-10-01
 
 - **Trigger bodies and inline SOQL binds are type checked when source loads.**
