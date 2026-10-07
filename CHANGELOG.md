@@ -896,6 +896,256 @@
   `lightning/empApi` mock's `subscribe()` now resolves with the subscription's
   `channel`, and `unsubscribe()` calls its callback.
 
+## v1.4.22 — 2026-10-07
+
+- **Test use less CPU time.** Reads of the running user and profile, formula
+  evaluation, permission loading, record reads and updates, and SQLite's own
+  locking and memory allocation all do less work.
+- **Slow SQL no longer fails tests after 5 seconds.** Every storage read and
+  write had a fixed 5-second deadline, so on a host with busy CPUs tests whose
+  Apex was correct failed with "timed out after 5s", and different tests failed
+  on each run. An operation that runs longer now prints a warning naming it and
+  continues, and only the test's `--timeout` stops it.
+  `UserInfo.getUserId()` failing to load the running user ended the whole
+  process from a static initializer, so later tests never ran and no summary
+  was printed; it now fails only the test.
+- **`Limits.getHeapSize()` follows sfapex's accounting.** A String, List,
+  Map or object that the code drops is given back on the next heap read, so
+  a cache that evicts entries to stay under a heap threshold sees its usage
+  fall; before, a dropped value stayed counted, and such a cache evicted every
+  entry. The sizes of values match sfapex: Integers, Decimals, Dates,
+  Datetimes, Ids, Blobs, collection slots and Map entries, objects of Apex
+  classes by their field count, static variables, live local variables, String
+  literals (counted once however many places hold them), exceptions, enums, and
+  class loads. Results of SOQL, SOSL, cursors, describe calls, custom metadata
+  and custom setting getters, Platform Cache `get()`, `JSON.deserialize()`,
+  `Dom.Document`, `HttpResponse`, `SingleEmailMessage`, `EventBus.publish()`,
+  `Test.loadData()` and the `Database` DML methods are charged as sfapex
+  charges them.  A queried Blob field costs its bytes; it was counted at about
+  four times that, so code reading file bodies reached the heap limit early.
+- **The Set `Map.keySet()` returns follows later changes to the map.** It was
+  a copy taken when `keySet()` was called. It now reflects later `put()`,
+  `remove()`, `clear()` and `putAll()` calls.
+- **Platform Cache and custom setting getters return copies.** `get()` of a
+  Platform Cache partition returned the cached object itself, so changing the
+  returned value changed the cache. The first `get()` of an entry in a
+  transaction now returns a copy, and later calls return that copy.
+  `getValues()`, `getOrgDefaults()`, `getInstance()` and a list setting's
+  `getAll()` return a new copy of the record on each call, and the record
+  `getInstance()` resolves carries `IsDeleted`.
+- **`Test.loadData()` inserts its rows.** The records it returned had no Ids
+  and could not be queried, and no trigger or validation rule ran. The rows are
+  now inserted as an insert statement inserts them, and the returned records
+  carry their Ids and whatever before-insert triggers set. A row the insert
+  rejects throws `System.SObjectException` with the error's message and inserts
+  nothing, and in a namespaced org a CSV header naming a custom field without
+  its namespace throws `System.StringException` "Unknown field: <header>". A
+  static resource named on the command line by its content file is now loaded.
+- **Object access is derived as Salesforce derives it.** Objects that
+  `ObjectPermissions` rows cannot name took their access from rows anyway, so
+  they were inaccessible to every user who was not a System Administrator.
+  Their access now comes from the objects that control it: `OrderItem`,
+  `OpportunityLineItem` and `QuoteLineItem` from their parent, `Product2` and
+  `Pricebook2`; `WorkOrderLineItem` from `WorkOrder`; a share object from read
+  on the object it shares; a field history object (`AccountHistory`,
+  `X__History`) from read on the tracked object, with no create, edit or
+  delete; and `CampaignMember`, `CaseStatus`, `AccountContactRole`,
+  `CaseTeamMember` and about 180 others from the objects they depend on. An
+  `ObjectPermissions` insert naming such an object fails with
+  `INVALID_OR_NULL_FOR_RESTRICTED_PICKLIST`.
+- **The builtin profiles hold the rows the same profiles hold in an org.** The
+  19 standard profiles of internal users carry the `ObjectPermissions` and
+  `FieldPermissions` rows Salesforce gives them; Standard User had read,
+  create and edit on every standard object and Read Only read on every
+  standard object. 13 standard profiles the builtin schema lacked were added,
+  and `User.UserType` comes from the profile's user license.
+- **Standard field describes report sfapex's flags.** `isCreateable()` and
+  `isUpdateable()` of a standard field start from the flags sfapex
+  reports, so create-only and read-only fields describe as they do in an org.
+  A field sfapex does not let `FieldPermissions` rows name follows its
+  object's access, as do the standard fields of a custom object (`Id`,
+  `OwnerId`, `CreatedDate`) and the person account fields (`IsPersonAccount`,
+  `Salutation`): a user with `Account` access alone got "No such column
+  'IsPersonAccount'" from a `USER_MODE` query.
+- **User-mode code reports sfapex's errors for an unreadable object.**
+  `Database` DML methods with `allOrNone` false return failed results with the
+  entity access message, and an upsert's result names the operation. A dynamic
+  `WITH SECURITY_ENFORCED` query throws `QueryException` from an API 67.0 or
+  later class, and `Security.stripInaccessible` says "No access to entity". A
+  `USER_MODE` child subquery whose lookup field the user cannot read fails with
+  "Didn't understand relationship 'Cases' in FROM part of query call".
+- **`USER_MODE` queries through `ContentDocumentLink.LinkedEntity` read the
+  `Name` entity.** An org custom object whose name sorts before `Account` made
+  `LinkedEntity.Name` fail with "Didn't understand relationship" for a user
+  who could not read that object. A `USER_MODE` `ContentDocumentLink` query
+  leaves out links to records of objects the user cannot read. A new document
+  is linked to its owner with `ShareType` I and `Visibility` AllUsers, also
+  when it has a `FirstPublishLocationId`, which gets a `ShareType` V link.
+- **`USER_MODE` queries of `EntityDefinition`, `FieldDefinition` and
+  `EntityParticle` apply `LIMIT` and `OFFSET` to the rows the user can see.**
+  `LIMIT 5` returned fewer than five rows when one of the first five was a
+  field the user cannot read. A `USER_MODE` `COUNT()` returned an empty list, a
+  `Fields` or `Particles` subquery returned every field, and `LIMIT 0` returned
+  no rows where sfapex ignores it. An aggregate function with a field
+  argument now throws "field QualifiedApiName does not support aggregate
+  operator COUNT", `GROUP BY` fails with "Not supported for this sObject type",
+  and `Database.getQueryLocator` throws "EntityDefinition does not support
+  queryMore(), use LIMIT to restrict the results to a single batch".
+- **SOSL applies the access mode, sharing and the `RETURNING` field list.**
+  `WITH USER_MODE`, `AccessLevel.USER_MODE` and searches from API 67.0 or later
+  classes check object and field access, and an unreadable object fails with
+  `System.SecurityException` "Access to entity 'X' denied". Results honor the
+  running user's sharing and hold only the `RETURNING` fields, a SOSL literal
+  passed as a method argument is no longer wrapped in an extra list, and an
+  inline search with no `RETURNING` clause is a compile error ("Entities should
+  be explictly specified in SOSL call in Apex"). In a namespaced org a
+  `RETURNING` object named without its namespace returns no rows.
+- **`toLabel()` returns picklist labels, and picklist value translations are
+  loaded.** `toLabel(field)` returned the stored API value, failed in child
+  subqueries and `WHERE` clauses, and lost the field through a parent
+  relationship. It now returns each value's label, in every clause. Picklist
+  value translations from `CustomObjectTranslation`, `GlobalValueSetTranslation`
+  and `StandardValueSetTranslation` metadata apply to `getPicklistValues()`,
+  `ConnectApi.RecordUi.getPicklistValuesByRecordType` and `toLabel()` for a
+  user whose `LanguageLocaleKey` matches the translation exactly.
+- **`Database.queryWithBinds` and the other `...WithBinds` methods reject a
+  bind missing from the `bindMap`.** A misspelled bind name bound null and the
+  query ran; it now throws `System.QueryException` "Key 'name' does not exist
+  in the bindMap", for binds in every clause and subquery. A bind written in a
+  different mix of case than its key now finds the key.
+- **`Database.merge` returns usable `MergeResult` lists and applies its
+  `AccessLevel`.** `getMergedRecordIds()` and `getUpdatedRelatedIds()` failed
+  with "size() called on non-list object", and `getUpdatedRelatedIds()` was
+  always empty. It now lists the reparented Contacts, Opportunities, Cases,
+  child Accounts, Tasks and `AccountContactRelation` rows the user can read.
+  The update of the master record ignored the `AccessLevel`: from an API 67.0
+  class a `SYSTEM_MODE` merge threw "Access to entity 'Account' denied".
+- **Shares behave as sfapex's do on insert, delete and undelete.**
+  Inserting a share whose parent, `UserOrGroupId` and `RowCause` match a stored
+  share failed with `DUPLICATE_VALUE` from `Database.insert`, and the insert
+  statement left the record's Id null; the stored share now takes the inserted
+  access levels and its Id is returned. While a parent is deleted its share
+  rows are hidden, and undeleting the parent restores them; before, a standard
+  object's shares stayed queryable with a blank parent and a custom object's
+  were removed for good. Deleting a parent whose recycled child had share rows
+  failed with "FOREIGN KEY constraint failed".
+- **`Database.emptyRecycleBin` keeps records from being undeleted.** A later
+  undelete restored the record. It now fails with `UNDELETE_FAILED` "Entity is
+  not in the recycle bin", and a second `emptyRecycleBin` fails with
+  `INVALID_ID_FIELD`. `Database.undelete` of a list of Ids read the wrong
+  record for every row after an Id not in the recycle bin, and
+  `DmlException.getDmlIndex()` of a failed undelete returned 0 instead of the
+  failing row.
+- **DML rejects Ids with a bad checksum and dangling polymorphic parents.** An
+  18-character Id whose last three characters are not its checksum fails with
+  `MALFORMED_ID`, "id value of incorrect type", on the record's Id or on a
+  reference field. `Note.ParentId`, `Attachment.ParentId`,
+  `EntitySubscription.ParentId`, `TopicAssignment.EntityId` and
+  `ContentVersion.FirstPublishLocationId` accepted an Id naming no record; they
+  now fail with the status code each reports in an org.
+- **`Database.insert` names the Id a record already carried.** With
+  `allOrNone` true, the message reads "First exception on row N with id <Id>"
+  and `getDmlId(0)` returns the Id, as the `insert` keyword already did. The
+  rollback no longer clears the Id the caller set.
+- **`LastModifiedById` is the `System.runAs` user on update.** An update inside
+  `System.runAs(u)` recorded the default test user; inserts already recorded
+  `u`.
+- **`Limits.getFutureCalls()` counts `@future` calls.** It always returned 0,
+  and any number of future calls was allowed. The 51st call in a transaction
+  now throws `System.LimitException` "Too many future calls: 51".
+- **Apex emails need a recipient.** `Messaging.sendEmail` accepted a
+  `SingleEmailMessage` with no To, CC or BCC address and no
+  `targetObjectId` treated as a recipient; it now fails with
+  `REQUIRED_FIELD_MISSING`, "Add a recipient (To, CC, or BCC) to send an
+  email.". A call that throws `EmailException` no longer counts toward
+  `Limits.getEmailInvocations()`, and the eleventh call throws `LimitException`
+  before its messages are checked.
+- **A flow's Send Email action reads its recipient collections and actions
+  follow fault connectors.** A record-triggered flow's Send Email action read
+  only `emailAddresses`, so an email addressed through `emailAddressesArray` or
+  `recipientAddresses` had no recipients and failed the save. It now combines
+  all three, honors `recipientId`, `logEmailOnSend`, `relatedRecordId` and
+  `saveAsActivity`, and no longer counts as an Apex email invocation. An
+  action that threw failed the save even when it had a fault connector; it now
+  takes the fault path with `$Flow.FaultMessage` set.
+- **Person account fixes.** An update that changed `FirstName` or `LastName`
+  left the stored `Name` unchanged, so validation rules saw the old name; it is
+  now recomposed before the rules run, and triggers see a null `Name` in every
+  context, as on sfapex. An `Account` built with `JSON.deserialize` and
+  `"IsPersonAccount": true` returned false from `IsPersonAccount`; it now
+  returns the value it carries, and its `Name` is discarded on insert and
+  update as sfapex does. A person account inserted without `LastName`
+  fails with `REQUIRED_FIELD_MISSING [LastName]`.
+  `AccountShare.ContactAccessLevel` is read-only under Person Accounts, as it
+  is in an org.
+- **`CaseStatus` has a row for each `Case.Status` value.** It returned no
+  rows, so `SELECT ApiName FROM CaseStatus WHERE IsClosed = true` found
+  nothing. `TaskStatus` rows now come from the `Task.Status` picklist instead of
+  two fixed rows.
+- **`UserLogin` has a row for every user.** Code that freezes a user by
+  updating its `UserLogin` row found nothing. Inserting or deleting a
+  `UserLogin` is rejected as in sfapex, and deleting a record of any object
+  that does not support delete throws a `TypeException`.
+- **Task `CompletedDateTime` follows the status a task was created with.** It
+  is set when a save leaves the task in a closed status different from its
+  creation status, cleared when the status is open and different, and left
+  alone when the status matches the creation status.
+- **`LastActivityDate` counts only closed tasks.** An open task set the date
+  and hid an earlier event or closed task, reopening a task did not clear it,
+  and undeleting an activity did not recompute it. `Case`, `Asset`, `Order`,
+  `Solution` and about 75 other standard objects no longer have the field, and
+  a custom object has it only when activities are enabled.
+- **Fields are listed in sfapex's describe order for custom objects.**
+  `REQUIRED_FIELD_MISSING` errors and `fields.getMap()` iteration list a custom
+  object's standard fields first, then its master-detail fields, then its other
+  custom fields. A secondary master-detail field returns 1 from
+  `getRelationshipOrder()`, and `isCustom()` returns true for `__pc` fields and
+  `__s` components. `Opportunity.StageName` has no default, so an insert
+  without it fails with `REQUIRED_FIELD_MISSING`.
+- **A hierarchy custom setting's `Name` holds 80 characters.** A record
+  inserted without a `Name` is named after the setting's label and level, such
+  as "My Setting (Organization)", instead of its Id. A list setting's `Name`
+  holds 38 characters, and a longer one fails with
+  `FIELD_INTEGRITY_EXCEPTION` "Custom Setting Name too long.".
+- **`getCompoundFieldName()` returns the compound field.** It returned null for
+  every field; it now returns `Name` for `Contact.FirstName` and
+  `BillingAddress` for `BillingStreet`. In a namespaced org a geolocation
+  component's compound field carries the namespace, so a user granted read on
+  `ns__Site__c` can read its latitude and longitude.
+- **`Address.getLatitude()` and `getLongitude()` return null without
+  coordinates.** They returned 0, and `JSON.serialize` wrote 0.
+- **`Database.insert` recomputes formulas before after-insert triggers.** An
+  after-insert trigger read a cross-object formula with the parent's value from
+  before a before-insert trigger changed it. The `insert` keyword was not
+  affected.
+- **Compile checks.** Passing a field token such as `RecordType.SObjectType`
+  where a `Schema.SObjectType` is expected, `deepClone()` on a list of
+  non-SObjects, and comparing a collection with `<`, `<=`, `>` or `>=` are now
+  compile errors with sfapex's messages. A custom relationship written with
+  an upper-case suffix (`child.PARENT__R`) compiles in namespaced code.
+- **`ContentNote` operations no longer count against the SOQL limit.**
+  Inserting 51 or more notes in one statement threw "Too many SOQL queries:
+  101".
+- **More fixes.**
+  - DataWeave `map`, `filter`, `reduce` and the other array functions return
+    null for a null value instead of failing, and an expanded null object adds
+    no fields.
+  - `AggregateResult.get()` and `getPopulatedFieldsAsMap()` on a result built
+    by `JSON.deserialize` no longer fail with an internal error.
+  - `JSON.deserialize` into an SObject throws `JSONException` for a Blob field
+    given as base64 text.
+  - `User.UserPermissionsAvantgoUser` is defined, and the `UserPermissions*`,
+    `UserPreferences*` and `EmailPreferences*` checkboxes are not groupable or
+    sortable.
+  - `PermissionSet.LicenseId` accepts a `UserLicense` Id.
+  - A source directory's `Survey.settings` enables the Survey objects.
+  - A formula on a subscriber object evaluated from package code no longer
+    reads the fields of a package object with the same base name.
+  - A user in a bootstrap database whose `ProfileId` names no `Profile` row now
+    gets an error, instead of running with no profile permissions.
+  - `aer server` failed with "sql: expected N destination arguments in Scan"
+    reading a record after a deploy added a field to its object.
+
 ## v1.4.21 — 2026-10-02
 
 - **`Limits.getHeapSize()` counts Strings returned by String methods.** Only
