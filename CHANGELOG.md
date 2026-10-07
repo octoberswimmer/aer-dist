@@ -896,6 +896,46 @@
   `lightning/empApi` mock's `subscribe()` now resolves with the subscription's
   `channel`, and `unsubscribe()` calls its callback.
 
+## v1.4.23 — 2026-10-07
+
+- **A variable declared in a `finally` block goes out of scope with the
+  block.** Declaring the same name later in the method failed to compile with
+  "Duplicate variable". It now compiles.
+- **Custom settings can be upserted by `Name`.** `upsert rows Setting__c.Name`
+  and `Database.upsert(rows, Setting__c.Name)` failed to compile with "Invalid
+  field for upsert, must be an External Id custom or standard indexed field:
+  Name". The `Name` of list and hierarchy settings now reports `isIdLookup()`
+  true, and an upsert on it updates the setting record with that name.
+- **`Flow.Interview` stays the system type in a namespace with a class named
+  `Flow`.** In code loaded into a namespace that also declares a top-level
+  class `Flow`, every `Flow.Interview` was read as an inner type of that class,
+  and assigning an interview failed with "Illegal assignment from
+  Flow.Interview to ns.Flow.Interview". `Outer.Inner` now names an inner type
+  of the namespace's `Outer` only when `Outer` declares `Inner`, as in
+  sfapex.
+- **Apex can read `Id` on a platform event.** `event.Id` failed to compile with
+  "Variable does not exist: Id". It now compiles, returns null on an event that
+  has not been published, and throws `System.SObjectException` "Invalid field
+  Id" once the event holds an Id: after `EventBus.publish` and on the events in
+  a subscriber trigger's `Trigger.new`. `event.get('Id')` throws "Invalid field
+  Id for <event>" even on an unpublished event; it returned null.
+- **A list custom setting's `getInstance(name)` returns null for a name with no
+  record.** Comparing the result with null crashed the test instead of
+  evaluating to true.
+- **Failed custom setting reads are reported.** When the query reading a
+  setting's records failed, `getInstance()` returned an empty default record,
+  `getAll()` and `getValues()` returned an empty map or null, and
+  `getOrgDefaults()` returned an empty org-level record. `$Setup` in formulas
+  and formula fields likewise read empty values. These now raise the error.
+- **`$Profile` reports a missing profile.** When the running user had no
+  `ProfileId` or the profile record did not exist, `$Profile` in formulas,
+  workflow criteria, flows, default values and Visualforce read a stand-in
+  profile named "System Administrator". It is now an error.
+- **An Event with no profile default record type gets the Master record type.**
+  aer assigned an active record type named `Marketing_Event` when one existed.
+  An Event now gets a null `RecordTypeId`, like any other object whose profile
+  names no default.
+
 ## v1.4.22 — 2026-10-07
 
 - **Test use less CPU time.** Reads of the running user and profile, formula
