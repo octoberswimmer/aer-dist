@@ -2,7 +2,7 @@ module aer
 
 go 1.26.0
 
-require github.com/octoberswimmer/aer v1.4.23
+require github.com/octoberswimmer/aer v1.4.24
 
 require (
 	git.sr.ht/~jackmordaunt/go-toast v1.1.2 // indirect
@@ -44,6 +44,7 @@ require (
 	github.com/jackmordaunt/icns/v3 v3.0.1 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/kevinburke/ssh_config v0.0.0-20190725054713-01f96b0aa0cd // indirect
+	github.com/klauspost/compress v1.19.2 // indirect
 	github.com/lucasbbb/otp v1.0.0 // indirect
 	github.com/lucasbbb/venus v0.0.0-20210302100040-40540571cfac // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
