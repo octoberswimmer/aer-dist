@@ -896,6 +896,61 @@
   `lightning/empApi` mock's `subscribe()` now resolves with the subscription's
   `channel`, and `unsubscribe()` calls its callback.
 
+## v1.4.24 — 2026-10-08
+
+- **`JSON.deserialize` drops keys the target class does not declare.** A typed
+  deserialize kept every member of the JSON object on the instance, and
+  `JSON.serialize` wrote the undeclared members back out, so deserializing a
+  subclass's JSON as its base class kept the subclass's fields. Members that no
+  class in the target's hierarchy declares are now dropped, as in sfapex.
+- **File access matches Salesforce for owners and shared users.**
+  `UserRecordAccess` reported no access on a `ContentDocument` for every user,
+  including the file's owner. The owner and any user the file is shared with
+  through a `ContentDocumentLink` now get read, edit and delete access. Under
+  enforced sharing (`runAs` or a `with sharing` class), deleting a file now
+  fails with `INSUFFICIENT_ACCESS_OR_READONLY` for anyone but the owner; it
+  succeeded for any user. A `without sharing` class can still delete it.
+- **Deleting a parent no longer runs the child's validation rules.** Clearing
+  a SetNull lookup on a child record evaluated the child object's validation
+  rules, so a rule rejecting the change failed the parent's delete with
+  `FIELD_CUSTOM_VALIDATION_EXCEPTION`. The lookup is now cleared without
+  evaluating them.
+- **A record-triggered flow's async path selects each field once.** A flow
+  that read the same `$Record` field with different spellings (`Status__c`,
+  `status__c`, `ns__Status__c`) failed on its async path with "duplicate field
+  selected".
+- **SOQL filters through a relationship use the related object's field.** In
+  `WHERE Parent__r.Field__c ...`, the field was looked up on the queried object
+  when it had a field of the same name, so a comparison was typed by the wrong
+  field; `Parent__r.Actions__c INCLUDES ('x')` failed with "includes or excludes
+  operator only valid on multipicklist field". The field is now resolved on
+  the related object.
+- **A trigger's top-level variables are checked as fields.** A loop or nested
+  block variable reusing the name of a trigger's top-level variable failed to
+  compile with "Duplicate variable"; it now compiles. Declaring a top-level
+  variable twice now fails with "Duplicate field" in every trigger; in a
+  trigger that declares methods it was not reported.
+- **Bootstrap databases keep the org's Id prefixes.** When a bootstrap
+  database holds custom object records with the org's key prefixes, new
+  records of those objects now get Ids with the same prefix. Initialization
+  fails with an error when a table's Ids carry more than one prefix, or a
+  prefix that belongs to another table. A bootstrap database not in WAL
+  journal mode failed to open with "attempt to write a readonly database"; it
+  now opens.
+- **Inserting a `ContentDocumentLink` is faster**, most noticeably on
+  PostgreSQL.
+- **Test runs on a `postgresqltest://` database start faster** when the
+  database template is already cached.
+- **A second checkout of a project reuses the first one's caches.** A new git
+  worktree at the same commit no longer reparses every Apex file or rebuilds
+  the schema, and touching a metadata file without changing its content no
+  longer rebuilds the schema. A run that reused a cached schema described some
+  fields as calculated and allowed deletes on some objects that do not allow
+  them; it now describes them as an uncached run does.
+- **Test progress percentages round down.** `aer test` progress lines and the
+  `SIGUSR1` status line reported 100% while tests were still running; they now
+  report 100% only once every test has completed.
+
 ## v1.4.23 — 2026-10-07
 
 - **A variable declared in a `finally` block goes out of scope with the
