@@ -758,6 +758,47 @@ jobs:
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
 
+  apex-rollup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout action
+        uses: actions/checkout@v6
+
+      - name: Fetch jongpie/NebulaLogger commit 1adf4de (dependency)
+        run: |
+          set -euo pipefail
+          root="oss/nebulalogger"
+          mkdir -p "${root}"
+          workdir=$(mktemp -d "${root}/repo.XXXXXX")
+          git clone https://github.com/jongpie/NebulaLogger.git "${workdir}"
+          cd "${workdir}"
+          git checkout 1adf4dea79c9583ce91774f7b1f2217d83c7beb1
+          echo "NEBULALOGGER_SOURCE=${workdir}/nebula-logger/core" >> "$GITHUB_ENV"
+
+      - name: Fetch jamessimone/apex-rollup v1.7.45 sources
+        run: |
+          set -euo pipefail
+          workdir="oss/apex-rollup"
+          mkdir -p "${workdir}"
+          curl -sSL https://github.com/jamessimone/apex-rollup/archive/refs/tags/v1.7.45.tar.gz \
+            | tar xz --strip-components=1 -C "${workdir}"
+          echo "APEX_ROLLUP_ROOT=${workdir}" >> "$GITHUB_ENV"
+
+      # The Nebula Logger plugin's test reads LogEntry__c fields with bare
+      # SOQL in an API 67.0 class, which runs in user mode, so the default
+      # user needs Nebula Logger's LoggerEndUser permission set.
+      - name: Run aer test (jamessimone/apex-rollup v1.7.45)
+        uses: ./
+        with:
+          source: |
+            ${{ env.APEX_ROLLUP_ROOT }}/rollup
+            ${{ env.APEX_ROLLUP_ROOT }}/plugins
+            ${{ env.NEBULALOGGER_SOURCE }}
+          version: ${{ env.AER_VERSION }}
+          flags: --filter-path ${{ env.APEX_ROLLUP_ROOT }} --assign-perms LoggerEndUser
+        env:
+          AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
+
   amoss:
     runs-on: ubuntu-latest
     strategy:
