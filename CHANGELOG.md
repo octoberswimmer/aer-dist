@@ -896,6 +896,77 @@
   `lightning/empApi` mock's `subscribe()` now resolves with the subscription's
   `channel`, and `unsubscribe()` calls its callback.
 
+## v1.4.26 — 2026-10-11
+
+- **`Database.update` and `Database.upsert` return a failed result for a row
+  sharing refuses.** With `allOrNone` false, a row the running user could not
+  edit threw `DmlException`. That row now gets a failed `SaveResult` or
+  `UpsertResult` with status `INSUFFICIENT_ACCESS_ON_CROSS_REFERENCE_ENTITY`
+  and the message "insufficient access rights on cross-reference id:
+  <15-character Id>", and the other rows save. With `allOrNone` true, the
+  exception message includes the 15-character Id and `getDmlId` returns the
+  record's Id. `ApexPages.addMessages` summarizes such an exception as
+  "Insufficient Privileges".
+- **Collections compare their members as sfapex does.** `==`, `equals()`
+  and the `System.Assert` methods treated List, Set and Map members as equal
+  when `==` on the two values would be true. Members of different numeric
+  types (`Integer`, `Long`, `Double`, `Decimal`), Decimals of different
+  scale, a Date and a Datetime, and Strings that differ only in case are now
+  unequal. An Id and its String are equal as List and Set members and Map
+  keys, but not as Map values.
+- **Triggers see DateTime values without milliseconds.** A record inserted
+  with `Datetime.now()` and saved again with the field unchanged had
+  milliseconds in `Trigger.new` and whole seconds in `Trigger.old`, so a
+  trigger comparing the two saw a change on every save. `Trigger.new` now
+  holds the whole-second value in insert and update triggers; the caller's
+  record keeps its milliseconds.
+- **Doubles convert to Decimals as sfapex converts them.** A Double that
+  met a Decimal lost digits: a Double holding `1234567.891` plus `0.1` was
+  `1234568.0` and is now `1234567.991`. This applies to arithmetic, compound
+  assignment, casts, assignment, SObject field values and `Decimal.valueOf`.
+  Converting `NaN` or an infinity to a Decimal throws `MathException` "Cannot
+  represent Double 'NaN' as a Decimal".
+- **Doubles and Decimals print as sfapex prints them.** `JSON.serialize`
+  and `JSONGenerator.writeNumberField` write a Double as `Double.toString`
+  does (`2.2222222E7`, `1.0E-4`, and `Infinity`, `-Infinity` and `NaN`
+  unquoted), and the generator keeps the fraction of a whole Double. A Decimal
+  below `10^-6` prints in scientific notation (`1E-8`), and `1 / 10^12` no
+  longer rounds to 0. `Decimal.format` and `Double.format` show at most three
+  fraction digits, rounded half to even, and print `-0` and the infinity sign.
+- **`instanceof` on a collection accepts user subtypes.** A `List<Child>` was
+  not an instance of `List<Iface>` when `Child`'s superclass implements
+  `Iface`. List, array, `Iterable` and Map value element types now accept a
+  subclass, a sub-interface, or a class that implements the interface
+  directly or through a superclass. Set element types must still match
+  exactly.
+- **Records whose child relationship lists hold the same records are equal.**
+  Two records with equal fields that had each read a child relationship
+  compared unequal and both stayed in a Set, so code that deduplicated custom
+  metadata records through a Set processed a record twice.
+- **`putSObject` leaves the lookup field unchanged.** Putting a queried parent
+  (Id and Name) on a child record replaced the child's lookup field with that
+  parent's Id. The lookup field now keeps its value in memory, and DML saves
+  it. `put()` with a parent relationship name throws for any value.
+- **SOQL filters exclude records whose owner has no Name row.** On Event,
+  Task and Case, a condition on `Owner` (including `Owner.Id` and
+  `Owner.Type`) matched records owned by a user created before the test, such
+  as the running user, as though the owner's name were null. Such records are
+  now filtered out, as sfapex does, including inside an `OR` whose other
+  operand is true and inside child subqueries.
+- **Flow Apex actions receive their inputs when the request class initializes
+  a field.** Every input of a request class that declared a field with an
+  initializer read as null.
+- **An unknown type is reported as "Invalid type: X".** The type checker
+  described an unknown type in its own words for each place it appeared, and
+  reported an unknown return type without its class and line.
+- **`ApexClass` records match Salesforce.** `LengthWithoutComments` counts the
+  source as Salesforce does, interfaces and enums have `ApexClass` records,
+  and every record has `IsValid` true and its file's API version.
+- **Describe corrections.** `ApprovalSubmission` describes as deletable and
+  undeletable. Objects whose deleted records skip the recycle bin
+  (`CampaignMember`, `FeedItem`, `PermissionSet`, and the Share and Feed
+  objects) describe as not undeletable.
+
 ## v1.4.25 — 2026-10-11
 
 - **Errors inside aer are no longer caught by Apex `catch` blocks.** When aer
