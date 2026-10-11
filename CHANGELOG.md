@@ -896,6 +896,161 @@
   `lightning/empApi` mock's `subscribe()` now resolves with the subscription's
   `channel`, and `unsubscribe()` calls its callback.
 
+## v1.4.25 — 2026-10-11
+
+- **Errors inside aer are no longer caught by Apex `catch` blocks.** When aer
+  itself failed (a builtin given input it did not handle, an unsupported
+  construct, a schema defect), Apex code caught the error as an `Exception`
+  with aer's own message. A test that wrapped the failing code in
+  `try`/`catch` passed and hid the aer error. These errors now propagate past
+  every `catch` block and fail the test with aer's message, so they show up
+  and can be reported. Apex exceptions are caught as before.
+- **Builtins throw sfapex's exceptions for null and invalid arguments.**
+  Many builtins returned an aer error for a null or invalid argument, which
+  Apex caught as an `Exception` with the wrong type and message. They now
+  throw the exception sfapex throws, with its message, which Apex can
+  still catch: a null argument to a builtin throws `NullPointerException`;
+  invalid regexes, XML, URLs, cron expressions, hex strings, crypto algorithms,
+  keys and IVs, Decimal scales, `Matcher` regions, `FlexQueue` job Ids, and
+  `describeSObjects` names throw the matching typed exception; and conditions
+  sfapex reports as uncatchable stay uncatchable. Affected areas include
+  `Math`, `Crypto`, `BusinessHours`, `Location`, `Pattern`, `Matcher`, `JSON`,
+  `JSONParser`, `Test`, `Database` query, cursor and DML methods, `Date`,
+  `Datetime`, `String`, `TimeZone`, `EventBus`, `Search`, and `Schema`.
+- **Unary minus, bitwise not, and index assignment on null throw
+  `NullPointerException`.** `-record.Amount__c` on a blank field,
+  `~nullValue`, and `values[i] = 'x'` on a null list returned an aer error.
+  `~` on a `Long` now inverts its bits; it also returned an aer error.
+- **A null cast to `Integer` passed to a builtin throws
+  `NullPointerException`.** `dt.addSeconds((Integer) record.Number__c)` with a
+  blank field returned an aer error.
+- **`Integer.valueOf`, `Double.valueOf` and `Boolean.valueOf` throw
+  `TypeException` for values they cannot convert.** `Integer.valueOf` of a
+  `Datetime` returned an aer error. All three now throw "Invalid
+  integer: X", "Invalid double: X" or "Invalid boolean or String: X", printing
+  a Date or Datetime as sfapex does.
+- **Password methods throw sfapex's exceptions.** `System.resetPassword`,
+  `resetPasswordWithEmailTemplate`, `setPassword` and `movePassword` returned
+  aer errors for a null Id, an Id that is not a user's, and an empty
+  password. They now throw `NullPointerException`,
+  `InvalidParameterValueException` "INVALID_CROSS_REFERENCE_KEY: invalid user
+  id", "INVALID_ID_FIELD: invalid userId", and "INVALID_NEW_PASSWORD: password
+  length must be greater than 0", as sfapex does.
+- **Ids are validated as sfapex validates them.** aer accepted any 15 or
+  18 alphanumeric characters as an Id. An invalid Id now throws
+  `StringException` "Invalid id" from `Id.valueOf`, assignment, casts and
+  `List<Id>` reads. `Id.getSObjectType()` on an Id whose prefix names no object
+  throws `SObjectException` "Cannot locate Apex Type for ID: <id>"; it returned
+  an aer error.
+- **`JSONParser.readValueAs` throws `JSONException` for invalid JSON.**
+  `readValueAs` and `readValueAsStrict` returned an aer error when the input
+  stopped being valid JSON. They now throw `JSONException` with
+  sfapex's message and location, and read the current token, close markers and
+  end of input as sfapex does.
+- **`Math` functions return sfapex's exact results.** `Math.tan(1.0)`
+  returned `1.5574077246549025` where sfapex returns
+  `1.5574077246549023`; `sin`, `cos`, `tan`, `exp`, `log`, `log10`, `pow`,
+  `asin`, `acos`, `atan`, `atan2`, `sinh`, `cosh`, `tanh` and `cbrt` differed
+  in the last digit on many arguments. They now match sfapex, as do
+  `pow`'s special cases (`Math.pow(1, Infinity)` is NaN). A `Decimal` argument
+  selects the `Decimal` overload; Decimals round half to even.
+- **`Location.getDistance` matches sfapex's distances.** Distances now
+  match sfapex to the last digit, including NaN for nearly antipodal
+  points. The static `System.Location.getDistance(first, second, unit)` is
+  available, and every form accepts an `Address` or a `Location` for either
+  point.
+- **`Crypto` supports the AES GCM and additional authenticated data
+  forms.** AES256-GCM and the AAD overloads are available with sfapex's
+  output layout, ECDSA signing and verification work with EC keys, only the
+  algorithm names sfapex accepts are accepted, and bad padding and
+  lengths throw `SecurityException`.
+- **The flex queue holds 100 jobs.** `Test.enqueueBatchJobs` and
+  `Database.executeBatch` reject jobs beyond the flex queue's 100, and
+  `enqueueBatchJobs` rejects a count below one.
+- **More standard overloads.** `Database.getCursor` with an access level,
+  `Test.calculatePermissionSetGroup` with a list, and
+  `DataWeave.Script.createScript` with a namespace are available.
+- **A for-each loop over a collection it changes throws `FinalException`.**
+  Adding to or removing from a List or Set inside a for-each loop over it
+  throws the uncatchable `FinalException` when the loop next advances, at the
+  line of the `for` statement.
+- **SOQL currency literals.** Filters such as `Amount > USD5000` compare
+  amounts, converting each record by its own currency in a multi-currency org.
+- **Collection printing and sorting match sfapex.** A Set or Map prints
+  its elements in natural order when they are all of one comparable kind,
+  null first, and in insertion order otherwise. `Set.toString()` matches
+  `String.valueOf`, a Blob in a collection prints as `Blob[size]`, and
+  `List.sort()` on SObjects compares every field either record holds, sorting
+  a missing one as null.
+- **Serialized records carry `attributes.url`.** `JSON.serialize` of an
+  SObject with an Id includes `/services/data/v<version>/sobjects/<type>/<id>`,
+  and an `AggregateResult` serializes with its attributes and fields in SELECT
+  order and prints as `AggregateResult:{n=a, c=1}`.
+- **A blank number field equals zero in a BlankAsZero formula.**
+  `Amount__c = 0` evaluated to null, so `IF` took its else branch.
+- **A batch's scope has the element type of the collection `start()`
+  returns.** A `Database.Batchable<Object>` whose `execute()` cast its scope
+  back to the type `start()` returned failed with "Invalid conversion from
+  runtime type List<SObject>".
+- **Array-typed fields, parameters and return types behave as lists.**
+  Calling `contains(null)` on a `static String[]` field called
+  `String.contains` and now throws sfapex's error instead.
+- **A property setter's `value` resolves to the property's type.**
+  `set { d = value.date(); }` with a null value returned an aer error instead
+  of throwing `NullPointerException`.
+- **Trigger DML inside a workflow or approval field update is validated.** A
+  field update's own save skips custom validation rules, but the saves made
+  by the triggers it fired skipped them too. They are now validated, and an
+  exception from such a trigger fails `Approval.process` with
+  `CANNOT_INSERT_UPDATE_ACTIVATE_ENTITY`.
+- **Record locks apply only with sharing enforced.** A locked record refused
+  every update or delete by a user who may not edit it. Triggers and `without
+  sharing` classes may now update and delete it; `with sharing` classes and
+  code under `System.runAs` are refused.
+- **Merging person accounts merges their person contacts.** Records that
+  pointed at the losing person contact, such as a Task's `WhoId`, now point
+  at the master's person contact, and the losing person contact is deleted
+  instead of moved onto the master.
+- **`IsPersonAccount` is set before insert triggers run.** Every Account in a
+  before insert trigger's `Trigger.new` read `IsPersonAccount` false.
+- **The All Internal Users group exists.** A query for the group of Type
+  `Organization` returns it, and a record shared with it is visible to every
+  internal user.
+- **Inserting a `UserRole` fills sfapex's defaults.** `PortalType`,
+  `DeveloperName`, and the account-owner and Case and Contact access levels
+  are filled on the stored row, and a duplicate developer name fails with
+  `DUPLICATE_DEVELOPER_NAME`. An access level below the org-wide default fails
+  with `FIELD_INTEGRITY_EXCEPTION`, while `AccountShare` no longer rejects
+  manual shares below the org-wide default. A developer name derived from a
+  name that begins with a digit gets an `X` prefix, for groups and roles.
+  `Organization.DefaultAccountAccess` and the other default access fields
+  report the org's sharing models.
+- **The Automated Process user has a profile.** Formulas, validation rules,
+  and workflow criteria that read `$Profile` failed in platform event
+  triggers. `$Profile.Name` is now 'Automated Process' and
+  `UserInfo.getProfileId()` returns its Id.
+- **Flow fixes.** A flow that referenced an Update Records element by name
+  failed to load; the reference is now true when the element saved a record,
+  false when it saved none or faulted. An Update Records input assignment of
+  null is applied, so a required field set to null routes to the fault path.
+  A Get Records or Update Records filter on a constant or `$Record__Prior`
+  works, a text template that merges `$Flow.CurrentRecord` renders it as
+  empty text, and a multi-line text template used as an email body or
+  Chatter post compiles.
+- **`System.Assert` with a null message throws `NullPointerException`**, as in
+  sfapex. An exception thrown while building an assert message is no
+  longer dropped.
+- **`aer package create` accepts a sibling package in the same namespace.**
+  A second package (`pkgB@ns`) built with `--package pkgA@ns.pkg` can
+  reference the first package's classes.
+- **`aer server` starts on PostgreSQL databases created by earlier
+  releases.** It failed when creating the All Internal Users group.
+- **Tests run faster.** Permission checks, profile reads, dynamic SOQL
+  parsing, formula evaluation, method calls, exception construction, and
+  SQLite's memory copies do less repeated work.
+- **Large orgs start faster.** Building the test database for an org with
+  thousands of roles and hundreds of profiles is faster.
+
 ## v1.4.24 — 2026-10-08
 
 - **`JSON.deserialize` drops keys the target class does not declare.** A typed
