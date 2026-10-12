@@ -440,7 +440,11 @@
   every async job with its status, type, class, times, and errors, kept current
   as jobs run, with Pause and Resume for the async worker, Run for a queued job
   while the worker is paused, and Debug, which opens the Anonymous Apex console
-  on that job. `/dev/jobs` links each queued job to the console as well.
+  on that job. `/dev/jobs` links each queued job to the console as well. The
+  list shows each job's node, batches, and records, and Purge finished jobs
+  deletes the finished ones. Each job has a page with its fields and child
+  jobs, and a `BatchApexWorker` job's page lists each scope it ran with its
+  node, times, records, and error.
 - **Setup has query, record count, email template, and validation rule pages,
   and lists the server's options.** `/dev/query` and
   `/lightning/setup/QueryEditor/home` are a SOQL editor that renders the
@@ -597,6 +601,124 @@
   field initializers, static and instance blocks, and triggers, attributes
   calls to overloaded methods and same-named classes in different namespaces
   correctly, and is the same on every run.
+- **`aer test --cluster` runs test classes on other machines.** `aer cluster
+  agent` joins a cluster of machines that share a key made with `aer cluster
+  keygen` and passed as `AER_CLUSTER_KEY`. `aer test --cluster` hands test
+  classes to the agents it finds through mDNS on the local network segment or
+  through `--cluster-join` addresses, and `aer cluster members` lists them.
+  Each agent receives the program the starting machine loaded, so it does not
+  parse, type check, or build a schema; results, `--json`, `--junit`, and
+  `--coverage` output come from the starting machine as in a local run. A
+  class whose node fails or disconnects runs on another node. Agents listen on
+  one port, 7951 by default (`--work-port`). An agent runs jobs only from a
+  machine running the same aer release, unless it was started with
+  `--allow-upgrade`, which downloads the starting machine's release from
+  GitHub and keeps it for later jobs. The starting machine needs a valid
+  license; agents need none. `--watch`, `--debug`, `--db`, `--profile`,
+  `--trace`, and `--integration-tests` cannot be combined with `--cluster`.
+- **`aer server --cluster` serves API requests and runs async Apex on several
+  machines.** With a PostgreSQL `--db`, the server sends its loaded program
+  and schema to the cluster's agents, which run REST record and query
+  requests, `executeAnonymous`, Apex REST, and Partner and Enterprise SOAP
+  calls against the same database, on whichever node has the fewest requests
+  running per CPU. Logins, deploys, streaming, and the development pages run
+  on the server. A deploy, package upgrade, or `--watch` reload pauses the
+  agents while the database changes and then sends them the new program.
+  Queued async Apex and Bulk API batches run on every node, each job once. A
+  batch job's records run as `BatchApexWorker` jobs of up to 10,000 records,
+  in scopes of the batch size that each commit in their own transaction, as
+  in Salesforce; the worker jobs of a batch that is not `Database.Stateful`
+  run at the same time, and a worker job whose node stops resumes at its next
+  scope on another node. Setup Home lists the cluster's members, each agent's
+  worker state and request counts, and the reason an agent runs no worker. An
+  agent started with `--no-server-jobs` takes only test jobs.
+- **Concurrent `aer test` runs on one machine divide its CPUs.** Each run
+  started one worker per CPU regardless of other aer runs, so two runs on a
+  28-CPU machine ran 56 workers. Runs now register with each other and split
+  the machine's CPUs among them; when a run ends, the others use its CPUs
+  within a second. A cluster agent's jobs take part, limited by the agent's
+  `--cpus`. `-vv` prints each change of a run's worker count, and
+  `AER_HOST_SHARE=off` makes a run use all of its workers regardless of other
+  runs.
+- **`aer test` exits with code 2 when the source does not compile.** A parse
+  error, a semantic error such as a duplicate class name, an invalid `@IsTest`
+  annotation, or a type error stops the run before any test executes and now
+  exits with 2, so a CI job can tell it from failing tests. Failing tests and
+  other errors, such as an invalid flag or a missing directory, still exit
+  with 1.
+- **`--path` adds source directories to `aer test`, `aer server`, and
+  `aer package create`.** The repeatable flag takes the same values as a
+  positional source path, including an `@namespace` suffix, so
+  `aer test force-app --path .aer/metadata` loads the same source as
+  `aer test force-app .aer/metadata`, and it can be set in `.aerrc` for a
+  directory every run needs. In every command, including `aer exec`, an
+  `.aerrc` `--path` stays loaded when the command line also gives `--path`, a
+  source path given more than once is loaded once, and the directory part of
+  a `dir@ns` value in `.aerrc` is resolved against the file's directory.
+- **`aer deduce` queries relationships between code and metadata.** The
+  command evaluates a Mangle (Datalog) program over facts about the Apex code
+  and metadata in a source tree and prints the facts it derives; `aer deduce
+  --help-examples` lists example programs, and the server's `/dev/deduce` page
+  runs programs from the browser. The facts include the modifiers of classes,
+  methods, fields, properties, and property accessors; the local variables a
+  method declares and reads; the API version of each class and trigger; the
+  methods that contain a `System.runAs` block; the fields that inline SOQL,
+  flow elements, and page layouts read or place; calls made on an element of a
+  returned list; and the implementations of abstract methods.
+- **Setup has Bulk Data Load Jobs pages, and Bulk API 1.0 supports PK chunking
+  and serial jobs.** `/lightning/setup/AsyncApiJobStatus/home` lists the Bulk
+  API 1.0 and 2.0 jobs with their state, batches, record counts, nodes, and
+  creator, and Purge finished jobs deletes the finished ones with their
+  batches and results. Each job's page shows its Job Details and Status, an
+  Abort Job button while aborting would stop work, and its batches with the
+  node that ran each and View Request and View Response links. A Bulk API 1.0
+  query job created with `Sforce-Enable-PKChunking` (`TRUE`, `chunkSize`,
+  `startRow`) splits each batch into a batch per range of Ids and marks the
+  original `NotProcessed`, as Salesforce does; the `parent` option is refused.
+  A job created with `concurrencyMode` `Serial` runs its batches one at a
+  time. Bulk API 1.0 adds the `queryAll` operation and serves a batch's
+  request at `.../batch/{batchId}/request`, and Bulk API 2.0 divides an ingest
+  job's data into batches of up to 10,000 records.
+- **The REST query resource returns large results in batches, and `queryAll`
+  is available.** A result larger than the batch size (2,000 records by
+  default, or 200 to 2,000 set with `Sforce-Query-Options: batchSize=`)
+  returns `done: false` and a `nextRecordsUrl` naming a query locator.
+  Subquery child records count toward a batch, and a child record set too
+  large for one is cut and given a locator of its own, as Salesforce does. A
+  locator is readable only by the user who opened it and is deleted after 15
+  minutes without use or when that user opens an eleventh; an unknown,
+  expired, or out-of-range locator returns `INVALID_QUERY_LOCATOR`. `queryAll`
+  returns deleted records and deleted child records. `ALL ROWS` in either
+  resource's query, and a request with no query, return `MALFORMED_QUERY`.
+  The query editor has a Load more button.
+- **The Tooling API `apexCompileResults` resource reports Apex that does not
+  compile.** `POST /tooling/apexCompileResults` type checks the program and
+  returns each class, interface, and trigger with an error, with its namespace
+  and each problem's line, column, and message, and rejects a malformed
+  request with the errors Salesforce returns. Tooling queries of `ApexClass`
+  and `ApexTrigger` report `IsValid` false for a class or trigger that does
+  not compile.
+- **Custom button URLs evaluate their merge fields as formulas.** A URL custom
+  button's merge fields are evaluated as formulas running as the requesting
+  user: record fields, `{!Id}`, `$Api` (including `{!API.Session_ID}` and the
+  SOAP endpoint URLs), `$User`, `$Profile`, `$UserRole`, `$Organization`,
+  `$Setup`, `$Label`, `$CustomMetadata`, `$Permission`, and `$System`. A
+  `$Setup` field reads the running user's effective hierarchy setting row.
+  Each value is form-encoded in the button's `encodingKey` character set, as
+  Salesforce does, so a `URLENCODE()` result is encoded a second time. A merge
+  field naming something that does not exist shows an error instead of
+  navigating.
+- **`URLENCODE()` is supported.** Visualforce email templates and
+  `Formula.builder()` formulas encode the text as UTF-8 with a space as `+`,
+  as Salesforce does, although the documentation says `%20`. A formula field
+  that uses `URLENCODE()` is rejected with the platform's message.
+- **An org that defines no applications gets the standard apps.** The app
+  menu offers Sales (the Lightning app, first), Service, Marketing CRM
+  Classic, and Salesforce Chatter with their standard tabs, leaving out a tab
+  whose object the schema does not define. An org with custom tabs keeps the
+  All Tabs app ahead of them. The `standard-Event` tab is labeled Calendar and
+  the `standard-OtherUserProfile` tab People, listing users, as in
+  Salesforce.
 
 ### Fixes and performance
 
@@ -658,7 +780,8 @@
   schema lookups found no fields on the unqualified object and typed every column
   as text. The namespace pass now qualifies the objects a report type names
   (`CustomEntity$`, `CustomEntityAuditHistory$`, `CustomEntityCustomEntity$`,
-  `<Standard>CustomEntity$`, and the join path after an `@`).
+  `<Standard>CustomEntity$`, and the join path after an `@`), and the tables and
+  fields its columns name, in namespaced source and in packages.
 - **Duplicate `FieldPermissions` rows are no longer inserted on every metadata
   load.** The table has no unique constraint, so a database reused across
   metadata reloads grew by a full duplicate set per load.  The load now reads
@@ -895,6 +1018,52 @@
   `lwc:if` element and its `lwc:else` dropped the `lwc:else` branch. The
   `lightning/empApi` mock's `subscribe()` now resolves with the subscription's
   `channel`, and `unsubscribe()` calls its callback.
+- **A Metadata API deploy fails only for errors in the components it deploys.**
+  A deploy type checked the whole program and failed when a class it did not
+  deploy stopped compiling. Salesforce saves such a deploy and marks the other
+  class invalid, and aer now does the same, reporting each error against the
+  deployed component with its line and column. A deployment's component
+  successes list `package.xml`, and a redeployed trigger is reported as
+  changed rather than created.
+- **A call to a method a type does not declare reports Salesforce's message.**
+  The error reads "Method does not exist or incorrect signature: void greet()
+  from the type ns.Callee", naming the type with its namespace and a trigger
+  body's methods by the trigger, at the column of the method name. An
+  interface method whose return or parameter type names no known type fails
+  with `Invalid type: X`; aer accepted such an interface.
+- **Saving a class through the `ApexClass` object by its bare name updates the
+  default namespace's class.** In a server with a default namespace, the save
+  defined a second, unnamespaced class beside the source-loaded one.
+- **A `$Setup` formula reads the running user's hierarchy custom setting
+  values.** Inside `System.runAs`, a `$Setup` formula returned the values of
+  the user it first ran as, and in `aer server` a request could read values
+  cached by an earlier request for another user.
+- **`FORMAT()` on a currency field keeps the field's scale, and an unaliased
+  `FORMAT()` or `convertCurrency()` column is named after its field.**
+  `Opportunity.Amount` 1234.5 formats as `$1,234.50` rather than `$1,234.5`.
+  An unaliased `convertCurrency(Amount)` failed with an unresolved column type.
+  In Apex, an unaliased `FORMAT()` leaves the field's own value in the field;
+  only an API query returns the formatted text, as in Salesforce.
+- **Bulk API query results and responses match Salesforce.** A CSV query
+  result wrote a null as `<nil>`, took its columns from the first record in
+  no fixed order, including fields the query did not select, and formatted
+  numbers in Go's notation. Results now have one quoted column per selected
+  item in `SELECT` order, a null as an empty value, numbers as Java writes
+  them, and datetimes and times with milliseconds, in Bulk API 1.0 and 2.0. A
+  Bulk API 1.0 query that matches nothing returns `Records not found for this
+  query`, and Bulk API 2.0 returns the header row alone. A query that selects
+  a compound field, aggregates, or selects a child relationship's records is
+  refused with Salesforce's messages. Bulk API 1.0 answered in the format of
+  the request's `Content-Type`, so a CSV batch got a JSON answer that `force`
+  could not read; it now answers in the format the `Accept` header names, or
+  else the job's. A Closed Bulk API 1.0 job can be aborted, and closing or
+  aborting a job that is already closed or aborted fails with Salesforce's
+  `InvalidJobState` messages. A job records the creating session's user as
+  `CreatedById`, a job on an object the schema does not define is refused,
+  and a batch whose query reads another object than the job's fails.
+- **`System.InstallHandler` and `System.UninstallHandler` are in the standard
+  library.** A class implementing `onInstall(InstallContext)` or
+  `onUninstall(UninstallContext)` type checks against them.
 
 ## v1.4.27 — 2026-10-12
 
