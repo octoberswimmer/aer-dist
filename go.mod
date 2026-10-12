@@ -1,8 +1,8 @@
 module aer
 
-go 1.27.0
+go 1.27.2
 
-require github.com/octoberswimmer/aer v1.5.6
+require github.com/octoberswimmer/aer v1.5.7
 
 require (
 	bitbucket.org/creachadair/stringset v0.0.11 // indirect
@@ -55,6 +55,7 @@ require (
 	github.com/jackmordaunt/icns/v3 v3.0.1 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/kevinburke/ssh_config v0.0.0-20190725054713-01f96b0aa0cd // indirect
+	github.com/klauspost/compress v1.19.2 // indirect
 	github.com/lucasbbb/otp v1.0.0 // indirect
 	github.com/lucasbbb/venus v0.0.0-20210302100040-40540571cfac // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
@@ -64,13 +65,13 @@ require (
 	github.com/ncruces/go-strftime v1.0.0 // indirect
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 // indirect
 	github.com/nxadm/tail v1.4.4 // indirect
-	github.com/octoberswimmer/apexfmt v0.67.0 // indirect
+	github.com/octoberswimmer/apexfmt v0.68.0 // indirect
 	github.com/octoberswimmer/digger v0.38.0 // indirect
-	github.com/octoberswimmer/libc v1.67.7-octoberswimmer.7 // indirect
+	github.com/octoberswimmer/libc v1.67.7-octoberswimmer.8 // indirect
 	github.com/octoberswimmer/memory v1.11.0-octoberswimmer.11 // indirect
-	github.com/octoberswimmer/sformula v0.19.0 // indirect
+	github.com/octoberswimmer/sformula v0.20.0 // indirect
 	github.com/octoberswimmer/skyfire v0.7.0 // indirect
-	github.com/octoberswimmer/sqlite v1.46.1-octoberswimmer.12 // indirect
+	github.com/octoberswimmer/sqlite v1.46.1-octoberswimmer.14 // indirect
 	github.com/otiai10/copy v1.6.0 // indirect
 	github.com/pb33f/jsonpath v0.8.2 // indirect
 	github.com/pb33f/libopenapi v0.36.3 // indirect
