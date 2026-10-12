@@ -896,6 +896,106 @@
   `lightning/empApi` mock's `subscribe()` now resolves with the subscription's
   `channel`, and `unsubscribe()` calls its callback.
 
+## v1.4.27 — 2026-10-12
+
+- **Dynamic SOQL errors for unknown fields and objects can be caught.** A
+  `Database.countQueryWithBinds` call whose result was discarded or passed
+  straight to another call raised a `QueryException` that `catch
+  (QueryException e)` did not catch. A dynamic query of an object the schema
+  does not define now throws `QueryException` "sObject type '<name>' is not
+  supported" from `Database.query`, `countQuery`, `queryWithBinds` and
+  `countQueryWithBinds`; `countQueryWithBinds` returned 0 and `queryWithBinds`
+  failed with an uncatchable error. `Database.getQueryLocator` and
+  `getQueryLocatorWithBinds` validate the query when the locator is created,
+  and passing a list that is not an inline query to `getQueryLocator` is a
+  compile error, "Argument must be an inline query".
+- **Dynamic subqueries reject unknown child relationships.** A subquery could
+  name a child relationship that has no name in Salesforce
+  (`SELECT Id, (SELECT Id FROM TaskAccountId) FROM Account`) and return rows,
+  and a subquery naming no relationship failed with an error Apex could not
+  catch. Both now throw `QueryException` "Didn't understand relationship
+  '<name>' in FROM part of query call", as sfapex does.
+- **`NOT IN` semi-joins ignore nulls the subquery returns.**
+  `Id NOT IN (SELECT AccountId FROM Contact)` returned no rows when any contact
+  had no account. It now returns the accounts that have no contacts.
+- **`getChildRelationships()` lists relationships in sfapex's order.**
+  Relationships are ordered by child object API name, then by child field API
+  name, case-sensitively. Code that picks the first relationship to a given
+  child object used a different lookup than on sfapex when an object had two
+  lookups to the same parent. With Person Accounts, Account no longer lists
+  a second `Person` relationship for a Contact lookup that also references
+  Account.
+- **Standard Share objects have their own key prefixes and fields.**
+  `getKeyPrefix()` returns `0Fy` for `OrderShare`, `70a` for `AssetShare`,
+  `0T5` for `IndividualShare`, `0N2` for `UserShare`, `0vK` for
+  `EngagementInteractionShare` and `0Jc` for `ForecastingShare`, and share
+  records, `AccountShare` included, get Ids with their object's prefix.
+  `AssetShare`, `IndividualShare` and `UserShare` have `AssetId` and
+  `AssetAccessLevel`, `IndividualId` and `IndividualAccessLevel`, and `UserId`
+  and `UserAccessLevel` in place of `ParentId` and `AccessLevel`, and
+  `UserShare` has `IsActive`. With Asset Public Read/Write, inserting an
+  `AssetShare` fails with `INSUFFICIENT_ACCESS_ON_CROSS_REFERENCE_ENTITY` and
+  update and delete DML on `AssetShare` are compile errors.
+- **A file is shown only to the users its links share it with.** Under
+  `System.runAs`, a file with any `ContentDocumentLink` whose `ShareType` was
+  not `I` was visible to every user. A file is now visible to the users its
+  links name, to users who can access a record it is linked to, and to every
+  user when it is linked to the organization.
+- **A `ContentDocumentLink` can link a file to the organization.** Setting
+  `LinkedEntityId` to the organization Id failed with
+  `FIELD_INTEGRITY_EXCEPTION` "id value of incorrect type".
+- **Deleting a record clears SetNull lookups on deleted children and
+  `Contact.ReportsToId`.** A child already in the recycle bin kept the deleted
+  parent's Id, and kept it after its own undelete. Deleting a contact left
+  `ReportsToId` set on the contacts that report to it.
+- **Clones of trigger records and subquery rows save their copied fields.**
+  An update with a clone of a `Trigger.new` record wrote only the fields
+  assigned after the clone. A clone of a child row from a parent-to-child
+  subquery lost the lookup to its parent, so inserting it saved no parent.
+  `List.deepClone()` copies records the same way.
+- **Permission sets with a duplicate Name or Label are refused.** Inserting or
+  updating a permission set whose `Name` or `Label` another permission set
+  already has fails with `DUPLICATE_DEVELOPER_NAME` or
+  `DUPLICATE_MASTER_LABEL`. A later row of the same DML statement repeating an
+  earlier row's value fails with `DUPLICATE_VALUE`.
+- **Lookup fields are inaccessible while the user cannot read the target
+  object.** A field permission on a lookup gave access to it even when the
+  running user could not read the object it references. Field describes,
+  `USER_MODE` queries and `Security.stripInaccessible` now treat such a lookup
+  as neither accessible, createable nor updateable, as sfapex does.
+- **Usernames are validated, and renaming the running user no longer breaks
+  later tests.** Insert and update require a `Username`, store it trimmed and
+  in lower case, reject one that is not in the form of an email address with
+  `FIELD_INTEGRITY_EXCEPTION`, and reject a duplicate with
+  `DUPLICATE_USERNAME`. A test that changed the running user's `Username`
+  made every later test fail with "user record not found".
+- **Stubbed methods receive arguments converted to their parameter types.** A
+  `StubProvider` created with `Test.createStub` received arguments as the
+  caller passed them, so a 15-character String passed to an `Id` parameter
+  arrived as that String, and mocking frameworks that match calls by
+  `hashCode` missed it. Arguments now arrive as the declared type, and a
+  String that is not an Id fails the call with `StringException`.
+- **Flow fixes.**
+  - A record-triggered after-save flow stopped after a Collection Filter or
+    Collection Sort element.
+  - A loop over a list property of an outer loop's item
+    (`{!Loop_Results.errors}`) failed to compile.
+  - A flow formula referencing another formula evaluated to null.
+  - Number and Currency formula results are Decimals at the formula's scale,
+    Date formulas are Dates and Date/Time formulas are Datetimes; a Date
+    formula using `DATE()` serialized as "2024-07-01 00:00:00 +0000 UTC".
+  - A property a flow assigned on an Apex-defined object read as null from
+    Apex, and is now converted to the property's declared type.
+  - In flow formulas, `TEXT()` of a Date returns `YYYY-MM-DD` and
+    `DATEVALUE()` of text in that form returns the date.
+- **A namespaced `Foo__ChangeEvent` reference resolves.** In code loaded with
+  a namespace, a bare change event name named no object.
+- **Large orgs start faster.** Loading source directories, parsing Apex, and
+  building the test database take less time, most noticeably on PostgreSQL.
+  Approval processes, assignment rules, Slack metadata and duplicate rules in
+  directories aer ignores are no longer loaded, as other metadata there is
+  not.
+
 ## v1.4.26 — 2026-10-11
 
 - **`Database.update` and `Database.upsert` return a failed result for a row
