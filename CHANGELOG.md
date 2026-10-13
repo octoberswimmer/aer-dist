@@ -1065,6 +1065,79 @@
   library.** A class implementing `onInstall(InstallContext)` or
   `onUninstall(UninstallContext)` type checks against them.
 
+## v1.4.28 — 2026-10-13
+
+- **Classes implementing a packaged interface compile when the interface names
+  package types.** A class implementing an interface from a `.pkg` or an `@ns`
+  source directory failed with "must implement the method" for each method
+  whose signature names a package inner class (`ns.Outer.Inner`) or a package
+  custom object (`List<ns__Item__c>`), although the class declared every
+  method.
+- **A class can use an inner type of a grandparent class by its simple name.**
+  When `Leaf extends Middle extends Base` named `Base`'s inner class `Item` as
+  `Item`, `Leaf` sometimes failed with "must implement the abstract method",
+  depending on the order in which source files were parsed.
+- **Null operands of compound assignment and bitwise operators throw
+  `NullPointerException`.** `-=`, `*=`, `/=`, `&=`, `|=`, `^=`, `<<=`, `>>=`
+  and `>>>=` with a null operand, and `&`, `|`, `^`, `<<`, `>>` and `>>>` with
+  a null operand, failed with an error Apex could not catch.
+- **Adding to a map's Set value inside a loop over that Set completes.** In a
+  class saved at API 62.0 or later, a loop such as
+  `for (String k : m.keySet()) { for (String v : m.get(k)) { m.get(k).add(...); } }`
+  raised `FinalException`. As on Salesforce, after `keySet()`, `values()` or
+  `toString()` is called on a map, each `Map.get` result is a separate
+  reference to the stored collection: a loop raises only for a change made
+  through the reference it iterates, a Set loop does not visit the added
+  element, and a List loop does.
+- **Decimal sums keep the digits of a quotient.** `20.00 - (0.01 / 2)`
+  returned `20.00` instead of `19.995`. On Apple silicon, `Math.pow(10, -2)`
+  returned `0.009999999999999983` instead of `0.01`.
+- **Platform event publish callbacks are called only through the interfaces
+  they implement.** A callback passed to `EventBus.publish` that implements
+  only `EventBus.EventPublishFailureCallback` failed with "method not found"
+  when `Test.stopTest()` or `Test.getEventBus().deliver()` delivered the
+  event, and a success-only callback failed the same way on
+  `Test.getEventBus().fail()`.
+- **Sharing reasons longer than 40 characters can be saved as a share's
+  `RowCause`.** A namespaced sharing reason failed the insert with
+  `STRING_TOO_LONG`. `RowCause` is now a restricted picklist of the object's
+  sharing reasons and Salesforce's platform values, with `Manual` as the
+  default, and accepts `Manual` and the sharing reasons in any letter case. A
+  platform value fails with `FIELD_INTEGRITY_EXCEPTION` on `RowCause`, "cannot
+  insert sharing row with this cause" on `AccountShare` and "Specified value is
+  reserved and cannot be used" on other shares, and any other value fails as
+  an invalid restricted picklist value.
+- **Custom buttons and links are queryable.** Every `WebLink` query returned
+  no rows. Each button and link in the object metadata is now a `WebLink` row
+  with the values Salesforce stores, visible to tests without `SeeAllData`. In
+  a namespaced org, the object, `DeveloperName`, `NamespacePrefix`, and the
+  custom objects and fields in the URL's merge fields carry the namespace.
+  An invalid webLink file fails the load instead of being skipped.
+- **Flow fixes.**
+  - A Create Records element that saves the records of a record variable or
+    record collection variable failed with "Record create '...' has no object
+    specified". The records are saved in one statement and receive their new
+    Ids; a failed row faults the element with the first failure's status code
+    and message. `$Flow.FaultMessage` and the `FlowException` of an unhandled
+    fault carry Salesforce's message for a failed create.
+  - A flow that reads a field a field-limited Get Records element did not
+    select, or a field Apex did not query on records it passed into the flow,
+    faults with "The flow failed to access the value for <reference> because
+    it hasn't been set or assigned." A record-triggered flow that does so fails
+    the save with `CANNOT_EXECUTE_FLOW_TRIGGER`.
+  - A query that binds the list `Flow.Interview.getVariableValue` returns
+    throws `System.UnexpectedException` "Bad rightOperand type", naming the
+    `IN` or `NOT IN` operator, as Salesforce does.
+  - A Collection Filter whose condition logic is a formula returned the whole
+    collection. It now keeps only the items for which the formula is true.
+  - Contains, StartsWith and EndsWith record filters with a variable value
+    matched nothing, and a scheduled flow's start filters with these operators
+    matched only the exact value. The value is matched as literal text, so `%`
+    and `_` in it are not wildcards, and a null value matches every non-null
+    field value.
+  - A Get Records `NotIn` filter returned only the records it listed instead
+    of excluding them.
+
 ## v1.4.27 — 2026-10-12
 
 - **Dynamic SOQL errors for unknown fields and objects can be caught.** A
