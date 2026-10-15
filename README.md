@@ -112,7 +112,12 @@ Optional inputs:
 - `flags` lets you append additional CLI arguments (for example `--skip SomeTest`).
 - `default-namespace` mirrors the `--default-namespace` flag to run tests against as if the code is within a package's namespace.
 
-Set a license key for production use (running more than 100 tests).
+Set a license key for production use. Without a license, a test run stops
+after 100 test methods. When the code being tested has more than 100 non-test
+classes and triggers, an unlicensed run executes only when it selects a single
+test method; a run that selects more stops with a license error before running
+any test. The count includes the source being tested and any package whose
+tests the run selects, but not packages it only depends on.
 
 ```yaml
       - name: Run Apex Tests

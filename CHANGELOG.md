@@ -1065,6 +1065,135 @@
   library.** A class implementing `onInstall(InstallContext)` or
   `onUninstall(UninstallContext)` type checks against them.
 
+## v1.4.29 — 2026-10-15
+
+- **Running more than one test in a large codebase requires a license.**
+  Without a license, when the code under test has more than 100 non-test
+  classes, interfaces, enums and triggers, `aer test` runs only when exactly
+  one test method is selected, and otherwise stops before running anything
+  with a license error that names the count and the number of selected tests.
+  The count covers the unnamespaced source, source loaded into a namespace,
+  and the packages the run selects tests from, but not packages the run only
+  depends on. A smaller codebase keeps the 100-test limit, and a test method
+  that limit refuses is now counted as skipped instead of failed.
+- **Re-updating a user after non-setup DML no longer fails with
+  `MIXED_DML_OPERATION` when no restricted field changes.** An update that
+  wrote `UserRoleId`, `IsActive`, `ForecastEnabled`, `IsPortalEnabled`,
+  `Username` or `ProfileId` was restricted even when the value was the one
+  already stored, as on a user carrying the fields from its insert or a query.
+  As on sfapex, the update is restricted only when it changes one of
+  those fields.
+- **The one-argument `Id.valueOf` checks the checksum suffix only from API
+  54.0.** A class saved at an earlier API version gets an 18-character Id with
+  a mismatched suffix back unchanged. `Id.valueOf(String, Boolean)` checks the
+  suffix at every version, and `JSONParser.getIdValue` does not check it at
+  any version.
+- **`JSON.deserialize` fills properties that declare no setter.** A member
+  whose property declares only a getter, such as `String myProp { get; }`,
+  stayed null. The value is now stored and the getter returns it.
+- **A `LimitException` raised in a trigger ends the transaction.** It was
+  wrapped in a catchable `DmlException`, or recorded as a failed `SaveResult`
+  under `allOrNone=false`, so the code kept running and a later, unrelated
+  query was reported as the one that exceeded the limit.
+- **An inserted row that already carries an Id is left out of `Trigger.new`.**
+  `Database.insert` ran such a row through the before-insert triggers, and a
+  keyword `insert` of a list rejected the whole statement before any trigger
+  ran. As on sfapex, the row is rejected before the triggers run and the
+  other rows save through the before and after insert triggers; an
+  all-or-none call then fails naming the rejected row and rolls back, and
+  `getDmlIndex()` reports that row instead of 0.
+- **Passing an inline query that returns no rows to an SObject parameter
+  throws `QueryException`.** A call such as `deleteObject([SELECT ...], false)`
+  instead ran another overload of the method, or failed with "isSuccess()
+  called on non-object instance".
+- **A lookup cleared by deleting its target can be written back.** As on
+  sfapex, an update that writes the deleted record's Id back into the
+  lookup the delete cleared on that same record succeeds; writing it into
+  another lookup still fails with `ENTITY_IS_DELETED`. A before update trigger
+  that deletes the target of the record's own lookup no longer fails the
+  update with `ENTITY_IS_DELETED`; the lookup stays null.
+- **A person account's contact receives `Phone`, `Fax`, `Description` and
+  `OwnerId`.** These fields are copied to the contact when the account is
+  inserted and whenever an update sets them, and the contact's
+  `IsPersonAccount` reads `true`.
+- **An element read from `Database.query` is typed `SObject`.**
+  `Contact c = Database.query(q)[0];` and `... .get(0)` now fail to compile
+  with "Illegal assignment from SObject to Contact", as on sfapex, for
+  `query` and `queryWithBinds` alike. Assigning or casting the whole result to
+  a `List<Contact>` still compiles.
+- **`String.valueOf` of a trigger record lists every field.** A `Trigger.new`
+  or `Trigger.old` record printed as an empty record, so code that skipped its
+  logic when `String.valueOf(Trigger.new[0])` equaled
+  `String.valueOf(Trigger.old[0])` skipped it on every update. The record now
+  lists every field in describe order, nulls included, with custom formula
+  fields last. A defaulted Number field now reads with the field's scale in
+  insert triggers (`0.00` rather than `0`).
+- **Method calls on a field of a null SObject member throw
+  `NullPointerException`.** `!holder.account.Contacts.isEmpty()` with a null
+  `account` failed with an error Apex could not catch. Reading a child
+  relationship of a null member throws `NullPointerException`, a child
+  relationship read through a null parent relationship returns an empty list,
+  and `!`, `-` and `~` with a null operand throw `NullPointerException`.
+- **A Date equals a Datetime at GMT midnight on that date.** `==`, `!=`,
+  `equals()` and `System.assertEquals` compared the Date with the Datetime's
+  date in the running user's time zone; the relational operators already
+  compared them in GMT.
+- **Field default values can read `$Organization` fields.** A default such as
+  `$Organization.PostalCode` was stored as its literal text, and the insert
+  failed with `STRING_TOO_LONG` on a short text field.
+- **Builtin constructors given null arguments throw sfapex's exceptions.**
+  `new ApexPages.Message(severity, null)` failed with an error Apex could not
+  catch, and the four-argument form rejected its component id argument, which
+  `getComponentLabel()` now returns. `XmlStreamReader`, `StandardController`,
+  `StandardSetController`, `KnowledgeArticleVersionStandardController`,
+  `Compression.ZipReader`, `Auth.AuthConfiguration`, `ApexPages.Action`,
+  `VisualEditor.DataRow` and `VisualEditor.DynamicPickListRows` now accept or
+  reject null arguments as sfapex does, with its messages.
+  `VisualEditor.DynamicPickListRows` keeps the list it was given, and
+  `VisualEditor.DataRow` has a three-argument form taking `selected`.
+  `Test.testInstall` with a null handler throws `NullPointerException` "Null
+  script passed into Test.testInstall()", and `Type.isAssignableFrom(null)`
+  throws `NullPointerException`.
+- **Indexing after a short-circuited safe navigation returns null.**
+  `m.get(key)?.getDescribe().referenceTo[0]` failed with an error Apex could
+  not catch when `m.get(key)` was null, and a method call on the result threw
+  `NullPointerException`. Indexing any other null throws
+  `NullPointerException`.
+- **Expressions are evaluated once, in sfapex's order.**
+  `new MyException(next())` and `obj.equals(next())` called `next()` more than
+  once, `next().count += 1` called it three times, and `items[i()]++` called
+  `i()` twice. A plain assignment evaluates its right-hand side before the
+  target, and a compound assignment its target first. A constructor evaluates
+  its arguments before running field initializers, and a child class's
+  initializer sees a parent field as null when the child declares a
+  constructor. `record.Field.addError(msg)` no longer reads the field, so it
+  works on an unqueried field.
+- **More invalid code is rejected at compile time.** Extending a class that is
+  neither virtual nor abstract, subscripting anything but a List ("Expression
+  must be a list type: Map<String,Integer>"), and indexing a List with a
+  non-Integer ("List index must be of type Integer: Long") now fail to
+  compile, as on sfapex.
+- **Date and Time method results are typed.** `endDate.addMonths(-1) + 1`
+  failed with "Illegal conversion from Integer to Date" when `endDate` was a
+  parameter.
+- **`AccountContactRelation` references enable contacts to multiple
+  accounts.** A static reference to `AccountContactRelation` enables
+  `AccountSettings.enableRelateContactToMultipleAccounts` when no Account
+  settings file is loaded; every such reference failed with "Invalid type".
+- **`OpportunityLineItem.Discount` and `Subtotal` are available.** Reading
+  `oppLine.Discount` failed with "Variable does not exist: Discount".
+  `Subtotal` is read-only in Apex. No profile has field permissions on either
+  field unless the org's metadata grants them.
+- **History, Feed, Share and ChangeEvent objects stay readable across test
+  methods.** When such an object was first used inside a test method, later
+  tests could read no rows from it, or fail depending on test order.
+- **Delete and undelete errors report the right row.** A single-record delete
+  after a three-row insert reported "First exception on row 2".
+- **Flow fix.** A Get Records element in a namespaced flow that lists a lookup
+  without the namespace and reads a parent field through the namespaced
+  relationship (`ns__Parent__r.ns__Kind__c`) left the parent field out of the
+  query, and the flow faulted with `CANNOT_EXECUTE_FLOW_TRIGGER`.
+
 ## v1.4.28 — 2026-10-13
 
 - **Classes implementing a packaged interface compile when the interface names
