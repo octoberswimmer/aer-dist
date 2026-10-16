@@ -719,6 +719,110 @@
   All Tabs app ahead of them. The `standard-Event` tab is labeled Calendar and
   the `standard-OtherUserProfile` tab People, listing users, as in
   Salesforce.
+- **Nonprofit Cloud objects are available.** The Fundraising, Grantmaking,
+  Program Management, Volunteer Management, Group Membership, Outcome
+  Management, and Record Rollup objects are defined, with their key prefixes,
+  picklists, auto-number formats, `CurrencyIsoCode` in a multi-currency org,
+  and the Share, History, Feed, and ChangeEvent objects Salesforce gives them.
+  Referencing one of the objects or one of the fields Nonprofit Cloud adds to
+  a standard object, or loading Nonprofit Cloud metadata, turns the feature on.
+  An object or field is visible only to code saved at or after the API version
+  that introduced it, and `Benefit.BenefitFrequency` and
+  `BenefitAssignment.BenefitFrequency`, which Salesforce removed after 56.0,
+  are visible to code saved at the versions that had them. Apex DML on the
+  setup objects (`FundraisingConfig`, `FieldMappingConfig`, the record
+  aggregation objects, `ParticipantRole`, `AffinityScoreDefinition`) is
+  rejected, as in sfapex.
+- **Nonprofit Cloud records are saved with the rules and values Salesforce
+  applies.** Inserts and updates enforce the platform's validations, in
+  sfapex's order and with its messages: gift transaction status changes,
+  locks, due and completion dates, refunds, and designation percentages;
+  overlapping commitment schedules; benefit assignments, program enrollments,
+  care plans, complaints, tributes, outreach summaries, applications, party
+  relationships, and FlexCard (`OmniUiCard`) names, versions, and keys.
+  `GiftTransaction` maintains `RefundedAmount`, `CurrentAmount`, and the
+  `IsPaid`/`IsFullyRefunded` flags, `GiftCommitment` maintains its paid total,
+  payment count, last paid date, and written-off amount at the point in the
+  save where Salesforce recalculates them, and `GiftBatch`, `ProgramCohort`,
+  `JobPositionShift`, and `BudgetCategoryValue` keep their totals and counts.
+  Deletes follow the objects' restrict and cascade rules. With Compliant Data
+  Sharing on, a Grantmaking participant record gives its user or participant
+  group a `CompliantDataSharing` share on the parent at the participant role's
+  access level.
+- **The Nonprofit Cloud standard invocable actions run.** The fundraising
+  actions (`closeGiftCommitment`, `processGiftCommitment`,
+  `pauseGiftCommitmentSchedule`, `resumeGiftCommitmentSchedule`,
+  `manageRcrGiftCmtSchd`, `manageCustomGiftCmtSchds`,
+  `manageGiftTrxnDesignations`, `manageGiftDefaultDesignations`), the gift
+  entry actions (`processGiftEntries`, `updateProcessedGiftEntries`), and
+  `runRecordAggrBatchProcDef` run from `Invocable.Action`, from flows, and
+  from record-triggered flows, with the results and errors sfapex
+  returns. A failed action in a flow follows the flow's fault connector, or
+  fails the triggering save with `CANNOT_EXECUTE_FLOW_TRIGGER`.
+- **The server serves the Nonprofit Cloud Connect REST API.** The Fundraising
+  resources create gifts and commitments (matching donors with the active
+  duplicate rules and resolving `externalId` references), edit commitments,
+  record payment updates, and report projected, past, due, and default
+  designation data. The Group Membership resources create and merge household
+  and group accounts and report their fields and related records. The Program
+  Management resources enroll participants, preview and generate benefit
+  schedule sessions, and record disbursements, and
+  `/connect/careplan/care-plans/{id}/tasks` serves care plan tasks. The record
+  aggregation resources generate the Data Processing Engine definition, run
+  the rollups, and return the results. `/actions/standard` lists the
+  implemented standard actions, returns each one's describe, and runs them.
+- **Nonprofit Cloud metadata is loaded.** `FundraisingConfig`,
+  `RecordAggregationDefinition`, `ParticipantRole`, `AffinityScoreDefinition`,
+  and `GiftEntryGridTemplate` files are loaded as records tests can query
+  (`GiftEntryGridTemplate` through the Tooling API), and the Grantmaking and
+  Compliant Data Sharing permission sets and licenses can be assigned in tests.
+- **`aer check` lists the dependencies a source tree is missing.** The command
+  replaces the separate `aer-check` program and takes its flags, with
+  `--default-namespace` in place of `--namespace` and a `--path` flag that
+  reads `.aerrc` paths as `aer test` does. It reports missing components by
+  Metadata API type, writes a `package.xml`, fetches the missing components,
+  and exits with status 2 when dependencies remain. `--references` lists the
+  files that reference each component, including the permission sets and
+  profiles that name a missing custom permission. It also reports Data Cloud
+  objects, custom relationships, the outer class of a missing inner class,
+  missing superclasses and interfaces, unknown fields in SObject constructor
+  arguments, package objects and fields named by lookups, lookup filters, and
+  flows, a record-triggered flow's `$Record` references, and custom metadata
+  records retrieved in Metadata API format whose type is not defined. The
+  errors `aer test` stops on end with a tip pointing at `aer check`.
+- **`OpenActivities` and `ActivityHistories` are built from tasks and
+  events.** The `ActivityHistories` subquery failed with "no such table" and
+  `OpenActivities` was always empty. Both lists now hold a record's tasks and
+  events: a task is open until it is closed, a timed event until it starts,
+  and an all-day event through its date in the running user's time zone.
+  Account's lists include its contacts' activities, and Contact and Lead
+  reach theirs through `WhoId`. A query of a non-queryable object such as
+  `ActivityHistory` or `FeedPost` fails with "entity type X does not support
+  query". An Event keeps `ActivityDateTime` and `StartDateTime` equal, moving
+  the start moves `EndDateTime`, an all-day event runs from midnight GMT of
+  its first day, and an insert that leaves `EventSubtype` unset stores
+  `Event`.
+- **Call centers, navigation menus, and survey flows create their records.**
+  `callCenters/` files are stored as `CallCenter` records, visible to tests
+  without `SeeAllData`. `navigationMenus/` files are stored as a
+  `NavigationLinkSet` with its `NavigationMenuItem` rows under the site's
+  `Network`, and a menu naming a network, object, or list view the source does
+  not define is reported as a deploy reports it. A survey flow creates a
+  `Survey` and a `SurveyVersion`, visible to `SeeAllData` tests, and
+  `Survey.TotalVersionsCount` counts the survey's versions.
+- **Org settings that change behavior are loaded.** `Contract.settings` with
+  `autoCalculateEndDate` off makes `Contract.EndDate` an ordinary date field
+  Apex can assign; without the file it stays calculated, and an assignment to
+  it fails with a tip to retrieve `Settings:Contract`. `Industries.settings`
+  with `enableBenefitManagementPreference` on requires `GoalDefinitionId` on a
+  `GoalAssignment` and `GoalAssigneeId` on an Individual goal; without it a
+  care plan goal saves with neither, as in a Health Cloud org; aer applied
+  both rules in every org.
+  `Apex.settings` with `enableGaplessTestAutoNum` (Independent Auto-Number
+  Sequence) on numbers auto-number fields inside tests from 100000 above the
+  org's counter. `Communities.settings` with `enableNetworksEnabled` turns on
+  Experience Cloud. A source directory holding only settings files is no
+  longer discarded, and a settings file can be passed by path.
 
 ### Fixes and performance
 
@@ -1064,6 +1168,111 @@
 - **`System.InstallHandler` and `System.UninstallHandler` are in the standard
   library.** A class implementing `onInstall(InstallContext)` or
   `onUninstall(UninstallContext)` type checks against them.
+- **Insert defaults match sfapex.** A new Case gets Priority Medium, a new
+  Campaign Type Conference and Status Planned, a new Account, Contact, or Lead
+  `CleanStatus` Pending, and a Task with no `TaskSubtype` gets Task.
+  `AccountSource` has no Web default. With Person Accounts, a business account
+  whose profile gives no default record type gets `Business_Account`. An
+  explicit null in a required field with a default (`Task.Priority`) fails
+  instead of taking the default, and an insert setting `OwnerId` to null fails
+  with "Owner ID: owner cannot be blank". A `REQUIRED_FIELD_MISSING` error lists
+  each missing field in `getFields()`.
+- **Auto numbers in tests follow the field's starting number.** A custom
+  object's auto-number Name starts at the `startingNumber` the metadata gives,
+  or 0, and an auto-number field at its `startingNumber` or 1. On PostgreSQL
+  an auto number is assigned within the inserting transaction, so a test
+  asserting one no longer fails after an earlier or parallel run inserted into
+  the same table.
+- **Standard History and Feed objects can be queried.** A query of
+  `AccountHistory`, `CaseFeed`, or another standard History, Feed, Share, or
+  ChangeEvent object compiled but failed because no table existed, including
+  one named only in a dynamic query.
+- **Standard matching rules report Salesforce's matches and confidence.** The
+  Standard Account matching rule first narrows candidates by its match keys
+  (company with city or ZIP, website with city or ZIP), ignores a blank state,
+  drops `www.` from websites, and scores phone numbers by section. Matches of
+  the standard Account, Person Account, Contact, and Lead rules report
+  confidence 100.0. The Standard Person Account matching rule is defined.
+- **REST API responses match Salesforce.** The sobject describe reports every
+  object and field property Salesforce gives, with the parent relationship
+  name in `relationshipName`, fields in describe order, and each object's CRUD
+  flags for the requesting user, including setup objects such as `ApexClass`,
+  `Profile`, and `StaticResource`. Record endpoints format values by field
+  type, answer a GET with every field, reject read-only and unknown fields, read
+  a non-Id path segment as an external ID field name, and return `NOT_FOUND`,
+  `INVALID_CROSS_REFERENCE_KEY`, or `ENTITY_IS_DELETED` as Salesforce does. A
+  duplicate rule failure returns Salesforce's `duplicateResult`. Query errors
+  are a list of `errorCode` and `message`, beginning with the query line, a
+  caret, and `ERROR at Row:<n>:Column:<n>` at the position Salesforce reports,
+  and `SELECT COUNT()` answers with `totalSize` and no records. Saving an
+  `ApexClass` through REST compiles the body and reports compile errors in the
+  compiler's words, and `StaticResource` saves compute `BodyLength`.
+  `ApexClass` reports `LengthWithoutComments` as Salesforce counts it, and
+  top-level interfaces and enums have `ApexClass` records.
+- **`EntityDefinition`, `FieldDefinition`, and `EntityParticle` rows report
+  their own values.** A query whose `WHERE` clause traversed a relationship
+  returned another row's `EntityDefinitionId`, and on PostgreSQL took about
+  85 ms per row. `DurableId` and `EntityDefinitionId` are returned with the
+  row, and reading them unselected throws `SObjectException`. `EntityParticle`
+  reports the REST describe's value for each field attribute, and
+  `FieldDefinition` lists flag fields as one row per group
+  (`PermissionSet.Permissions`). A SOQL `for` loop over these objects returning
+  more than 200 rows throws "does not support queryMore()".
+- **A Contact's direct `AccountContactRelation` is maintained through DML.**
+  Inserting a contact, changing its account, or clearing its account fires
+  `AccountContactRelation` triggers, after the contacts are written and before
+  their after triggers, and reassigning an account keeps the old relation as
+  indirect instead of deleting it. A second relation between the same account
+  and contact is rejected, a relation to a deleted contact fails with
+  `ENTITY_IS_DELETED`, `IsDirect` is not writeable, and `Roles` selections are
+  stored in sfapex's value order.
+- **Record-triggered flow DML failures and filtered deletes match
+  Salesforce.** A failed Create, Update, or Delete Records element with no
+  fault connector fails the save with the element's status code and a message
+  naming the flow, the operation, and the error. A Delete Records element with
+  filters deletes the matching records, and faults with "No records in
+  Salesforce match your delete criteria." when none match. A Get Records
+  filter comparing a Date field with a Datetime value binds its GMT date, a
+  `$Setup` filter value binds the custom setting's value, an Add assignment
+  onto a list property of an Apex-defined variable appends to the list, and a
+  variable initialized before a decision is available in every branch. A flow
+  calling an approval action follows its fault connector when the action
+  fails. `aer server` starts with source holding an after-save flow that calls
+  Apex actions.
+- **Workflow, approval, and assignment rule criteria evaluate `includes` and
+  `excludes`.** A criterion on a multi-select picklist never matched. `includes`
+  matches when any listed value is selected and `excludes` when any listed value
+  is not, with commas and semicolons both separating values.
+- **`JSON.deserialize` converts a member whose key differs in case from the
+  field.** A key `"data"` for a field declared `Data` stored the value
+  unconverted, so a `List<Entry>` held maps; `JSONParser.readValueAsStrict`
+  had the same fault.
+- **A queried blank parent counts as no parent.** Updating rows queried with a
+  field through a blank lookup failed with "No fields provided in an external
+  foreign key reference", and so did updating rows deserialized from their
+  JSON. A parent formula read through a null lookup no longer produces a
+  related record. A related record built in Apex must name its parent by one
+  external ID or indexed field (`new Profile(Name = 'Standard User')`).
+- **`Schema.getGlobalDescribe()` has no entries under bare local names.**
+  `get('Widget__c')` returned `pkg__Widget__c`; it returns null, as in
+  Salesforce, even in the object's own namespace.
+- **Territory metadata loads across models and in parent order.** A child
+  territory whose file sorted before its parent lost its parent, a second
+  model's territory replaced a same-named territory of the first, and an
+  omitted access level failed a NOT NULL constraint instead of taking the
+  `Territory2Settings` default. A reference to a territory or type that is not
+  loaded fails the load with an error naming the record and field.
+- **Case team roles are visible to tests without `SeeAllData`.**
+  `[SELECT Id FROM CaseTeamRole LIMIT 1]` found none of the org's roles.
+- **Custom metadata records of an undefined type are reported together.**
+  `aer test` failed naming only the first type with no definition. It lists
+  every such type with its record count and a hint for namespaced types, and
+  with `--skip-errors` drops the records with one warning per type.
+- **A lookup filter error names the metadata file that defines the filter.**
+- **Package formulas reaching package fields through standard relationships
+  resolve.** A package formula such as `PricebookEntry.Product2.Field__c` on
+  `OpportunityLineItem` kept its package field unqualified when the package
+  defines fields only on `Product2`.
 
 ## v1.4.29 — 2026-10-15
 
