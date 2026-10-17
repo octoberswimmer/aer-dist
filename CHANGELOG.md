@@ -1316,6 +1316,68 @@
   `Location`'s `ExternalReference`.** It was always null, so a query filtering
   on it returned no rows.
 
+## v1.4.30 — 2026-10-17
+
+- **`SObject.put()` rejects the fields sfapex does not let it set.**
+  `put()` accepted every field the schema allowed, so putting
+  `Account.CreatedDate`, `SystemModstamp`, `IsDeleted` or
+  `PermissionSet.IsOwnedByProfile` succeeded where sfapex throws
+  `SObjectException` "Field <name> is not editable".
+- **A custom setting's system fields describe as not createable.** Inside
+  `System.runAs`, a custom setting's `IsDeleted` described as createable, so a
+  factory that puts every createable field failed with "Field IsDeleted is not
+  editable". A platform event's fields now describe as not updateable.
+- **`EntityParticle` `IsCreatable` and `IsUpdatable` match an administrator's
+  describe.** Fields such as `Account.PhotoUrl`, `LastViewedDate` and
+  `Case.ClosedDate` were reported creatable, and the audit fields were never
+  creatable even with Set Audit Fields upon Record Creation on.
+- **Edit access to a master record allows deleting its detail records.** A
+  user with edit access to the master through a Public Read/Write default or
+  an Edit share failed to delete a detail record under `with sharing` or
+  `USER_MODE` with `INSUFFICIENT_ACCESS_OR_READONLY`. sfapex permits that
+  delete.
+- **A junction object's access follows both of its masters.** Access to a
+  junction record followed one of its two masters, chosen at random. The
+  primary master is now the first by relationship order, and a user's access
+  to a junction record is the lesser of their access to its two masters, for
+  `UserRecordAccess`, DML, and query results.
+- **A Queueable enqueued from a Finalizer starts a new chain.** It inherited
+  the finalized job's `MaximumQueueableStackDepth`, so in a test a chain could
+  continue where Salesforce throws `AsyncException` "Maximum stack depth has
+  been reached." The job gets the default depth of a new chain unless the
+  Finalizer passes `AsyncOptions`.
+- **Workflow rules, approval entry criteria and assignment rules evaluate
+  `includes` and `excludes`.** A criterion on a multi-select picklist never
+  matched, so such a rule never fired and such an assignment rule entry never
+  assigned. `includes` matches when any listed value is selected, `excludes`
+  matches when any listed value is not selected, and commas and semicolons
+  both separate the listed values.
+- **`Schema.getGlobalDescribe()` has no entries under bare local names.**
+  `getGlobalDescribe().get('Widget__c')` returned `pkg__Widget__c`. As on
+  sfapex, it returns null, even in code running in the `pkg` namespace;
+  use the qualified name.
+- **`JSON.deserialize` converts members whose JSON key differs in case from
+  the field name.** A key `"data"` for a field declared as `Data` stored the
+  value unconverted, so a `List<Entry>` field held maps and a `String` field
+  held a number. `JSONParser.readValueAsStrict` had the same problem.
+- **Maintaining a contact's direct `AccountContactRelation` fires
+  `AccountContactRelation` triggers.** Inserting a contact or changing or
+  clearing its `AccountId` ran no relation triggers, and reassigning the
+  account deleted the old direct relation. As on sfapex, the old direct
+  relation is kept as an indirect relation, and the relation DML runs before
+  the contact's after triggers.
+- **Flow fixes.**
+  - A Get Records filter that compares with the output of an Apex action
+    whose outputs are stored automatically failed with "identifier not found
+    in binding".
+  - An Assignment that uses Add on a list property of an Apex-defined variable
+    failed with "Incompatible types in ternary operator" in a record-triggered
+    flow, and stored the element in place of a list in other flows. Adding to
+    a null list property now starts from an empty list.
+  - A record-triggered flow in which a decision's branches each set a field of
+    the same Apex-defined or record variable dereferenced null in every branch
+    after the first.
+
 ## v1.4.29 — 2026-10-15
 
 - **Running more than one test in a large codebase requires a license.**
