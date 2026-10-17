@@ -550,7 +550,7 @@
   business hours; a milestone completes when its `CompletionDate` is not in the
   future, and `StopStartDate` follows `IsStopped`. A new case gets the org's
   default business hours. `SlaProcess` and `MilestoneType` records are created
-  from the metadata, and reference runs deploy all four types.
+  from the metadata.
 - **`aer test --sandbox-post-copy <Class>` runs a `SandboxPostCopy` class before
   the tests.** The class runs once as the default user, outside a test, so its
   DML commits, and the async jobs it enqueues run before the first test. The
@@ -823,6 +823,20 @@
   org's counter. `Communities.settings` with `enableNetworksEnabled` turns on
   Experience Cloud. A source directory holding only settings files is no
   longer discarded, and a settings file can be passed by path.
+- **Service channels, skills, and presence statuses load as records.**
+  Metadata in `serviceChannels/`, `skills/`, and `servicePresenceStatuses/` is
+  stored as `ServiceChannel`, `Skill`, `ServicePresenceStatus`, and
+  `ServiceChannelStatus` records, which tests can query without `SeeAllData`.
+  A channel's `relatedEntityType` becomes its `RelatedEntity`, and with the
+  Status-Based Capacity Model enabled a channel carries `CapacityModel`,
+  `StatusField`, `DoesCheckCapOnOwnerChange`, and
+  `DoesCheckCapOnStatusChange`. `PendingServiceRouting.WorkItemId` and
+  `AgentWork.WorkItemId` accept a custom object record, and
+  `SkillRequirement.RelatedRecordId` accepts a `JobProfile` or a
+  `PendingServiceRouting`. A channel naming an object that is not loaded, or a
+  status naming a channel that is not loaded, is reported as invalid metadata;
+  `--skip-errors` drops it, and `aer check` lists the missing channels and
+  objects.
 
 ### Fixes and performance
 
@@ -1025,8 +1039,7 @@
   share the `.dataSource` suffix with `ExternalDataSource` files, and every one
   produced "expected element type <ExternalDataSource> but have <DataSource>".
   Data source files are now identified by their root element, and a file that
-  is not an external data source is skipped in source loading, `aer test`, and
-  the reference deploy.
+  is not an external data source is skipped in source loading and `aer test`.
 - **A package's Apex REST resources are served under its namespace.** Every
   `@RestResource` class was served at the `urlMapping` its annotation gives,
   whether it came from subscriber source or a loaded package, so a packaged
@@ -1273,6 +1286,35 @@
   resolve.** A package formula such as `PricebookEntry.Product2.Field__c` on
   `OpportunityLineItem` kept its package field unqualified when the package
   defines fields only on `Product2`.
+- **`Test.createSoqlStub` providers answer queries against external and Data
+  Cloud objects.** A provider registered for an external object (`__x`) or a
+  data model object (`__dlm`) was never called: every query against the object
+  threw "Stubbed query invocations can't be used without a participating query
+  stub set." The provider's `handleSoqlQuery` receives what sfapex passes
+  it: for inline SOQL, the query with each bind replaced by `:tmpVar1`,
+  `:tmpVar2`, ... and a map of their values; for `Database.query` and
+  `Database.queryWithBinds`, the text as written and the bind map passed. The
+  rows it returns are the result.
+- **Aggregate functions on external objects are rejected.** `COUNT(Id)` and
+  `MAX(field)` on an external object fail with "field Id does not support
+  aggregate operator COUNT", as in sfapex. External objects describe an
+  `Id` field, no field is aggregatable, and `ExternalId` and `DisplayUrl` are
+  not groupable.
+- **Inserting a `ServiceAppointment` no longer requires `Address`.** Every
+  insert failed with "Required fields are missing: [Address]", although an
+  insert sets only the address's components (`Street`, `City`, ...). The same
+  applied to `TaxEngine.TaxEngineAddress`. `isNillable()` still reports false
+  for both, as in sfapex.
+- **Apex can set `UserId` on a new `UserServicePresence`.** Assigning it threw
+  "Field is not writeable". `UserId`, `ServicePresenceStatusId`, `OwnerId`, and
+  `CurrencyIsoCode` can be set on an unsaved record by assignment and `put()`,
+  and an insert without `UserId` fails as missing a required field. Assigning a
+  field that is not updateable on a record that has an Id, such as
+  `UserServicePresence.UserId` or `Attachment.ParentId`, throws, as in
+  Salesforce.
+- **`LocationTrustMeasure.LocationExternalReference` holds the related
+  `Location`'s `ExternalReference`.** It was always null, so a query filtering
+  on it returned no rows.
 
 ## v1.4.29 — 2026-10-15
 
