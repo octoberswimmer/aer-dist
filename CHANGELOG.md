@@ -1316,6 +1316,54 @@
   `Location`'s `ExternalReference`.** It was always null, so a query filtering
   on it returned no rows.
 
+## v1.4.31 — 2026-10-18
+
+- **Serializing a value that contains itself raises `JSONException`.**
+  `JSON.serialize`, `String.valueOf` and `System.debug` of a map that
+  contained itself ended the aer process with a stack overflow, losing the
+  rest of the test run. As on sfapex, serialization throws a catchable
+  `System.JSONException` "Cycle detected. Multiple references to ...". A value
+  referenced more than once without a cycle serializes in full each time.
+  Related changes:
+  - Equality and hashing of a collection that contains itself throw the
+    uncatchable `System.LimitException` "Maximum stack depth reached"
+    instead of crashing aer. Queued and batch job state, `clone(true)`,
+    Platform Cache, DataWeave input and `Security.stripInaccessible` keep
+    cycles and shared references instead of crashing aer. Platform Cache
+    `get()` returns the instance `put()` stored.
+  - `String.valueOf` and assertion failure messages render a map, list, set
+    or object that already appeared earlier in the same string as
+    `(already output)`. A user-defined object lists every instance field,
+    including unassigned fields as null and inherited fields as
+    `<BaseClass>.<field>`, sorted by name.
+  - `JSONGenerator.writeObject` reports the same errors as `JSON.serialize`,
+    with Jackson's "(through reference chain: ...)" suffix, and a pretty
+    generator writes arrays on one line (`[ 1, 2 ]`). Control characters are
+    escaped as uppercase `\u00XX`.
+  - A SOQL bind whose collection element type cannot be compared with the
+    field fails with "Invalid bind expression type of ANY for column of type
+    String", at compile time for inline SOQL and at run time for dynamic
+    SOQL. Inline `LIMIT` and `OFFSET` binds must be Integers.
+- **A subquery row holds no parent record for a null lookup.** In a child
+  relationship subquery that selects a parent field, a child whose lookup was
+  null held an empty parent record. `getPopulatedFieldsAsMap` listed it,
+  `JSON.serialize` wrote it, and DML on the deserialized record failed with
+  "Field name provided, Account, is not field for Contact".
+- **Business hours that end at 00:00 run until midnight.** A business day
+  stored with an end time of 00:00, such as a 24-hour day (00:00-00:00) or
+  18:00-00:00, was read as having no hours, and `BusinessHours.add` looped
+  forever on a calendar where every day was stored that way; `--timeout` did
+  not stop it. Subtracting business hours also skipped the current day's
+  closing time, so Monday 20:00 minus one hour on a 9:00-17:00 calendar gave
+  Friday 16:00 instead of Monday 16:00. A `BusinessHoursSettings` file that
+  Salesforce refuses to deploy (no default calendar, a day whose start is not
+  before its end, or a calendar with no open day) now stops loading with
+  Salesforce's message instead of being skipped.
+- **Flow Get Records compares a Date field with a Datetime value.** A filter
+  such as `Start_Date__c <= $Record.Some_Datetime__c` failed with "Invalid
+  bind expression type of Datetime for column of type Date". As in the Flow
+  runtime, the Datetime is converted to its GMT date.
+
 ## v1.4.30 — 2026-10-17
 
 - **`SObject.put()` rejects the fields sfapex does not let it set.**
