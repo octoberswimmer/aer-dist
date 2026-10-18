@@ -278,7 +278,7 @@ third-party-licenses.txt: go.mod licenses.tpl
 	@if ls $(AER_MODULE_DIR)/licenses/*.txt >/dev/null 2>&1; then cat $(AER_MODULE_DIR)/licenses/*.txt >> $@; fi
 
 test:
-	ghproxy --repo octoberswimmer/aer-dist -- act
+	ghproxy --repo octoberswimmer/aer-dist -- act --env GIT_CONFIG_GLOBAL=/dev/null
 
 clean:
 	-rm -f $(EXECUTABLE) $(EXECUTABLE).exe $(EXECUTABLE)_* $(WASM) $(WASM_EXEC) $(WASI_WASM) *.zip SHA256SUMS-*
