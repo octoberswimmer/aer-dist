@@ -265,7 +265,7 @@ third-party-licenses.txt: go.mod licenses.tpl
 	go tool go-licenses report ./... --ignore aer --ignore github.com/octoberswimmer --template licenses.tpl > $@
 
 test:
-	ghproxy --repo octoberswimmer/aer-dist -- act
+	ghproxy --repo octoberswimmer/aer-dist -- act --env GIT_CONFIG_GLOBAL=/dev/null
 
 clean:
 	-rm -f $(EXECUTABLE) $(EXECUTABLE).exe $(EXECUTABLE)_* $(WASM) $(WASM_EXEC) $(WASI_WASM) *.zip SHA256SUMS-*
