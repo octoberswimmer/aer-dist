@@ -2,7 +2,7 @@ module aer
 
 go 1.27.2
 
-require github.com/octoberswimmer/aer v1.5.9
+require github.com/octoberswimmer/aer v1.5.10
 
 require (
 	bitbucket.org/creachadair/stringset v0.0.11 // indirect
@@ -90,6 +90,7 @@ require (
 	go.yaml.in/yaml/v4 v4.0.0-rc.4 // indirect
 	golang.org/x/crypto v0.57.0 // indirect
 	golang.org/x/exp v0.0.0-20260112195511-716be5621a96 // indirect
+	golang.org/x/image v0.46.0 // indirect
 	golang.org/x/mod v0.41.0 // indirect
 	golang.org/x/net v0.59.0 // indirect
 	golang.org/x/sync v0.23.0 // indirect
