@@ -1316,6 +1316,30 @@
   `Location`'s `ExternalReference`.** It was always null, so a query filtering
   on it returned no rows.
 
+## v1.4.32 — 2026-10-19
+
+- **A partial save retries the saved rows with before and after triggers.**
+  In `Database.insert`, `update` or `delete` with `allOrNone` false, a row
+  that failed in a before trigger, in validation or in an after trigger made
+  aer rerun only the trigger phase that failed, and a row that failed
+  validation on update still ran the after-update triggers and caused no
+  retry. As in sfapex, the attempt is rolled back and the rows that saved
+  go through a new attempt with both before and after triggers, up to three
+  attempts.  An update whose after triggers fail several rows reports each row
+  in its `DmlException` with the row's index and Id; it reported only the first
+  error, under the wrong row and Id.
+- **`-f <ClassName>` runs only that class.** A bare `-f` value matched as a
+  substring of `Class.method`, so `-f AccountTest` also ran
+  `LegacyAccountTest`. A value that names a test class now selects that class
+  alone; a value that names no test class still matches as a substring.
+  `-f` and `--skip` also ignore case, as Apex names do, so `-f accesslevel`
+  selects the same tests as `-f AccessLevel`.
+- **A database exported from an org keeps its own Automated Process user.**
+  aer recognized only the Automated Process user it creates itself, so the
+  first time it opened an exported database it added a second Automated
+  Process user and profile. aer now uses the org's user, and `$Profile`
+  reads the Automated Process profile for that user.
+
 ## v1.4.31 — 2026-10-18
 
 - **Serializing a value that contains itself raises `JSONException`.**
