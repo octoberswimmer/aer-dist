@@ -837,6 +837,16 @@
   status naming a channel that is not loaded, is reported as invalid metadata;
   `--skip-errors` drops it, and `aer check` lists the missing channels and
   objects.
+- **The server serves the Analytics Download API.**
+  `/analytics/download/report/<reportId>.png` returns a Lightning report's
+  chart and `/analytics/download/dashboard/<dashboardId>.png` returns a
+  Lightning dashboard as an image of its components.
+- **`Apex.settings` sets the asynchronous Apex limits `OrgLimits` reports.**
+  `asyncApexExecutionsOverride` becomes the limit of
+  `DailyAsyncApexExecutions`, which was always 250000. With
+  `enableAsyncApexElasticExecutions` on, code saved at API 67.0 or later also
+  sees `DailyAsyncApexElasticExecutions`, at twice that limit up to 250000,
+  and `DailyAsyncApexProcessed`.
 
 ### Fixes and performance
 
