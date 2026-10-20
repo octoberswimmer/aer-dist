@@ -1326,6 +1326,108 @@
   `Location`'s `ExternalReference`.** It was always null, so a query filtering
   on it returned no rows.
 
+## v1.4.33 — 2026-10-20
+
+- **Every failing validation rule is reported.** When several validation
+  rules fired on one record, aer reported only the first. As in sfapex,
+  the `DmlException` and the `SaveResult` of a partial insert or update carry
+  every error: the rules with an error display field first, then the others,
+  each group in rule name order. `getNumDml()` counts a row with several
+  errors once, and the `getDml` methods read the row's first error.
+- **`--faketime` applies to every timestamp Apex can read.** DML audit
+  fields, SOQL date literals and formulas followed `--faketime`, but the
+  `CreatedDate` and `CompletedDate` of `AsyncApexJob` records (including
+  scheduled jobs and flex queue entries), approval `CompletedDate`, a
+  converted lead's `ConvertedDate` and the new opportunity's `CloseDate`,
+  merge reparenting, `Database.getDeleted` and `getUpdated` results,
+  `ContentVersion` and `ContentNote` `CreatedDate`, metadata deploy results,
+  recently viewed records, `UserRecordAccess`, the TOTP check, and soft
+  deletes used the real time. They now use the fake time. The org is also
+  set up at the fake time, so fiscal periods surround the fake date and the
+  default user and profile are not created after the fake now. With
+  `--integration-tests`, a `--faketime` value that is not RFC3339 is reported
+  as an error instead of being ignored.
+- **A hierarchy custom setting holds one record per owner.** aer saved any
+  number of records for the same `SetupOwnerId`, so a test that inserted two
+  org defaults passed in aer and failed in sfapex. An insert for an owner
+  that already has a record, or an update that moves a record to such an
+  owner, now fails with `DUPLICATE_VALUE` "duplicate value found:
+  SetupOwnerId duplicates value on record with id: <owner Id>".
+- **`getInstance` returns a record owned by the requested owner.** For an
+  owner with no record, `getInstance(profileId)` returned a new record owned
+  by the running user, and for a user with no record whose profile had one,
+  `getInstance` returned the profile's stored record, Id included, so
+  inserting it failed with "cannot specify Id in an insert call". As in
+  sfapex, `getInstance` returns a new record with a null Id owned by the
+  requested owner, with field values merged from the records above it, and
+  fills the blank fields of an owner's own record from the lowest record
+  above it that sets each field.
+- **Datetimes carry the Buddhist era for a `th_TH` user.** For a user whose
+  locale uses the Buddhist calendar, `yearGmt()` adds 543 to a Datetime's
+  stored year when the Datetime was built in that user's context. aer marked
+  only `Datetime.newInstance`, `newInstanceGmt` with year arguments and
+  `Datetime.parse`. It now also marks `newInstance(Date, Time)`,
+  `newInstanceGmt(Date, Time)`, `newInstance(Long)`, `valueOf` of a Long,
+  `valueOfGmt(String)`, `Datetime.now()`, `System.now()`, queried Datetime
+  fields, and Datetimes read by `JSON.deserialize`,
+  `JSON.deserializeStrict` and `JSONParser`. `Datetime.valueOf(String)` reads
+  the written year as a Buddhist year, as `Datetime.parse` does, and the
+  `add` methods keep the era of the value they are called on.
+- **A Date before 1582 keeps its calendar date when it becomes a
+  Datetime.** Assigning a Julian-calendar Date to a Datetime, comparing the
+  two, or reading it from a flow Date variable shifted the day, so Date
+  1477-08-21 became Datetime 1477-08-12. A `th_TH` user reaches such dates
+  with modern years, since `Date.newInstance(2020, 8, 21)` stores
+  1477-08-21.
+- **Password policies come from Security settings.**
+  `Site.getPasswordPolicyStatement` returned a fixed sentence,
+  `System.setPassword` checked the default policy whatever the org set, and
+  `System.changeOwnPassword` read only the minimum length. All three now use
+  the `passwordPolicies` complexity and `minimumPasswordLength` from
+  `Security.settings`, defaulting to `AlphaNumeric` and 8, with Salesforce's
+  messages. A `Security.settings` file with an unknown complexity, a
+  non-numeric minimum length, or XML that cannot be parsed stops the load
+  instead of being skipped.
+- **`Site` methods return what sfapex returns outside a site.**
+  `getPathPrefix` returned `/site`, the base URL methods returned
+  `example.force.com` URLs, `getPrefix` returned `site`, and `isLoginEnabled`
+  and `isRegistrationEnabled` returned true.  `getPathPrefix` and the
+  `getBase*Url` methods return `""`, `getPrefix`, `getCurrentSiteUrl` and
+  `getCustomWebAddress` return null, and `isLoginEnabled` and
+  `isRegistrationEnabled` return false.
+- **`Crypto` accepts the AES CBC algorithm names.** `AES128-CBC`,
+  `AES192-CBC` and `AES256-CBC` are accepted as other names for `AES128`,
+  `AES192` and `AES256`, matched exactly as sfapex does. Any algorithm
+  name containing `GCM` in any case gets the GCM argument rules before the
+  name is checked: `encrypt` and `decrypt` reject a caller-provided IV, and
+  `decryptWithManagedIV` checks for a 12-byte IV.
+- **Transaction security policy conditions compile and run.**
+  `TxnSecurity.AsyncCondition` is available, and the Real-Time Event
+  Monitoring objects a policy evaluates (`ApiEvent`, `ReportEvent`,
+  `SessionHijackingEvent` and nine more) are in the schema, with every field
+  assignable from Apex so a test can build its input. The `TxnSecurity.Event`
+  constructor stored a null or Id argument as an empty string; it now
+  converts each argument to its field's type. `new TxnSecurity.Event()` fails
+  to compile with "Constructor not defined", `Type.newInstance()` of it
+  throws, and an event prints as `Event:[...]`.
+- **`Type.forName` finds stdlib classes named like an SObject.**
+  `Type.forName('TxnSecurity.Event')` returned the `Event` SObject, and
+  `Dom.Document`, `DataSource.Order` and similar names resolved the same way.
+  A name qualified by a namespace other than `Schema` now resolves to the
+  class, and `Type.getName()` spells a stdlib namespace as sfapex prints
+  it (`dom.Document`).
+- **`Formula.builder()` requires declared globals.** `build()` accepted any
+  global variable; as in sfapex, a global whose
+  `FormulaEval.FormulaGlobal` is not passed to `withGlobalVariables` raises
+  `FormulaValidationException` "Field $System.OriginDateTime does not exist.
+  Check spelling." `FormulaEval.FormulaGlobal.values()` returned an empty
+  list and now lists all nine globals. `$System.OriginDateTime` returned the
+  current time and is now 1900-01-01 00:00:00 GMT.
+- **`MIN` and `MAX` handle blank arguments.** They skipped a blank argument.
+  In a formula that treats blanks as zero, a blank field counts as 0, so
+  `MAX(blank, -2)` is 0; in one that treats blanks as blanks, any blank
+  argument makes the result blank.
+
 ## v1.4.32 — 2026-10-19
 
 - **A partial save retries the saved rows with before and after triggers.**
