@@ -1326,6 +1326,16 @@
   `Location`'s `ExternalReference`.** It was always null, so a query filtering
   on it returned no rows.
 
+## v1.4.34 — 2026-10-20
+
+- **`PartyProfile` has its identity child relationships.** With Financial
+  Services Cloud enabled, `p.IdentityDocuments` and
+  `p.PartyIdentityVerifications` on a `PartyProfile` failed to compile with
+  "Variable does not exist", and subqueries on them were rejected. The
+  `PartyIdentityVerification` object is now in the schema,
+  `IdentityDocument` has the `PartyProfileId` lookup, and `PartyProfile` has
+  both child relationships.
+
 ## v1.4.33 — 2026-10-20
 
 - **Every failing validation rule is reported.** When several validation
