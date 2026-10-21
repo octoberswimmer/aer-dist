@@ -1326,6 +1326,85 @@
   `Location`'s `ExternalReference`.** It was always null, so a query filtering
   on it returned no rows.
 
+## v1.4.36 — 2026-10-21
+
+- **Unqualified `Cache.Org` and `Cache.Session` keys use the default
+  partition.** `Cache.Org.put('key', value)` failed with "Invalid Key, Key is
+  not properly qualified" even in an org with a default cache partition. As in
+  sfapex, a key without the `namespace.partition.` prefix now reads and
+  writes the default partition, and throws `OrgCacheException` or
+  `SessionCacheException` when no partition is the default. Malformed keys
+  raise the same exceptions as the org in the same order: an empty or null key
+  throws `Cache.InvalidParamException`, a dotted key without three parts throws
+  "not properly qualified", and a key that is not ASCII letters and digits
+  throws "Failed Cache.Org operation for key ...". The `Cache.Partition`
+  `get`, `put`, `contains` and `remove` methods reject empty, null and
+  non-alphanumeric keys the same way, and `Cache.Session.isAvailable()`
+  returns false in a test.
+- **Line items fill `ListPrice` and quotes, service contracts and work orders
+  total their lines.** An `OrderItem` inserted with a `PricebookEntryId` now
+  takes its `ListPrice` from the entry's `UnitPrice`, and an insert that sets a
+  different `ListPrice` fails with `FIELD_INTEGRITY_EXCEPTION`.
+  `OpportunityLineItem`, `QuoteLineItem`, `ContractLineItem`,
+  `WorkOrderLineItem` and `ProductConsumed` read `ListPrice` from the entry's
+  current `UnitPrice`. An `OpportunityLineItem` insert requires exactly one of
+  `UnitPrice` and `TotalPrice` and derives the other, and inserts and updates
+  raise the sfapex errors for a zero quantity, both prices, no price, and
+  an update that changes both prices or both `Quantity` and `Discount`.
+  Contract lines, work order lines and products consumed compute `Subtotal`
+  and `TotalPrice`. A `Quote`, `ServiceContract` or `WorkOrder` sums its lines
+  into `Subtotal` and `TotalPrice`, computes `Discount` from them, and adds
+  `Tax` and `ShippingHandling` to `GrandTotal`; products consumed do not count
+  toward a work order's totals. Quote sync removes opportunity line items the
+  quote does not link to.
+- **A new `ContentVersion` updates its file's title, description, type and
+  size.** Inserting a `ContentVersion` with the `ContentDocumentId` of an
+  existing file left `ContentDocument.Title` at the first version's title. The
+  file now shows the `Title`, `Description`, `FileType`, `FileExtension` and
+  `ContentSize` of its latest version, so a PDF version of a text file makes
+  it a PDF. A version inserted without a `Title` or `Description` takes both
+  from the file, as in sfapex.
+- **Package code can read its own feature parameters by bare name.**
+  `FeatureManagement` methods called from a package's code with the
+  parameter's unqualified name raised `NoDataFoundException`, whether the
+  package came from a `.pkg` file, a source directory loaded with `@ns`, or a
+  source directory loaded with `--default-namespace`.  A package's feature
+  parameters now carry its namespace, and a subscriber parameter with the same
+  bare name stays a separate parameter.
+- **A ternary with a query in both branches can assign to a single SObject.**
+  `Account a = cond ? [SELECT ...] : [SELECT ...];` failed with "Illegal
+  assignment from List<Account> to Account"; only a query paired with `null`
+  was accepted. A query assigned to a single SObject variable of a different
+  type, such as `Contact c = [SELECT Id FROM Account];`, now fails to compile
+  with "Illegal assignment from List<Account> to Contact" instead of failing at
+  run time.
+- **`aer package create` accepts an inner class as an interface type
+  argument.** A class declaring `implements Database.Batchable<Item>` with its
+  own inner class `Item` passed `aer test` but failed `aer package create`
+  with "Class must implement the method". Type arguments in an `implements`
+  clause, including one in an abstract parent class, now resolve in the class
+  that declares the clause.
+- **The `Matcher` regex limit counts the characters a matcher reads.** A
+  matcher on a region of an input over 1,000,000 characters threw "Regex too
+  complicated". As in sfapex, the count accumulates over the characters
+  `find()`, `matches()`, `lookingAt()`, `replaceAll()` and `replaceFirst()`
+  read from the same input, and starts over only for a new input.
+- **`Matcher` positions are character indexes for non-ASCII input.**
+  `region()`, `find(start)`, `start()`, `end()`, `regionStart()` and
+  `regionEnd()` used byte offsets, so they returned and accepted wrong
+  positions in strings with accented letters, emoji or other non-ASCII
+  characters. They now use the same UTF-16 indexes as `String` methods.
+  `clone()` keeps the matcher's region.
+- **`\\Q` in a regex is an escaped backslash followed by `Q`.** A pattern
+  containing `\\Q` failed with "trailing backslash at end of expression", and
+  `\\Qx\\E` failed with "Illegal/unsupported escape sequence"; a class
+  compiling such a pattern in a static field failed to load. Inside `\Q...\E`,
+  `\_` now matches a backslash followed by an underscore, as in Java.
+- **The language server no longer crashes when a file outside the project is
+  opened during startup.** Opening such a file while the server was rebuilding
+  a project from its cached index could crash it with "concurrent map
+  iteration and map write".
+
 ## v1.4.35 — 2026-10-20
 
 - **Financial Services Cloud defines `FinancialAccountParty`,
