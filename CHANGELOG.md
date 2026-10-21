@@ -1326,6 +1326,22 @@
   `Location`'s `ExternalReference`.** It was always null, so a query filtering
   on it returned no rows.
 
+## v1.4.35 — 2026-10-20
+
+- **Financial Services Cloud defines `FinancialAccountParty`,
+  `PartyProfileAddress` and `PartyScreeningSummary`.** With Financial Services
+  Cloud enabled, declaring one of these objects failed with "Invalid type",
+  and `PartyProfile` had no `PartyProfileAddresses` or
+  `PartyScreeningSummaries` child relationship. The three objects are now in
+  the schema, along with `FinancialAccount` and the `Banker` and `BranchUnit`
+  objects its lookups reference. Their child relationships are available on
+  `PartyProfile`, `FinancialAccount`, `Account` (`FinancialAccountParties` and
+  `PersonFinancialAccountParties`), `Contact`, `Applicant`, `User`, `Location`
+  and `Product2`. The fields the Financial Services Cloud developer guide
+  documents are included, such as `PartyScreeningSummary.ApplicantId` and
+  `PartyProfileAddress.IsCurrentAddress`, `IsNegativeAddress`,
+  `IsPermanentAddress` and `IsVerified`.
+
 ## v1.4.34 — 2026-10-20
 
 - **`PartyProfile` has its identity child relationships.** With Financial
