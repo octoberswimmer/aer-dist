@@ -395,7 +395,9 @@
   `Approval.isLocked` reports the record locked and an update fails with
   `ENTITY_IS_LOCKED` unless the user has Modify All Data or is the step's
   assignee and the step has `canAssigneeEdit`. `aer exec` and the server write
-  `FlowOrchestrationLog` rows; a test writes none. Such a flow previously
+  `FlowOrchestrationLog` rows; a test writes none. The start times of runs,
+  stages, and steps, a work item's `ReviewedDate`, and the log entries'
+  timestamps follow `--faketime`. Such a flow previously
   converted to a generated class that failed with "Method does not exist:
   do_Recall". A scheduled flow whose scheduled path targets an element aer does
   not convert now fails its conversion naming the element.
@@ -1325,6 +1327,25 @@
 - **`LocationTrustMeasure.LocationExternalReference` holds the related
   `Location`'s `ExternalReference`.** It was always null, so a query filtering
   on it returned no rows.
+- **`Invocable.Action.createCustomAction` runs a standard action named as its
+  type.** Passing a standard action's name as the type failed with
+  `MISSING_RECORD` "Action name not found". Both
+  `createCustomAction` and `createStandardAction` now run the standard action,
+  matching the type without regard to case, as in sfapex.
+- **`Invocable.Action.invoke()` rejects a type Apex cannot invoke.** A type
+  that names no action, an action that only flows and the REST Actions API
+  run, or an action introduced after the API version of the invoking class
+  throws `System.TypeException` "\"<type>\" isn't a valid action type.", and
+  a null type or a custom action without a name throws a
+  `NullPointerException`, as in sfapex. Flow action elements are not
+  affected.
+- **`Invocable.Action` invocations behave as in sfapex.**
+  `setInvocationParameter` writes to the last invocation, `addInvocation`
+  appends an empty one, `setInvocations` keeps the list passed to it and
+  returns the action, `clearInvocations` empties that list, and a `clone()`
+  shares the list with the original. `String.valueOf` of an action, a result,
+  or an error prints `Action:[...]`, `Result:[...]`, or `Error:[...]` with the
+  fields sfapex shows.
 
 ## v1.4.36 — 2026-10-21
 
