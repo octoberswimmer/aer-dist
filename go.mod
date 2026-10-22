@@ -1,8 +1,8 @@
 module aer
 
-go 1.27.2
+go 1.27.3
 
-require github.com/octoberswimmer/aer v1.5.11
+require github.com/octoberswimmer/aer v1.5.12
 
 require (
 	bitbucket.org/creachadair/stringset v0.0.11 // indirect
@@ -17,7 +17,6 @@ require (
 	github.com/buger/jsonparser v1.1.2 // indirect
 	github.com/cwarden/mergo v0.3.12-0.20210528180603-9b708ca2c584 // indirect
 	github.com/dlclark/metaphone3 v0.0.0-20190903202417-5fe87fcdd547 // indirect
-	github.com/dlclark/regexp2 v1.11.5 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/emirpasic/gods v1.12.0 // indirect
 	github.com/evanw/esbuild v0.27.3 // indirect
@@ -62,6 +61,7 @@ require (
 	github.com/octoberswimmer/digger v0.38.0 // indirect
 	github.com/octoberswimmer/libc v1.67.7-octoberswimmer.9 // indirect
 	github.com/octoberswimmer/memory v1.11.0-octoberswimmer.11 // indirect
+	github.com/octoberswimmer/regexp2 v1.11.5-octoberswimmer.2 // indirect
 	github.com/octoberswimmer/sformula v0.20.0 // indirect
 	github.com/octoberswimmer/skyfire v0.7.0 // indirect
 	github.com/octoberswimmer/sqlite v1.46.1-octoberswimmer.15 // indirect
