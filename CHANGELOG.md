@@ -1347,6 +1347,147 @@
   or an error prints `Action:[...]`, `Result:[...]`, or `Error:[...]` with the
   fields sfapex shows.
 
+## v1.4.37 — 2026-10-22
+
+- **Insert and update triggers run in chunks of 200 records.** An insert or
+  update of more than 200 records saved every record before the first chunk's
+  after triggers ran, so an after trigger of a 450-record insert counted 450
+  records in every chunk where sfapex counts 200, 400 and 450. Each chunk now
+  runs its before triggers, is saved, and runs its after triggers, workflow
+  rules and after-save flows before the next chunk starts.  Under all-or-none,
+  a record that a trigger or validation rule fails no longer stops the
+  operation at that record: the other records of its chunk are saved and run
+  their after triggers, the chunk is rolled back, the later chunks run, and the
+  `DmlException` names every failed record. A workflow field update is saved
+  after the re-fired before update triggers run, so a query in those triggers
+  does not see the new value. `getDmlIndex()` on the exception
+  `Database.update` throws reports the failed row instead of 0.
+- **`NetworkMember`, `User.IsPortalEnabled`, `FeedItem.NetworkScope` and
+  `FeedItem.Visibility` exist only with Experience Cloud.** The schema defined
+  all four in every run, so code that checks for them to tell whether
+  Experience Cloud is on always took its Experience Cloud branch. They are
+  now added with the Experience Cloud feature, along with the
+  `Network.NetworkMembers` child relationship. The feature is enabled
+  automatically when Apex references `NetworkMember` or one of the fields in
+  a SOQL `SELECT` or `WHERE` clause, an SObject initializer or a field token,
+  when the source contains Network metadata, or when a source profile carries
+  an Experience Cloud user license. Without the feature, a ConnectApi post
+  reports the requested visibility, a stored feed element reads as
+  `InternalUsers`, and the post header has no " to <org> Only" trailer, as in
+  an org without Experience Cloud.
+- **`Matcher` honors transparent and anchoring bounds.**
+  `useTransparentBounds(true)` and `useAnchoringBounds(false)` were stored and
+  ignored, so every search ran on the input sliced to the region:
+  `(?<![a-z])tok` found `tok` in `xtok` with a transparent region starting at
+  1, where sfapex finds nothing, and `^` and `$` matched at the region edges
+  with anchoring bounds off. Lookahead, lookbehind and word boundaries now see
+  the input outside a transparent region, and `^` and `$` match only at the
+  ends of the input when anchoring bounds are off. `start()`, `end()`,
+  `group()` and `split()` with a lookaround pattern returned wrong positions
+  for non-ASCII input; they now return character indexes.
+- **`Matcher.hitEnd()` and `requireEnd()` report the last operation.**
+  `hitEnd()` was true only when the returned match reached the end of the
+  input, and `requireEnd()` was never true. As in sfapex, `hitEnd()` is now
+  true when the last `find()`, `matches()` or `lookingAt()` read the end of
+  the input at any point, including a failed `find()` that tried every start
+  position, and `requireEnd()` is true when an anchor or word boundary matched
+  because the input ended. Code that searches a long text in pieces can use
+  them to re-run a match that touches the edge of a piece.
+- **A replacement naming a group that does not exist throws
+  `StringException`.** `String.replaceAll`, `String.replaceFirst`,
+  `Matcher.replaceAll` and `Matcher.replaceFirst` expanded `$2` with one
+  group to nothing or left it as text, and read `$12` as group 12 where Java
+  reads group 1 followed by a literal `2`. A group number past the group
+  count, an unknown group name, a malformed `${...}`, a `$` with no reference
+  and a trailing backslash now throw `System.StringException` with Java's
+  messages, and only when a match is replaced; an input without a match is
+  returned unchanged.
+- **Dynamic SOQL binds every local declared before the query.** A variable
+  declared in a `for` or `for-each` loop body was "Variable does not exist"
+  in a `Database.query` bind after the loop. As in sfapex, a bind now reads
+  variables of exited blocks and loops with the value they last held, catch
+  variables and switch type bindings, and null for a declaration that never
+  ran or for a for-each loop variable after its loop. The last declaration of
+  the name before the query wins, and such a local takes precedence over a
+  field of the same name.
+- **`FilteredLookupInfo.getControllingFields()` returns plain field names.**
+  It returned every filter item's field as written, so a `$Source.Project__c`
+  filter reported `$Source.Project__c`, a target-object field counted as
+  controlling, and a `$Source` reference in `valueField` was left out. It now
+  returns each `$Source` field once, without the prefix, sorted, and
+  `isDependent()` is true only when there is one, as in sfapex.
+- **A subscriber class can override a packaged abstract method whose
+  signature names a package inner type.** The override failed to compile with
+  "must implement the abstract method", or at run time with "parent class ...
+  does not have a method named", whether the package came from a `.pkg` file
+  or a source directory loaded with `@ns`. A call with null arguments on the
+  subclass was also reported as ambiguous between the override and the
+  abstract method it overrides. A subscriber class may also extend a packaged
+  abstract inner class (`pkg.Outer.Inner`).
+- **`System.scheduleBatch` returns the `CronTrigger` Id and scheduled jobs
+  store `TimeZoneSidKey`.** `scheduleBatch` returned the `AsyncApexJob` Id;
+  it now returns the `CronTrigger` Id, as in sfapex, and `System.abortJob`
+  with that Id aborts the job and deletes the trigger.
+  `CronTrigger.TimeZoneSidKey` read null; `System.schedule` stores the
+  scheduling user's time zone and `System.scheduleBatch` stores GMT.
+- **User and group photo URL fields are filled on insert.** `SmallPhotoUrl`,
+  `FullPhotoUrl`, `MediumPhotoUrl` and the banner fields of a `User` or
+  `CollaborationGroup` were null, so reading the running user's
+  `SmallPhotoUrl` threw a `NullPointerException`. They now hold the default
+  image URLs sfapex assigns by key prefix
+  (`https://<domain>.file.force.com/profilephoto/005/F` and the like), and
+  each user banner rendition carries its own size code (`B`, `E`, `D`).
+- **Describing record types no longer creates a Master `RecordType` row.**
+  After `getRecordTypeInfos()` or its `ByName`, `ById` or `ByDeveloperName`
+  variants on an object with no active custom record types, a `RecordType`
+  query for that object returned a row with DeveloperName `Master`, where
+  sfapex returns no rows. Describe still reports the Master `RecordTypeInfo`.
+- **`System.Assert.areEqual` compares a `List<Id>` with a `List<String>`.**
+  It raised "Comparison arguments must be compatible types: List<Id>,
+  List<String>". As in sfapex, Id and String are compatible as List element
+  types and Map value types and incompatible as Set element types and Map
+  key types. List elements are equal only when the String is the Id's
+  18-character form, Map values holding an Id and its text are never equal,
+  and `areNotEqual` on two Maps compares their values the way `==` does.
+- **`Map.put` accepts a typed null and a null key renders its value.** A
+  cast of a null value such as `(Integer) noValue`, or a safe-navigation call
+  on a null receiver, failed `Map<String, Integer>.put` with "type mismatch:
+  expected Integer, got null". A map holding `null => 1` printed as `{null=}`;
+  it now prints `{null=1}`.
+- **A chatter feed record can name its author.** Assigning `CreatedById`,
+  `CreatedDate` or `LastModifiedById` on a `FeedItem` or another feed object
+  failed to compile with "Field is not writeable" unless Set Audit Fields upon
+  Record Creation was on. The feed objects describe these fields as
+  createable, so the assignment now compiles and the insert keeps the values.
+  Assigning a field that is createable and not updateable on a record that
+  carries an Id now fails with "Field is not writeable", as in sfapex.
+- **An Id can be assigned on `Site` and the other setup objects.**
+  `new Site(Id = x)` and `s.Id = x` failed to compile with "Field is not
+  writeable: Site.Id", as did Id assignments on `SiteDetail`,
+  `CustomPermission`, `TabDefinition`, `AppTabMember`, `ColorDefinition`,
+  `IconDefinition` and `RecentlyViewed`. The other fields of these objects
+  stay read-only.
+- **A variable named `sObjectType` shadows the `SObjectType` shorthand.**
+  `sObjectType.fields.getMap()` on a `Schema.DescribeSObjectResult` variable
+  or parameter named `sObjectType` read `fields` as an object name and
+  failed. The member is now resolved through the variable.
+- **`XmlStreamWriter.writeStartDocument` accepts a null encoding or
+  version.** A null or empty encoding or version raised an error Apex could
+  not catch. A null or empty encoding is left out of the declaration, a null
+  or empty version writes `1.0`, and both null or empty write
+  `<?xml version="1.0" ?>`, as in sfapex.
+- **An integer formula result takes its field's scale.** A formula on a
+  number field with two decimal places whose result is an integer literal,
+  such as the `0` of `IF(BLANKVALUE(Goal__c, 0) = 0, 0, 1 / Goal__c)`, read
+  `0`; it now reads `0.00`.
+- **`JSON.deserializeUntyped` keeps one entry for a repeated key.** A JSON
+  object repeating a key produced a map whose `keySet()` and iteration listed
+  the key once per occurrence. The map now holds the key once, in the
+  position of its first occurrence, with the last value.
+- **`short` is a reserved identifier.** A variable, field, parameter or class
+  named `short` now fails to compile with "Identifier name is reserved:
+  short", as it does on Salesforce.
+
 ## v1.4.36 — 2026-10-21
 
 - **Unqualified `Cache.Org` and `Cache.Session` keys use the default
