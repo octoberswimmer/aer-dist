@@ -1347,6 +1347,114 @@
   or an error prints `Action:[...]`, `Result:[...]`, or `Error:[...]` with the
   fields sfapex shows.
 
+## v1.4.38 — 2026-10-23
+
+- **String positions count UTF-16 code units, and `substring` runs in
+  constant time.** `indexOf`, `lastIndexOf` and the other search methods
+  returned byte offsets, and `substring`, `left`, `right`, `mid` and the
+  padding methods counted code points, so positions in a string with
+  non-ASCII or supplementary characters disagreed with Salesforce. Every
+  String method, including the code point methods and `getChars`, now counts
+  UTF-16 code units, as sfapex does. A loop that cuts a long string into short
+  pieces with `substring` or `charAt` took time proportional to the square of
+  its length (4 seconds for 17,857 substrings of a 250,000-character string);
+  each call now takes constant time. The offset argument of `abbreviate`, the
+  two-argument `indexOfChar` and `lastIndexOfChar`, and the 16-bit truncation
+  of `String.fromCharArray` are implemented. A String can hold a lone
+  surrogate: joining a high and a low half forms one character,
+  `Blob.valueOf` and URL encoding write it as `?`, and a saved field stores
+  U+FFFD. A `Matcher` position or region that falls between the halves of a
+  pair reads the low half alone instead of raising an error Apex could not
+  catch, and `Pattern.split` drops trailing empty strings.
+- **`Limits.getCpuTime()` charges loop iterations and arithmetic as an org
+  does.** A loop iteration or an Integer operation was charged about a third
+  of a method call, where an org charges a twentieth, and a Long operation
+  was charged like an Integer one.
+- **Named regex groups are numbered by position.** Java numbers every
+  capturing group by the position of its opening parenthesis, named or not.
+  After the first `find()`, with non-default transparent or anchoring bounds,
+  for a pattern with lookarounds or backreferences, and in
+  `String.replaceAll`, aer numbered named groups after all unnamed groups, so
+  for `'"(?:token|(?<other>\\w+-\\w+))":("[^"]*")'` the second `find()`
+  returned the value's position from `start(1)` and -1 from `start(2)`.
+  `group(n)`, `start(n)`, `end(n)`, `$n` replacements, `\n` backreferences and
+  the formula `REGEX()` function now number groups as Java does.
+- **A record from `newSObject` prints like a Salesforce record.** A record
+  built with `SObjectType.newSObject(Id)` printed without its Id in
+  `String.valueOf` and `System.debug`, and did not compare equal by its
+  string to a record built with the same Id by a constructor; the
+  `RecordTypeId` of `newSObject(recordTypeId, loadDefaults)` and a platform
+  event's `EventUuid` were left out the same way. A record from
+  `newSObject(null, true)` now prints every field of its object in describe
+  order, a null one as null, before and after insert, while
+  `getPopulatedFieldsAsMap()` holds only the fields the defaults filled in.
+  A clone of such a record prints every field except those `clone()` clears.
+  The person name fields print together as Salutation, FirstName, LastName,
+  MiddleName, Suffix, and the compound `Name` of Contact, Lead and User is
+  left out. `clone()` no longer clears `SystemModstamp`, which sfapex
+  keeps.
+- **A trigger that re-queries a parent sees its recalculated roll-up.** When
+  a child DML changed a roll-up summary field, a SOQL query of the parent in
+  the parent's after-update trigger returned the roll-up value from before the
+  recalculation while `Trigger.new` held the new value. The query now returns
+  the recalculated value, as on sfapex, and a child subquery returns the
+  child's saved rows.
+- **The newest list custom setting record with a shared Name can be
+  updated.** A list custom setting accepts several records with the same
+  Name, and sfapex lets the newest of them be updated. aer failed the
+  update whenever another record had the Name, comparing Names
+  case-insensitively, and `getInstance(name)` returned the oldest record. An
+  update now fails with `FIELD_INTEGRITY_EXCEPTION` only when a newer record
+  has the record's final Name, compared case-sensitively; `getInstance` and
+  `getValues` return the newest exact-case match; and `getAll` throws the
+  `ListException` "Row with duplicate Name at index: N" when two records share
+  a Name. Within one statement, an insert fails each row that repeats an
+  earlier row's Name, an update fails every row whose final Name another row
+  ends on, and an upsert fails existing rows that end on the Name of one of
+  its new rows.
+- **A class literal names the class of its leading type.** sfapex
+  compiles a class literal whose dotted name names no type as the class of the
+  leading segments that do: `X__c.SObjectType.class` is `X__c.class`,
+  `Account.Name.class` is `Account.class`. aer reported "Invalid type", or
+  "Variable does not exist" for a method called on the literal. It now
+  accepts these literals, and rejects the ones the compiler rejects.  A dotted
+  name such as `Account.Name` or `Contact.Account` is no longer accepted as an
+  SObject type, and `DisplayType.class.getName()` returns `Schema.DisplayType`.
+  In a namespaced org, code in namespace `ns` can name an External Service
+  class `ExternalService.Service`.
+- **A generic class literal of a custom object carries its namespace.** In a
+  namespaced run, `List<Custom__c>.class` was the Type `List<Custom__c>` while
+  a `StubProvider` received `List<ns__Custom__c>` for the same parameter, so a
+  stub library that keys recorded calls by `String.valueOf(paramTypes)` never
+  matched an expectation built from the literal. List, nested List, Map, Set
+  and array class literals now carry the namespaced object name and equal the
+  `Type.forName` result. Comparing a `StubProvider`'s parameter types with a
+  `List<Type>` in `System.Assert.areEqual` no longer raises "Comparison
+  arguments must be compatible types".
+- **A field set member whose path crosses a lookup describes the related
+  field.** For a member such as `Account.Name` on a Contact field set,
+  `getSObjectField()` returned null, so `getDescribe()` on the result threw a
+  `NullPointerException`. It now returns a token that describes the related
+  object's field, and `getType()` and `getLabel()` report that field's type
+  and label; `getFieldPath()` keeps the path. As on Salesforce, the member's
+  token is not equal to the field's own token, and a set or map keyed by the
+  field's token does not find it. A field set member serializes to JSON as
+  `dbRequired`, `fieldPath`, `label`, `required`, `type` and `typeApex`, in
+  that order.
+- **`aer package mock` captures permission sets and permission set groups as
+  `aer package create` stores them.** A mocked package's permission sets
+  lacked the description, license, session activation setting,
+  ViewAllFields, user permissions, tab settings, record type visibilities and
+  custom metadata type access, and permission set groups were not captured.
+  `aer package mock` now retrieves the package's permission sets and groups
+  and stores them as `aer package create` does. A package's permission set
+  group was loaded twice, with two companion permission sets, and when a
+  subscriber permission set shared a package permission set's name, a package
+  group's member resolved to either one from run to run. Each group now loads
+  once, and a bare member name resolves within the group's namespace. `aer
+  package unpack` writes permission set groups and every permission set
+  element the source loader reads.
+
 ## v1.4.37 — 2026-10-22
 
 - **Insert and update triggers run in chunks of 200 records.** An insert or
