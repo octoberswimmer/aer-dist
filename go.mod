@@ -2,7 +2,7 @@ module aer
 
 go 1.27.3
 
-require github.com/octoberswimmer/aer v1.4.37
+require github.com/octoberswimmer/aer v1.4.38
 
 require (
 	git.sr.ht/~jackmordaunt/go-toast v1.1.2 // indirect
@@ -56,7 +56,7 @@ require (
 	github.com/octoberswimmer/digger v0.38.0 // indirect
 	github.com/octoberswimmer/libc v1.67.7-octoberswimmer.9 // indirect
 	github.com/octoberswimmer/memory v1.11.0-octoberswimmer.11 // indirect
-	github.com/octoberswimmer/regexp2 v1.11.5-octoberswimmer.2 // indirect
+	github.com/octoberswimmer/regexp2 v1.11.5-octoberswimmer.3 // indirect
 	github.com/octoberswimmer/sformula v0.18.0 // indirect
 	github.com/octoberswimmer/skyfire v0.6.0 // indirect
 	github.com/octoberswimmer/sqlite v1.46.1-octoberswimmer.15 // indirect
