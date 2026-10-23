@@ -2,7 +2,7 @@ module aer
 
 go 1.27.3
 
-require github.com/octoberswimmer/aer v1.5.12
+require github.com/octoberswimmer/aer v1.5.13
 
 require (
 	bitbucket.org/creachadair/stringset v0.0.11 // indirect
@@ -61,7 +61,7 @@ require (
 	github.com/octoberswimmer/digger v0.38.0 // indirect
 	github.com/octoberswimmer/libc v1.67.7-octoberswimmer.9 // indirect
 	github.com/octoberswimmer/memory v1.11.0-octoberswimmer.11 // indirect
-	github.com/octoberswimmer/regexp2 v1.11.5-octoberswimmer.2 // indirect
+	github.com/octoberswimmer/regexp2 v1.11.5-octoberswimmer.3 // indirect
 	github.com/octoberswimmer/sformula v0.20.0 // indirect
 	github.com/octoberswimmer/skyfire v0.7.0 // indirect
 	github.com/octoberswimmer/sqlite v1.46.1-octoberswimmer.15 // indirect

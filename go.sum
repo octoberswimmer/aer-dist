@@ -723,8 +723,8 @@ github.com/ncruces/go-strftime v1.0.0/go.mod h1:Fwc5htZGVVkseilnfgOVb9mKy6w1naJm
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
 github.com/nxadm/tail v1.4.4 h1:DQuhQpB1tVlglWS2hLQ5OV6B5r8aGxSrPc5Qo6uTN78=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
-github.com/octoberswimmer/aer v1.5.12 h1:GPuf9Tp2Pwg+aus6P8qlNvJE4bswLFeDqNI6B86lqwA=
-github.com/octoberswimmer/aer v1.5.12/go.mod h1:27AMqx8ZvS4eO+C/fODfl6TtIif0JmDGp6e59LdIwK8=
+github.com/octoberswimmer/aer v1.5.13 h1:gJITSz3coFDffQi2WBgGIwjdgWwBh2Qy1yC0ZaAd+Tw=
+github.com/octoberswimmer/aer v1.5.13/go.mod h1:JRjvCO0QB1yDh1rUMs2IVBAOsP+l3WTD4xaX+H7Rrnw=
 github.com/octoberswimmer/antlr/v4 v4.13.1-octoberswimmer.3 h1:LQNXELq1U8IsyVp+mh9ZEWrHj68++spgnOV2P6oNqKY=
 github.com/octoberswimmer/antlr/v4 v4.13.1-octoberswimmer.3/go.mod h1:pHLfGz+l3a2OKxb2g1xTnLaOE4NvC9rX7AfzTCOyUVM=
 github.com/octoberswimmer/apexfmt v0.68.0 h1:6ybkSh1SmNdsIwcLXttMEMy3h+E1dtzujZFuBTQwf9Q=
@@ -737,8 +737,8 @@ github.com/octoberswimmer/mangle v0.5.0-octoberswimmer.1 h1:uvQnxPR1JnI6rEBOlhbG
 github.com/octoberswimmer/mangle v0.5.0-octoberswimmer.1/go.mod h1:vRyMW+12BnLtDKYrN3YsbktLZKOyuLmRrEW5pnZz/Xs=
 github.com/octoberswimmer/memory v1.11.0-octoberswimmer.11 h1:zwNeTjKFu0pyJnPBBM8eMZNAUO4k/uY9rrXhtm/r0WA=
 github.com/octoberswimmer/memory v1.11.0-octoberswimmer.11/go.mod h1:qAxvZaeFZnTB98TgFzMYVAawXSSXNHRdgf8fSS47svc=
-github.com/octoberswimmer/regexp2 v1.11.5-octoberswimmer.2 h1:2cGpLbVX6cnZml4FZ//CkvsuzNwrun369CwQ0o6rU8A=
-github.com/octoberswimmer/regexp2 v1.11.5-octoberswimmer.2/go.mod h1:tej/GSjEKPVpMI4az9xNsUJUZaybkXhYounkAPAHZ0I=
+github.com/octoberswimmer/regexp2 v1.11.5-octoberswimmer.3 h1:L4RY8atKao9LU3mR17rDhF5xnNy7TxupC+/83XvyIPk=
+github.com/octoberswimmer/regexp2 v1.11.5-octoberswimmer.3/go.mod h1:tej/GSjEKPVpMI4az9xNsUJUZaybkXhYounkAPAHZ0I=
 github.com/octoberswimmer/sformula v0.20.0 h1:sjUSWyEZqWq2yUjmwHVlM6ALvt/AxnJ5AICTctaSrmU=
 github.com/octoberswimmer/sformula v0.20.0/go.mod h1:jj/jQdckA8mXgz9vOT8B1vfF5Jf9MrPuSQVAjLUr8Yo=
 github.com/octoberswimmer/skyfire v0.7.0 h1:Dw9d5BHqDjKi5ffPlU2PgjIQAIrhJiAsZcivoGlmeXU=
