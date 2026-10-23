@@ -65,9 +65,10 @@ jobs:
           root="oss/fflib-apex-mocks"
           mkdir -p "${root}"
           workdir=$(mktemp -d "${root}/repo.XXXXXX")
-          git clone https://github.com/apex-enterprise-patterns/fflib-apex-mocks.git "${workdir}"
           cd "${workdir}"
-          git checkout 0cf357ac9d42fb069f2c651573f7c18ba41f1786
+          git init -q
+          git fetch -q --depth 1 https://github.com/apex-enterprise-patterns/fflib-apex-mocks.git 0cf357ac9d42fb069f2c651573f7c18ba41f1786
+          git checkout -q FETCH_HEAD
           echo "FFLIB_MOCKS_SOURCE=${workdir}/sfdx-source" >> "$GITHUB_ENV"
 
       - name: Run aer test (fflib-apex-mocks commit 0cf357a)
@@ -100,9 +101,10 @@ jobs:
           root="oss/fflib-apex-common"
           mkdir -p "${root}"
           workdir=$(mktemp -d "${root}/repo.XXXXXX")
-          git clone https://github.com/apex-enterprise-patterns/fflib-apex-common.git "${workdir}"
           cd "${workdir}"
-          git checkout ca71952b3fc3928c06dbb6f57492b820c8167cf4
+          git init -q
+          git fetch -q --depth 1 https://github.com/apex-enterprise-patterns/fflib-apex-common.git ca71952b3fc3928c06dbb6f57492b820c8167cf4
+          git checkout -q FETCH_HEAD
           echo "FFLIB_COMMON_SOURCE=${workdir}/sfdx-source" >> "$GITHUB_ENV"
 
       - name: Fetch fflib-apex-mocks commit 0cf357a (dependency)
@@ -111,9 +113,10 @@ jobs:
           root="oss/fflib-apex-mocks"
           mkdir -p "${root}"
           workdir=$(mktemp -d "${root}/repo.XXXXXX")
-          git clone https://github.com/apex-enterprise-patterns/fflib-apex-mocks.git "${workdir}"
           cd "${workdir}"
-          git checkout 0cf357ac9d42fb069f2c651573f7c18ba41f1786
+          git init -q
+          git fetch -q --depth 1 https://github.com/apex-enterprise-patterns/fflib-apex-mocks.git 0cf357ac9d42fb069f2c651573f7c18ba41f1786
+          git checkout -q FETCH_HEAD
           echo "FFLIB_MOCKS_SOURCE=${workdir}/sfdx-source" >> "$GITHUB_ENV"
 
       - name: Run aer test (fflib-apex-common commit ca71952)
@@ -149,9 +152,10 @@ jobs:
           root="oss/trigger-actions-framework"
           mkdir -p "${root}"
           workdir=$(mktemp -d "${root}/repo.XXXXXX")
-          git clone https://github.com/mitchspano/trigger-actions-framework.git "${workdir}"
           cd "${workdir}"
-          git checkout cfda6715c0f4d3977224dcc2619aa30a84e537dd
+          git init -q
+          git fetch -q --depth 1 https://github.com/mitchspano/trigger-actions-framework.git cfda6715c0f4d3977224dcc2619aa30a84e537dd
+          git checkout -q FETCH_HEAD
           echo "TAF_SOURCE=${workdir}/trigger-actions-framework" >> "$GITHUB_ENV"
 
       - name: Run aer test (trigger-actions-framework commit cfda671)
@@ -175,9 +179,10 @@ jobs:
           root="oss/jira-sf-integration"
           mkdir -p "${root}"
           workdir=$(mktemp -d "${root}/repo.XXXXXX")
-          git clone https://github.com/jawills/jira-sf-integration.git "${workdir}"
           cd "${workdir}"
-          git checkout 38c27d2a8353eadd468778a859e09a787f075026
+          git init -q
+          git fetch -q --depth 1 https://github.com/jawills/jira-sf-integration.git 38c27d2a8353eadd468778a859e09a787f075026
+          git checkout -q FETCH_HEAD
           echo "JIRA_SF_CORE=${workdir}/jira-integration/core" >> "$GITHUB_ENV"
           echo "JIRA_SF_AUTH=${workdir}/jira-integration/auth" >> "$GITHUB_ENV"
 
@@ -212,9 +217,10 @@ jobs:
           root="oss/open-force-jsonparse"
           mkdir -p "${root}"
           workdir=$(mktemp -d "${root}/repo.XXXXXX")
-          git clone https://github.com/open-force/jsonparse.git "${workdir}"
           cd "${workdir}"
-          git checkout 69da320c172da34d4112835509184a31ce500f80
+          git init -q
+          git fetch -q --depth 1 https://github.com/open-force/jsonparse.git 69da320c172da34d4112835509184a31ce500f80
+          git checkout -q FETCH_HEAD
           echo "JSONPARSE_SOURCE=${workdir}" >> "$GITHUB_ENV"
 
       - name: Run aer test (open-force/jsonparse commit 69da320)
@@ -247,9 +253,10 @@ jobs:
           root="oss/closinator"
           mkdir -p "${root}"
           workdir=$(mktemp -d "${root}/repo.XXXXXX")
-          git clone https://github.com/bhanudas/closinator.git "${workdir}"
           cd "${workdir}"
-          git checkout 4412d44833f8b3f0daf3f6e4167606159c865d47
+          git init -q
+          git fetch -q --depth 1 https://github.com/bhanudas/closinator.git 4412d44833f8b3f0daf3f6e4167606159c865d47
+          git checkout -q FETCH_HEAD
           if [ -d "${workdir}/force-app/main/default" ]; then
             echo "CLOSINATOR_SOURCE=${workdir}/force-app/main/default" >> "$GITHUB_ENV"
           elif [ -d "${workdir}/force-app" ]; then
@@ -281,9 +288,10 @@ jobs:
           root="oss/codefriar-apexkit"
           mkdir -p "${root}"
           workdir=$(mktemp -d "${root}/repo.XXXXXX")
-          git clone https://github.com/codefriar/ApexKit.git "${workdir}"
           cd "${workdir}"
-          git checkout 4c1d9cb4d3555ba56956405341679be95c46e66c
+          git init -q
+          git fetch -q --depth 1 https://github.com/codefriar/ApexKit.git 4c1d9cb4d3555ba56956405341679be95c46e66c
+          git checkout -q FETCH_HEAD
           echo "APEXKIT_SOURCE=${workdir}/force-app/main/default" >> "$GITHUB_ENV"
 
       - name: Run aer test (codefriar/ApexKit commit a6e8921)
@@ -315,9 +323,10 @@ jobs:
           root="oss/propicsignifi-rapex"
           mkdir -p "${root}"
           workdir=$(mktemp -d "${root}/repo.XXXXXX")
-          git clone https://github.com/PropicSignifi/R.apex.git "${workdir}"
           cd "${workdir}"
-          git checkout 28f6198373eec788c0811db0f1089ce8a8b30746
+          git init -q
+          git fetch -q --depth 1 https://github.com/PropicSignifi/R.apex.git 28f6198373eec788c0811db0f1089ce8a8b30746
+          git checkout -q FETCH_HEAD
           echo "RAPEX_SOURCE=${workdir}/force-app/main/default" >> "$GITHUB_ENV"
 
       - name: Run aer test (PropicSignifi/R.apex commit 28f6198)
@@ -350,9 +359,10 @@ jobs:
           root="oss/surajp-universalmock"
           mkdir -p "${root}"
           workdir=$(mktemp -d "${root}/repo.XXXXXX")
-          git clone https://github.com/surajp/universalmock.git "${workdir}"
           cd "${workdir}"
-          git checkout 1e04164ca66258b21cc9bab9e614060ca3594b28
+          git init -q
+          git fetch -q --depth 1 https://github.com/surajp/universalmock.git 1e04164ca66258b21cc9bab9e614060ca3594b28
+          git checkout -q FETCH_HEAD
           echo "UNIVERSALMOCK_SOURCE=${workdir}/force-app/main/default" >> "$GITHUB_ENV"
 
       - name: Run aer test (surajp/universalmock commit 1e04164)
@@ -385,9 +395,10 @@ jobs:
           root="oss/salesforce-moxygen"
           mkdir -p "${root}"
           workdir=$(mktemp -d "${root}/repo.XXXXXX")
-          git clone https://github.com/ZackFra/Salesforce-Moxygen.git "${workdir}"
           cd "${workdir}"
-          git checkout 51d085e40c7020b6143f14ae18405ab5a862d730
+          git init -q
+          git fetch -q --depth 1 https://github.com/ZackFra/Salesforce-Moxygen.git 51d085e40c7020b6143f14ae18405ab5a862d730
+          git checkout -q FETCH_HEAD
           echo "MOXYGEN_SOURCE=${workdir}/moxygen" >> "$GITHUB_ENV"
 
       - name: Run aer test (ZackFra/Salesforce-Moxygen commit 51d085e)
@@ -411,9 +422,10 @@ jobs:
           root="oss/apex-opensource-library"
           mkdir -p "${root}"
           workdir=$(mktemp -d "${root}/repo.XXXXXX")
-          git clone https://github.com/pkozuchowski/Apex-Opensource-Library.git "${workdir}"
           cd "${workdir}"
-          git checkout af14265159a530614f9f2347edae84b7c58b9840
+          git init -q
+          git fetch -q --depth 1 https://github.com/pkozuchowski/Apex-Opensource-Library.git af14265159a530614f9f2347edae84b7c58b9840
+          git checkout -q FETCH_HEAD
           echo "APEX_OSS_LIB_SOURCE=${workdir}/force-app/commons" >> "$GITHUB_ENV"
 
       - name: Run aer test (pkozuchowski/Apex-Opensource-Library commit 9110e87)
@@ -436,9 +448,10 @@ jobs:
           root="oss/trailheadapps-apex-recipes"
           mkdir -p "${root}"
           workdir=$(mktemp -d "${root}/repo.XXXXXX")
-          git clone https://github.com/trailheadapps/apex-recipes.git "${workdir}"
           cd "${workdir}"
-          git checkout 19aba6b846857516f389d16b8597dd410a6ce904
+          git init -q
+          git fetch -q --depth 1 https://github.com/trailheadapps/apex-recipes.git 19aba6b846857516f389d16b8597dd410a6ce904
+          git checkout -q FETCH_HEAD
           echo "APEX_RECIPES_SOURCE=${workdir}/force-app" >> "$GITHUB_ENV"
 
       - name: Run aer test (trailheadapps/apex-recipes commit 19aba6b)
@@ -471,9 +484,10 @@ jobs:
           root="oss/nebulalogger"
           mkdir -p "${root}"
           workdir=$(mktemp -d "${root}/repo.XXXXXX")
-          git clone https://github.com/jongpie/NebulaLogger.git "${workdir}"
           cd "${workdir}"
-          git checkout 1adf4dea79c9583ce91774f7b1f2217d83c7beb1
+          git init -q
+          git fetch -q --depth 1 https://github.com/jongpie/NebulaLogger.git 1adf4dea79c9583ce91774f7b1f2217d83c7beb1
+          git checkout -q FETCH_HEAD
           echo "NEBULALOGGER_SOURCE=${workdir}/nebula-logger/core" >> "$GITHUB_ENV"
 
       - name: Run aer test (jongpie/NebulaLogger commit 1adf4de)
@@ -506,9 +520,10 @@ jobs:
           root="oss/flxbl-apex-api"
           mkdir -p "${root}"
           workdir=$(mktemp -d "${root}/repo.XXXXXX")
-          git clone https://github.com/cwarden/flxbl-apex-api.git "${workdir}"
           cd "${workdir}"
-          git checkout c13b5310586f639d48339454bd3e925559aa0946
+          git init -q
+          git fetch -q --depth 1 https://github.com/cwarden/flxbl-apex-api.git c13b5310586f639d48339454bd3e925559aa0946
+          git checkout -q FETCH_HEAD
           echo "FLXBL_APEX_API_SOURCE=${workdir}/apps" >> "$GITHUB_ENV"
 
       - name: Run aer test (cwarden/flxbl-apex-api commit c13b531)
@@ -539,9 +554,10 @@ jobs:
           root="oss/soql-lib"
           mkdir -p "${root}"
           workdir=$(mktemp -d "${root}/repo.XXXXXX")
-          git clone https://github.com/beyond-the-cloud-dev/soql-lib.git "${workdir}"
           cd "${workdir}"
-          git checkout 7e4984aa4701367f5375720d19b14202a51f5223
+          git init -q
+          git fetch -q --depth 1 https://github.com/beyond-the-cloud-dev/soql-lib.git 7e4984aa4701367f5375720d19b14202a51f5223
+          git checkout -q FETCH_HEAD
           echo "SOQL_LIB_SOURCE=${workdir}/force-app" >> "$GITHUB_ENV"
 
       - name: Fetch beyond-the-cloud-dev/dml-lib commit 3cfa0f9
@@ -550,9 +566,10 @@ jobs:
           root="oss/dml-lib"
           mkdir -p "${root}"
           workdir=$(mktemp -d "${root}/repo.XXXXXX")
-          git clone https://github.com/beyond-the-cloud-dev/dml-lib.git "${workdir}"
           cd "${workdir}"
-          git checkout 3cfa0f945e2e138ab8538b1a04a640aa15d37606
+          git init -q
+          git fetch -q --depth 1 https://github.com/beyond-the-cloud-dev/dml-lib.git 3cfa0f945e2e138ab8538b1a04a640aa15d37606
+          git checkout -q FETCH_HEAD
           echo "DML_LIB_SOURCE=${workdir}/force-app" >> "$GITHUB_ENV"
 
       - name: Fetch beyond-the-cloud-dev/async-lib commit fa4f92e
@@ -561,9 +578,10 @@ jobs:
           root="oss/async-lib"
           mkdir -p "${root}"
           workdir=$(mktemp -d "${root}/repo.XXXXXX")
-          git clone https://github.com/beyond-the-cloud-dev/async-lib.git "${workdir}"
           cd "${workdir}"
-          git checkout fa4f92ea6a3b19938a4db260500b2b8040ccac46
+          git init -q
+          git fetch -q --depth 1 https://github.com/beyond-the-cloud-dev/async-lib.git fa4f92ea6a3b19938a4db260500b2b8040ccac46
+          git checkout -q FETCH_HEAD
           echo "ASYNC_LIB_SOURCE=${workdir}/force-app" >> "$GITHUB_ENV"
 
       - name: Fetch beyond-the-cloud-dev/http-mock-lib commit dd13273
@@ -572,9 +590,10 @@ jobs:
           root="oss/http-mock-lib"
           mkdir -p "${root}"
           workdir=$(mktemp -d "${root}/repo.XXXXXX")
-          git clone https://github.com/beyond-the-cloud-dev/http-mock-lib.git "${workdir}"
           cd "${workdir}"
-          git checkout dd13273f23e304d3492a9991fe15344492c87c0b
+          git init -q
+          git fetch -q --depth 1 https://github.com/beyond-the-cloud-dev/http-mock-lib.git dd13273f23e304d3492a9991fe15344492c87c0b
+          git checkout -q FETCH_HEAD
           echo "HTTP_MOCK_LIB_SOURCE=${workdir}/force-app" >> "$GITHUB_ENV"
 
       - name: Fetch beyond-the-cloud-dev/apex-consts commit 146cd85
@@ -583,9 +602,10 @@ jobs:
           root="oss/apex-consts"
           mkdir -p "${root}"
           workdir=$(mktemp -d "${root}/repo.XXXXXX")
-          git clone https://github.com/beyond-the-cloud-dev/apex-consts.git "${workdir}"
           cd "${workdir}"
-          git checkout 146cd85f3b62a4d55814782cddb59c5844671390
+          git init -q
+          git fetch -q --depth 1 https://github.com/beyond-the-cloud-dev/apex-consts.git 146cd85f3b62a4d55814782cddb59c5844671390
+          git checkout -q FETCH_HEAD
           echo "APEX_CONSTS_SOURCE=${workdir}/force-app" >> "$GITHUB_ENV"
 
       - name: Run aer test (Apex Fluently)
@@ -623,9 +643,10 @@ jobs:
           root="oss/cache-manager"
           mkdir -p "${root}"
           workdir=$(mktemp -d "${root}/repo.XXXXXX")
-          git clone https://github.com/beyond-the-cloud-dev/cache-manager.git "${workdir}"
           cd "${workdir}"
-          git checkout 2e5e55ab2fac099003b5e087ea7d24efe0875897
+          git init -q
+          git fetch -q --depth 1 https://github.com/beyond-the-cloud-dev/cache-manager.git 2e5e55ab2fac099003b5e087ea7d24efe0875897
+          git checkout -q FETCH_HEAD
           echo "CACHE_MANAGER_SOURCE=${workdir}/force-app" >> "$GITHUB_ENV"
 
       - name: Run aer test (beyond-the-cloud-dev/cache-manager commit 2e5e55a)
@@ -658,9 +679,10 @@ jobs:
           root="oss/testdatafactory"
           mkdir -p "${root}"
           workdir=$(mktemp -d "${root}/repo.XXXXXX")
-          git clone https://github.com/benahm/TestDataFactory.git "${workdir}"
           cd "${workdir}"
-          git checkout 22487c80d4c188099c9964ae20087be86905aa6f
+          git init -q
+          git fetch -q --depth 1 https://github.com/benahm/TestDataFactory.git 22487c80d4c188099c9964ae20087be86905aa6f
+          git checkout -q FETCH_HEAD
           echo "TESTDATAFACTORY_SOURCE=${workdir}/force-app" >> "$GITHUB_ENV"
 
       - name: Run aer test (benahm/TestDataFactory commit 22487c8)
@@ -693,9 +715,10 @@ jobs:
           root="oss/apex-dml-mocking"
           mkdir -p "${root}"
           workdir=$(mktemp -d "${root}/repo.XXXXXX")
-          git clone https://github.com/jamessimone/apex-dml-mocking.git "${workdir}"
           cd "${workdir}"
-          git checkout 9bd498440e82f7484e33e396bd2e891a64ddb4c1
+          git init -q
+          git fetch -q --depth 1 https://github.com/jamessimone/apex-dml-mocking.git 9bd498440e82f7484e33e396bd2e891a64ddb4c1
+          git checkout -q FETCH_HEAD
           echo "APEX_DML_MOCKING_SOURCE=${workdir}/force-app" >> "$GITHUB_ENV"
 
       - name: Run aer test (jamessimone/apex-dml-mocking commit 9bd4984)
@@ -719,9 +742,10 @@ jobs:
           root="oss/nebulalogger"
           mkdir -p "${root}"
           workdir=$(mktemp -d "${root}/repo.XXXXXX")
-          git clone https://github.com/jongpie/NebulaLogger.git "${workdir}"
           cd "${workdir}"
-          git checkout 1adf4dea79c9583ce91774f7b1f2217d83c7beb1
+          git init -q
+          git fetch -q --depth 1 https://github.com/jongpie/NebulaLogger.git 1adf4dea79c9583ce91774f7b1f2217d83c7beb1
+          git checkout -q FETCH_HEAD
           echo "NEBULALOGGER_SOURCE=${workdir}/nebula-logger/core" >> "$GITHUB_ENV"
 
       - name: Fetch sandriiy/salesforce-google-drive-library commit 43f6e66 (dependency)
@@ -730,9 +754,10 @@ jobs:
           root="oss/salesforce-google-drive-library"
           mkdir -p "${root}"
           workdir=$(mktemp -d "${root}/repo.XXXXXX")
-          git clone https://github.com/sandriiy/salesforce-google-drive-library.git "${workdir}"
           cd "${workdir}"
-          git checkout 43f6e66f96b99b1810c954b4b21404e9203e5f2a
+          git init -q
+          git fetch -q --depth 1 https://github.com/sandriiy/salesforce-google-drive-library.git 43f6e66f96b99b1810c954b4b21404e9203e5f2a
+          git checkout -q FETCH_HEAD
           echo "GOOGLE_DRIVE_LIB_SOURCE=${workdir}" >> "$GITHUB_ENV"
 
       - name: Fetch sandriiy/salesforce-google-client commit 5f49723
@@ -741,9 +766,10 @@ jobs:
           root="oss/salesforce-google-client"
           mkdir -p "${root}"
           workdir=$(mktemp -d "${root}/repo.XXXXXX")
-          git clone https://github.com/sandriiy/salesforce-google-client.git "${workdir}"
           cd "${workdir}"
-          git checkout 5f497233b2cef7315d6e5ce22b590686e6856a97
+          git init -q
+          git fetch -q --depth 1 https://github.com/sandriiy/salesforce-google-client.git 5f497233b2cef7315d6e5ce22b590686e6856a97
+          git checkout -q FETCH_HEAD
           echo "GOOGLE_CLIENT_SOURCE=${workdir}/force-app" >> "$GITHUB_ENV"
 
       - name: Run aer test (sandriiy/salesforce-google-client commit 5f49723)
@@ -820,9 +846,10 @@ jobs:
           root="oss/amoss"
           mkdir -p "${root}"
           workdir=$(mktemp -d "${root}/repo.XXXXXX")
-          git clone https://github.com/bobalicious/amoss.git "${workdir}"
           cd "${workdir}"
-          git checkout 3c054ed3aad90109805f838b12855961aafba86c
+          git init -q
+          git fetch -q --depth 1 https://github.com/bobalicious/amoss.git 3c054ed3aad90109805f838b12855961aafba86c
+          git checkout -q FETCH_HEAD
           echo "AMOSS_SOURCE=${workdir}/force-app" >> "$GITHUB_ENV"
 
       - name: Run aer test (bobalicious/amoss commit 3c054ed)
@@ -855,9 +882,10 @@ jobs:
           root="oss/apex-fuzzy-finder"
           mkdir -p "${root}"
           workdir=$(mktemp -d "${root}/repo.XXXXXX")
-          git clone https://github.com/jonathanmorris180/apex-fuzzy-finder.git "${workdir}"
           cd "${workdir}"
-          git checkout a2212f205bc30c3a5a636ec7ec49dc6fcbb7a67b
+          git init -q
+          git fetch -q --depth 1 https://github.com/jonathanmorris180/apex-fuzzy-finder.git a2212f205bc30c3a5a636ec7ec49dc6fcbb7a67b
+          git checkout -q FETCH_HEAD
           echo "APEX_FUZZY_FINDER_SOURCE=${workdir}/force-app" >> "$GITHUB_ENV"
 
       - name: Run aer test (jonathanmorris180/apex-fuzzy-finder commit a2212f2)
@@ -890,9 +918,10 @@ jobs:
           root="oss/apex-mockery"
           mkdir -p "${root}"
           workdir=$(mktemp -d "${root}/repo.XXXXXX")
-          git clone https://github.com/salesforce/apex-mockery.git "${workdir}"
           cd "${workdir}"
-          git checkout 320d3a731fad390bdcbb815cc17cb0cc8ad5cb63
+          git init -q
+          git fetch -q --depth 1 https://github.com/salesforce/apex-mockery.git 320d3a731fad390bdcbb815cc17cb0cc8ad5cb63
+          git checkout -q FETCH_HEAD
           echo "APEX_MOCKERY_SRC=${workdir}/force-app/src/classes" >> "$GITHUB_ENV"
           echo "APEX_MOCKERY_TEST=${workdir}/force-app/test/package/classes" >> "$GITHUB_ENV"
 
@@ -928,9 +957,10 @@ jobs:
           root="oss/sirono"
           mkdir -p "${root}"
           workdir=$(mktemp -d "${root}/repo.XXXXXX")
-          git clone https://github.com/SCWells72/sirono-common.git "${workdir}"
           cd "${workdir}"
-          git checkout 021eef3ff0d08f15fd7e4fdfc6bf6be6036f4789
+          git init -q
+          git fetch -q --depth 1 https://github.com/SCWells72/sirono-common.git 021eef3ff0d08f15fd7e4fdfc6bf6be6036f4789
+          git checkout -q FETCH_HEAD
           echo "SIRONO_SOURCE=${workdir}/force-app" >> "$GITHUB_ENV"
 
       - name: Run aer test (SCWells72/sirono commit 021eef3)
@@ -954,9 +984,10 @@ jobs:
           root="oss/agent-script-recipes"
           mkdir -p "${root}"
           workdir=$(mktemp -d "${root}/repo.XXXXXX")
-          git clone https://github.com/trailheadapps/agent-script-recipes.git "${workdir}"
           cd "${workdir}"
-          git checkout 9c9017691db4a90bc73189371d7d540e1d9f077c
+          git init -q
+          git fetch -q --depth 1 https://github.com/trailheadapps/agent-script-recipes.git 9c9017691db4a90bc73189371d7d540e1d9f077c
+          git checkout -q FETCH_HEAD
           echo "AGENT_SCRIPT_RECIPES_SOURCE=${workdir}/force-app/main" >> "$GITHUB_ENV"
 
       - name: Run aer test (trailheadapps/agent-script-recipes commit 9c90176)
@@ -980,9 +1011,10 @@ jobs:
           root="oss/salesforcedocgen"
           mkdir -p "${root}"
           workdir=$(mktemp -d "${root}/repo.XXXXXX")
-          git clone https://github.com/DaveMoudy/SalesforceDocGen.git "${workdir}"
           cd "${workdir}"
-          git checkout 4fa5457e5a4a317c7802388ed2fdf0a9538a1492
+          git init -q
+          git fetch -q --depth 1 https://github.com/DaveMoudy/SalesforceDocGen.git 4fa5457e5a4a317c7802388ed2fdf0a9538a1492
+          git checkout -q FETCH_HEAD
           echo "SALESFORCEDOCGEN_SOURCE=${workdir}/force-app/main" >> "$GITHUB_ENV"
 
       - name: Run aer test (DaveMoudy/SalesforceDocGen commit 4fa5457)
