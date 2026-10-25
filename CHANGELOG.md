@@ -1347,6 +1347,50 @@
   or an error prints `Action:[...]`, `Result:[...]`, or `Error:[...]` with the
   fields sfapex shows.
 
+## v1.4.39 — 2026-10-25
+
+- **Picklist values a before trigger assigns are saved in normalized form.**
+  A multi-select picklist value set in a before insert or before update
+  trigger, such as `'beta;;ALPHA;'`, was saved as written, where a value
+  passed directly to DML is saved with the configured casing and in value
+  order. The trigger's value is now saved as `'Alpha;Beta'`, and a value
+  holding only separators (`';'`) is saved as null. Trigger.new in the after
+  triggers holds the saved value, so the after triggers no longer see a
+  field change that did not happen.
+- **`Datacloud.FindDuplicates` and `FindDuplicatesByIds` throw when an object
+  has no active duplicate rules.** Both returned empty results. As in sfapex,
+  they now throw `System.HandledException`: "No duplicate rules are defined
+  for the Account object." when the object has no rules, and "No active
+  duplicate rules are defined for the Account object type." from
+  `findDuplicates` when all its rules are inactive. `findDuplicatesByIds`
+  names the object by its `EntityDefinition.DurableId` and uses the first
+  message in both cases. Duplicate rules in the source, active or inactive,
+  can now be queried from `DuplicateRule`.
+- **Undeleting a parent restores a cleared lookup without running the child's
+  validation rules.** When a lookup with a "Clear the value of this field"
+  delete option was restored by undeleting its parent, a validation rule on
+  the child object could reject the restore. The restore now skips child
+  validation rules, as the clearing on delete does, and later updates of the
+  child still run them.
+- **A private virtual method dispatches to a subclass's method before API
+  61.0.** In a class saved with API version 60.0 or earlier, a subclass
+  method with the same signature as a private virtual method declared in a
+  different outer class was not called; the base class's method ran instead.
+  The subclass's method now runs, as in sfapex. Classes at API 61.0 and later
+  are unchanged.
+- **`Case.OwnerId` describes its reference targets as `Group`, then `User`.**
+  `getReferenceTo()` listed `User` first, so code that reads the first
+  target got `User` where sfapex returns `Group`.
+- **A future method or scheduled job counts static values in its heap.**
+  `Limits.getHeapSize()` inside a future method or a scheduled job run by
+  `Test.stopTest()` left out the Strings and collections held in static
+  variables shared with the caller. It now includes them, drops them when the
+  job clears them, and still leaves out the caller's local variables.
+- **`Contact.DoNotCall` and `Lead.DoNotCall` require an explicit field
+  permission.** A Standard User could read and edit both fields without a
+  `FieldPermissions` row. As in sfapex, the fields are now inaccessible until
+  a permission set grants them.
+
 ## v1.4.38 — 2026-10-23
 
 - **String positions count UTF-16 code units, and `substring` runs in
