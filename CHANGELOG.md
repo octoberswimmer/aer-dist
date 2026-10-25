@@ -1347,6 +1347,23 @@
   or an error prints `Action:[...]`, `Result:[...]`, or `Error:[...]` with the
   fields sfapex shows.
 
+## v1.4.40 — 2026-10-25
+
+- **A bootstrap profile whose user license is missing no longer stops
+  startup.** A `Profile` in a bootstrap database can keep the org's
+  `UserLicenseId` without the matching `UserLicense` row. aer then failed to
+  set the license of the profile's permission set and did not start. The
+  profile's license is now looked up by the license name in the profile
+  metadata, and the profile's permission set gets that license. When aer
+  defines no license by that name, the permission set's `LicenseId` is left
+  empty.
+- **An External Service operation with an inline JSON request body generates
+  an `_IN_body` type.** The body type of an OpenAPI 3 operation whose request
+  schema is defined inline was named `<Operation>_Request_Body`, so Apex that
+  references it by the name Salesforce generates did not compile. It is now
+  named `<Operation>_IN_body`, as in Salesforce, for example
+  `ExternalService.BookingWebhook_Onlinex20Bookings_IN_body`.
+
 ## v1.4.39 — 2026-10-25
 
 - **Picklist values a before trigger assigns are saved in normalized form.**
