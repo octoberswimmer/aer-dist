@@ -801,19 +801,20 @@ jobs:
           git checkout 1adf4dea79c9583ce91774f7b1f2217d83c7beb1
           echo "NEBULALOGGER_SOURCE=${workdir}/nebula-logger/core" >> "$GITHUB_ENV"
 
-      - name: Fetch jamessimone/apex-rollup v1.7.45 sources
+      # Pin the DST date-literal fix: https://github.com/jamessimone/apex-rollup/pull/790
+      - name: Fetch cwarden/apex-rollup commit 2232b8f sources
         run: |
           set -euo pipefail
           workdir="oss/apex-rollup"
           mkdir -p "${workdir}"
-          curl -sSL https://github.com/jamessimone/apex-rollup/archive/refs/tags/v1.7.45.tar.gz \
+          curl -sSL https://github.com/cwarden/apex-rollup/archive/2232b8fa433faadd542f67d286cca0c8360b78c9.tar.gz \
             | tar xz --strip-components=1 -C "${workdir}"
           echo "APEX_ROLLUP_ROOT=${workdir}" >> "$GITHUB_ENV"
 
       # The Nebula Logger plugin's test reads LogEntry__c fields with bare
       # SOQL in an API 67.0 class, which runs in user mode, so the default
       # user needs Nebula Logger's LoggerEndUser permission set.
-      - name: Run aer test (jamessimone/apex-rollup v1.7.45)
+      - name: Run aer test (cwarden/apex-rollup commit 2232b8f)
         uses: ./
         with:
           source: |
