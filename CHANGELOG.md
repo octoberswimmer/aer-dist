@@ -1347,6 +1347,30 @@
   or an error prints `Action:[...]`, `Result:[...]`, or `Error:[...]` with the
   fields sfapex shows.
 
+## v1.4.41 — 2026-10-26
+
+- **SOQL week date literals start the week on the running user's locale's
+  first day.** `THIS_WEEK`, `LAST_WEEK`, `NEXT_WEEK`, `LAST_N_WEEKS` and the
+  other week literals started every week on Sunday, including in semi-join
+  subqueries, while `Date.toStartOfWeek()` followed the locale. Both now use
+  the first day sfapex uses for each `LocaleSidKey`. `toStartOfWeek()`
+  also started the week on Monday for every locale except six US English
+  ones. The week now starts on Sunday for 88 locales, including `ja_JP`,
+  `th_TH`, the `zh` locales, `es_MX`, `pt_BR` and `fr_CA`, on Saturday for 14
+  locales, including `ar_AE`, `ar_EG` and `ps_AF`, and on Monday for the rest.
+- **`TODAY` and `Date.today()` are correct on a day that skips midnight.** In
+  a time zone whose daylight saving time starts at midnight, such as
+  `America/Santiago`, `TODAY` and the other day literals matched the last hour
+  of the previous day, and `Date.today()` and `System.today()` could return
+  the previous date. The day now starts at its first valid local time, and
+  `Date.today()` returns the current local date.
+- **`System.runAs` counts toward the DML limits.** As in sfapex, switching
+  to a saved user is one DML statement, and a user that has not been inserted
+  adds the statement and row that save it. A `LimitException` is thrown at the
+  151st statement, and `Limits.getRunAs()` returns the DML statement count
+  instead of 0. A runAs block does not count as uncommitted work, so a callout
+  inside it is still allowed.
+
 ## v1.4.40 — 2026-10-25
 
 - **A bootstrap profile whose user license is missing no longer stops
