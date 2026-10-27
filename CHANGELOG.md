@@ -666,7 +666,10 @@
   method declares and reads; the API version of each class and trigger; the
   methods that contain a `System.runAs` block; the fields that inline SOQL,
   flow elements, and page layouts read or place; calls made on an element of a
-  returned list; and the implementations of abstract methods.
+  returned list; the implementations of abstract methods; and the records
+  created, updated, upserted, deleted, undeleted, and merged by DML statements
+  and by the `Database` DML methods, including DML on the list a method
+  returns (`insert accounts();`).
 - **Setup has Bulk Data Load Jobs pages, and Bulk API 1.0 supports PK chunking
   and serial jobs.** `/lightning/setup/AsyncApiJobStatus/home` lists the Bulk
   API 1.0 and 2.0 jobs with their state, batches, record counts, nodes, and
@@ -849,6 +852,23 @@
   `enableAsyncApexElasticExecutions` on, code saved at API 67.0 or later also
   sees `DailyAsyncApexElasticExecutions`, at twice that limit up to 250000,
   and `DailyAsyncApexProcessed`.
+- **`aer package mock` stores a managed package's flows, and `aer package edit
+  flow` replaces one.** Salesforce returns no metadata for a flow installed
+  from a managed package, so the mock stores a stub for each of the package's
+  flows built from `FlowDefinitionView` and `FlowVariableView`: its label, API
+  version, process type, status, trigger, and variables, with no elements.
+  Subscriber Apex that starts such a flow with `Flow.Interview` passes its
+  declared inputs and gets no outputs back. `aer package edit flow` reads a
+  flow's metadata XML from an editor or stdin, rejects XML that is not a flow,
+  and stores it in the package under the flow's API name, adding the flow when
+  the package does not have it. `aer package unpack` writes the package's
+  flows, so `aer package create` on the unpacked directory stores them again.
+- **Lightning web components can run a screen flow with `lightning-flow`.**
+  The element runs the interview on the server's flow runner with the
+  component's input variables, starts it when `flow-api-name` is set or
+  `startFlow()` is called, restarts it on finishing when the finish behavior is
+  `RESTART`, and dispatches `statuschange` with `STARTED`, `PAUSED`,
+  `FINISHED` (with the output variables), or `ERROR`.
 
 ### Fixes and performance
 
@@ -1346,6 +1366,50 @@
   shares the list with the original. `String.valueOf` of an action, a result,
   or an error prints `Action:[...]`, `Result:[...]`, or `Error:[...]` with the
   fields sfapex shows.
+- **Standard objects take Salesforce's org-wide defaults.** Every standard
+  object now has the internal and external org-wide defaults of a new org, and
+  an object controlled by its parent takes its access from the parent record.
+  Another user can read and edit a `Case` or a `Lead`, cannot see a `Macro`,
+  and cannot update another user's `User` record. An `Event` is controlled by
+  its parent as a `Task` is: either one is visible to whoever can see its
+  `WhatId` or `WhoId` record, and one with neither is visible to its owner
+  only.
+- **Inserts check access to the records they reference in code without a
+  sharing declaration.** Inside `System.runAs`, an insert from a class with no
+  `with sharing` or `without sharing` now fails when the running user cannot
+  see a referenced record, as it did in `with sharing` code: a lookup fails as
+  a missing record would, a custom master-detail field fails without the Id,
+  and `OrderItem.OrderId` fails with `INVALID_CROSS_REFERENCE_KEY`. A missing
+  custom master-detail parent also fails with `INVALID_CROSS_REFERENCE_KEY`.
+  Publishing a platform event does not check its reference fields.
+- **Undeleting a record requires delete access.** `Database.undelete` checked
+  only that the running user could edit each record, and the `undelete`
+  statement checked no access at all. Both now fail with
+  `INSUFFICIENT_ACCESS_OR_READONLY` for a record the user can edit but not
+  delete, as in Salesforce; with `allOrNone` false, that record gets a failed
+  `UndeleteResult` and the rest are undeleted.
+- **Record types copied in with `--bootstrap-db` are known to describe and
+  person accounts.** A `RecordType` row from the bootstrap database was
+  queryable, but describe did not list it, and an Account inserted with a
+  bootstrap-only person account record type was treated as a business account
+  and failed with `REQUIRED_FIELD_MISSING [Name]`, or with
+  `INVALID_FIELD_FOR_INSERT_UPDATE` when given a Name. Person account record
+  types under `objects/PersonAccount/recordTypes` also load when the source
+  has no Account metadata; they were dropped.
+- **A persistent SQLite database starts after an upgrade, and migrates
+  faster.** A field that became nullable kept its `NOT NULL` constraint and a
+  lookup that gained a second target type kept its foreign key, so startup
+  failed creating the All Internal Users group or the standard permission sets.
+  The migration removes both constraints. A database is no longer migrated and
+  seeded again on every start over the same source, and seeding no longer
+  inserts another copy of every static resource and Visualforce page, which
+  made a later seeding fail with `DUPLICATE_DEVELOPER_NAME`. A metadata
+  deployment of a profile or permission set that references a custom permission
+  the server already has, but the deployment does not include, no longer fails.
+  The server logs each phase of a deployment and its elapsed time.
+- **A roll-up summary of a currency roll-up summary is a currency field.**
+  Depending on the order the fields were loaded, the outer roll-up was
+  sometimes typed as a double.
 
 ## v1.4.43 — 2026-10-27
 
