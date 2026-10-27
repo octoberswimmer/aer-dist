@@ -1347,6 +1347,130 @@
   or an error prints `Action:[...]`, `Result:[...]`, or `Error:[...]` with the
   fields sfapex shows.
 
+## v1.4.42 — 2026-10-26
+
+- **Sent emails are saved as `EmailMessage` activities.**
+  `Messaging.sendEmail` with `saveAsActivity` stored only a `Task`, with a
+  fixed `ActivityDate` of 2025-07-17 and `Type` `Email`. As in sfapex with
+  Enhanced Email, each saved `SingleEmailMessage` now inserts an
+  `EmailMessage` with an `EmailMessageRelation` row for the sender and for
+  each To, Cc, and Bcc address, and an email with a target object also gets
+  a completed `Task` (subject `Email: <subject>`, `TaskSubtype` `Email`,
+  today's `ActivityDate`) that the `EmailMessage`'s `ActivityId` names.
+- **`Messaging.renderEmailTemplate` renders Lightning template merge
+  fields.** Merge fields such as `{{{Recipient.LastName}}}` were returned
+  unchanged. A body with no complete classic `{!Object.Field}` merge field is
+  now rendered as sfapex renders it: `Recipient` is the `whoId`, `Sender`
+  the running user, `Organization` the org, and any other prefix the `whatId`'s
+  object. Values are formatted as sfapex formats them (checkboxes as 1 or
+  0, 15-character Ids, short dates, currency amounts with the symbol or, in a
+  multi-currency org, the ISO code). An unrecognized prefix, a malformed merge
+  field, mismatched braces, a `whoId` that is not a contact, lead, or user, an
+  empty body list, or more than ten bodies raise
+  `EmailTemplateRenderException`, and each rendered body counts as one SOQL
+  query.
+- **`EmailMergeFieldService.getMergeFields` returns merge field labels.** It
+  returned an empty `mergeFields` list for every object. It now returns the
+  labels an object's email templates offer, in the order Salesforce returns
+  them, and raises `ConnectApiException` for a null or empty list, an empty
+  name, or a name that matches no object the running user can read.
+- **Manual shares are deleted when a record's owner changes.** Salesforce
+  deletes every share row with `RowCause` `Manual` when `OwnerId` changes,
+  including one granted to the new owner, while rows with an Apex sharing
+  reason are kept. A before update trigger still sees the Manual rows and an
+  after update trigger sees none. aer kept them. A queue owner now also gets
+  an `Owner` share row with `All` access on every sharing model, as in
+  Salesforce. A custom object whose internal and external sharing models are
+  both Public Read/Write no longer has a `__Share` object, so a reference to
+  it does not compile, as in sfapex.
+- **`LastViewedDate` and `LastReferencedDate` are kept per user.** Both fields
+  were null on every record and `FOR REFERENCE` was ignored, so
+  `WHERE LastViewedDate != null` returned nothing. Inserting or updating a
+  record now sets both for the user who saved it, a `FOR VIEW` query sets both
+  for each record it returns, and a `FOR REFERENCE` query sets
+  `LastReferencedDate`. Another user reads null until they do the same.
+  `RecentlyViewed` lists only the running user's records and leaves out
+  deleted records until they are undeleted.
+- **Custom settings are readable through permission set and profile
+  grants.** A user could not read a custom setting granted by a permission
+  set's or profile's `customSettingAccesses` entry, and View All Custom
+  Settings was ignored. Either grant now gives read access, as in sfapex.
+  The setting describes as not createable, updateable, or deletable for that
+  user, and user-mode DML on it fails with "DML operation <OP> not allowed".
+- **Permission set accesses create `SetupEntityAccess` rows.** A permission
+  set's class, page, flow, app, custom metadata type, custom setting, and
+  external data source accesses now each create a `SetupEntityAccess` row,
+  where only custom permissions did before. `SetupEntityType` is computed
+  from the entity `SetupEntityId` names, so inserting a row for an Apex class
+  no longer fails with `REQUIRED_FIELD_MISSING`. `FlowDefinitionView` has a
+  row for each flow, a custom app's `AppMenuItem` has `Type` `TabSet` and an
+  `ApplicationId` that matches its grant, and DML on `OrgWideEmailAddress` is
+  rejected, as in sfapex.
+- **`Security.stripInaccessible` keeps queried null fields populated.** A
+  queried field with a null value that `stripInaccessible` kept was missing
+  from `getPopulatedFieldsAsMap()` and was not sent as an explicit null when a
+  clone was inserted. sfapex keeps it, so, for example, inserting a clone
+  with a copied null `RecordTypeId` fails with `INVALID_CROSS_REFERENCE_KEY`
+  on an object with record types. aer now does the same.
+- **`getPopulatedFieldsAsMap()` returns Id values for Id and lookup fields.**
+  A queried record's map held a String until the field was read through its
+  accessor and an Id afterwards, so two maps of the same record could compare
+  unequal. The map now always holds an Id, as `get()` returns.
+- **`clone()` keeps queried null formula values.** Reading a cross-object
+  formula field whose queried value was null threw "formula dependency Account
+  missing Id in query results" after `clone()`, and after `clone(true)`
+  returned the parent's current value. Both now return the queried value, as
+  in sfapex.
+- **Nulls deserialized from JSON clear fields on update.** An update of a
+  record built by `JSON.deserialize` with a field set to null left the stored
+  value unchanged. sfapex clears the field, and aer now does too.
+- **A DML statement on a list of mixed SObject types counts once.** An
+  `insert`, `delete`, or `undelete` of a list holding several SObject types
+  added one to `Limits.getDmlStatements()` for each type. It now counts as one
+  statement, as in sfapex.
+- **Assigning `Database.query` to a single SObject throws on zero or several
+  rows.** Assigning the result to an existing local variable stored the list
+  when it did not have exactly one row, and assigning it to a static field
+  turned no rows into null. Both now throw `QueryException` with "List has no
+  rows for assignment to SObject" or "List has more than 1 row for assignment
+  to SObject".
+- **Inserting a `FeedAttachment` updates its post.** A `Content` attachment
+  makes a `TextPost` or `LinkPost` a `ContentPost` and sets its
+  `RelatedRecordId` to the first attached `ContentVersion`, and a `Link`
+  attachment makes a `TextPost` a `LinkPost`. Each attached file, and the file
+  of a `FeedItem` inserted with a `RelatedRecordId`, is shared with the post's
+  parent record.
+- **Comments on custom object feed items succeed.** Commenting through
+  ConnectApi on a feed item posted to a custom object record failed with
+  `INSUFFICIENT_ACCESS_ON_CROSS_REFERENCE_ENTITY`. `FeedComment.ParentId` now
+  accepts custom object records, and it is set from the comment's `FeedItem`
+  on every insert instead of being left null.
+- **Inserting a `CollaborationGroup` makes the owner a member.** As in
+  sfapex, the owner is added as an Admin member, so
+  `CollaborationGroupMember` finds the membership and `MemberCount` is 1. Only
+  `ConnectApi.ChatterGroups.createGroup` added it before.
+- **`UserRecordAccess` fields work in dynamic queries and subqueries.**
+  `Database.query('SELECT Id, UserRecordAccess.HasReadAccess FROM Account')`
+  returned a null relationship, a lowercase `userrecordaccess` failed with
+  "Didn't understand relationship", and a subquery selecting the fields
+  returned null values, or a Double instead of a Boolean.
+- **Child subqueries sort picklists by value set order and put nulls first.**
+  An `ORDER BY` on a picklist in a relationship subquery sorted
+  alphabetically, and a `DESC` sort put nulls last. Subqueries now order a
+  picklist by its value set, as top-level queries do, and put nulls first
+  unless `NULLS LAST` is given.
+- **`EntityDefinition` filters on `QualifiedApiName` resolve local names.**
+  In namespaced code, `WHERE QualifiedApiName = 'Widget__mdt'` found no row
+  for `ns__Widget__mdt`. The value is now resolved in the executing namespace
+  first, as in sfapex, for `=`, `!=`, `<>`, `IN`, and `NOT IN`.
+- **A variable named like an object no longer enables that object's
+  feature.** A local, parameter, or field named, for example,
+  `networkMember` enabled Experience Cloud as though the code referenced
+  `NetworkMember`.
+- **`aer exec` type checks namespaced enums.** With a default namespace, a
+  top-level enum referenced by its plain name failed with "Variable does not
+  exist" or "Invalid type" in `aer exec`, while `aer test` accepted it.
+
 ## v1.4.41 — 2026-10-26
 
 - **SOQL week date literals start the week on the running user's locale's
