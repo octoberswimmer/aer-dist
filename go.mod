@@ -2,12 +2,12 @@ module aer
 
 go 1.27.3
 
-require github.com/octoberswimmer/aer v1.4.41
+require github.com/octoberswimmer/aer v1.4.42
 
 require (
 	git.sr.ht/~jackmordaunt/go-toast v1.1.2 // indirect
 	github.com/ForceCLI/force v1.9.0 // indirect
-	github.com/ForceCLI/force-md v0.59.0 // indirect
+	github.com/ForceCLI/force-md v0.70.0 // indirect
 	github.com/ForceCLI/inflect v0.0.0-20130829110746-cc00b5ad7a6a // indirect
 	github.com/adrg/xdg v0.5.3 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
@@ -52,7 +52,7 @@ require (
 	github.com/ncruces/go-strftime v1.0.0 // indirect
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 // indirect
 	github.com/nxadm/tail v1.4.4 // indirect
-	github.com/octoberswimmer/apexfmt v0.67.0 // indirect
+	github.com/octoberswimmer/apexfmt v0.69.0 // indirect
 	github.com/octoberswimmer/digger v0.38.0 // indirect
 	github.com/octoberswimmer/libc v1.67.7-octoberswimmer.9 // indirect
 	github.com/octoberswimmer/memory v1.11.0-octoberswimmer.11 // indirect
