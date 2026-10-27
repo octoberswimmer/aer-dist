@@ -1347,6 +1347,20 @@
   or an error prints `Action:[...]`, `Result:[...]`, or `Error:[...]` with the
   fields sfapex shows.
 
+## v1.4.43 — 2026-10-27
+
+- **`Messaging.sendEmail` renders the bodies of a message sent with
+  `setTreatBodiesAsTemplate(true)`.** The merge fields in the subject and
+  bodies were sent and saved on the `EmailMessage` and `Task` unrendered. The
+  subject, plain text body, and HTML body are now rendered as
+  `Messaging.renderEmailTemplate` renders a body, with the target object as
+  the recipient and the `whatId` as the related record, and the rendered
+  values are written back onto the message. As in sfapex, a `templateId`
+  on the same message is ignored and rendering counts no SOQL query. A body
+  that fails to render fails its message with
+  `EMAIL_TEMPLATE_PROCESSING_ERROR`, reported in message order alongside
+  validation failures, and leaves that message's fields as authored.
+
 ## v1.4.42 — 2026-10-26
 
 - **Sent emails are saved as `EmailMessage` activities.**
