@@ -2,13 +2,13 @@ module aer
 
 go 1.27.3
 
-require github.com/octoberswimmer/aer v1.5.14
+require github.com/octoberswimmer/aer v1.6.0-beta.1
 
 require (
 	bitbucket.org/creachadair/stringset v0.0.11 // indirect
 	codeberg.org/TauCeti/mangle-go v0.5.0 // indirect
 	github.com/ForceCLI/force v1.15.0 // indirect
-	github.com/ForceCLI/force-md v0.65.0 // indirect
+	github.com/ForceCLI/force-md v0.70.0 // indirect
 	github.com/ForceCLI/inflect v0.0.0-20130829110746-cc00b5ad7a6a // indirect
 	github.com/adrg/xdg v0.5.3 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
@@ -57,7 +57,7 @@ require (
 	github.com/nbio/xml v0.0.0-20260302224236-9f64bb3b5a9e // indirect
 	github.com/ncruces/go-strftime v1.0.0 // indirect
 	github.com/nxadm/tail v1.4.4 // indirect
-	github.com/octoberswimmer/apexfmt v0.68.0 // indirect
+	github.com/octoberswimmer/apexfmt v0.69.0 // indirect
 	github.com/octoberswimmer/digger v0.38.0 // indirect
 	github.com/octoberswimmer/libc v1.67.7-octoberswimmer.9 // indirect
 	github.com/octoberswimmer/memory v1.11.0-octoberswimmer.11 // indirect
