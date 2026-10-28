@@ -1411,6 +1411,49 @@
   Depending on the order the fields were loaded, the outer roll-up was
   sometimes typed as a double.
 
+## v1.4.44 — 2026-10-27
+
+- **`System.schedule` computes the next fire time of every cron expression.**
+  An expression shape aer did not recognize, such as an hour range, could
+  report a `NextFireTime` in the past. Fire times are now computed like sfapex
+  computes them, in the running user's local time: on a DST fall-back day an
+  hourly schedule no longer fires twice in the repeated hour, and a fixed hour
+  that a spring-forward transition skips fires on the next day that has that
+  hour. An expression that never fires raises `AsyncException`, and a seconds
+  or minutes field that names more than one value is rejected with
+  `StringException`, as in sfapex.
+- **Local times keep the time zone the transaction started with after the
+  running user's `TimeZoneSidKey` is updated.** As in sfapex, date and
+  time conversions in the same transaction still use the original time zone,
+  while `UserInfo.getTimeZone()` reads the updated record.
+- **Local times skipped or repeated by a daylight saving time change resolve
+  as in sfapex.** A time that a forward transition skips is read with the
+  offset before the transition, and a time that a backward transition repeats
+  is read as its second occurrence. `Datetime.newInstance(2027, 3, 14, 2, 30,
+  0)` in `America/New_York` returned 06:30 GMT and now returns 07:30 GMT. The
+  same rule applies to `Datetime.valueOf`, `Datetime.parse`, Date to Datetime
+  conversion, and JSON dates.
+- **`JSON.deserialize` no longer moves a date back a day when daylight saving
+  time starts at midnight.** In a time zone such as `America/Santiago`,
+  deserializing `"2024-09-08"` into a Date, a Date field, or a class field
+  returned 2024-09-07, so a record copied through `JSON.serialize` and
+  `JSON.deserialize` lost a day. Date strings are now read as calendar dates
+  without the user's time zone.
+- **A Date converted to a Datetime for a `th_TH` user carries the Buddhist
+  era.** When a Date is assigned to a Datetime variable, passed to a Datetime
+  parameter, cast to Datetime, or put into a `Map<String, Datetime>` under a
+  `th_TH` user, `yearGmt()` of the result now returns the year plus 543, as
+  in sfapex. `yearGmt()` of `GMT.today()` converted to a Datetime returned
+  2026 while `GMT.today().year()` returned 2569.
+- **`Database.update` throws `ListException` for a list that names the same
+  Id twice.** The `update` statement threw "Duplicate id in list", but
+  `Database.update` saved every row. As in sfapex, it now throws before
+  saving any row, with `allOrNone` true or false.
+- **SOQL accepts Date binds before 1700.** A query rejected every Date bind
+  before 1700 with `QueryException`. As in sfapex, only a February 29
+  that the Gregorian calendar does not have is rejected, including inside
+  a `List` or `Set` bind and an inline `IN :collection`.
+
 ## v1.4.43 — 2026-10-27
 
 - **`Messaging.sendEmail` renders the bodies of a message sent with
