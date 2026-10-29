@@ -1411,6 +1411,159 @@
   Depending on the order the fields were loaded, the outer roll-up was
   sometimes typed as a double.
 
+## v1.4.45 — 2026-10-29
+
+- **`JSON.serialize` raises `JSONException` for types it cannot serialize.**
+  A `Pattern`, `Matcher`, `Url`, `HttpRequest`, `Type`, `SObjectType`,
+  `Savepoint`, `PageReference`, iterator, or another type sfapex cannot
+  serialize produced aer's internal representation of the value instead of
+  an error. It now raises `System.JSONException` naming the type as sfapex
+  does. Exceptions follow the calling class's API version: from API 63.0,
+  serializing any exception raises "Type unsupported in JSON". In an earlier
+  class, an exception of the `System` namespace raises "Apex Type unsupported
+  in JSON: System.MathException", and any other exception serializes as an
+  object holding only the fields its class declares, without the message,
+  line number, or stack trace. The system objects sfapex does serialize now
+  have its shape: a
+  `DescribeFieldResult` as the REST field describe, the
+  `Messaging.InboundEmail` classes with every property including nulls, tab
+  describes, `Database.Cursor` as its query Id, `Auth.JWT` with its `iat`,
+  `nbf`, `exp`, and `jti` claims, the email message classes, `Location`
+  coordinates as doubles, and a `Blob` as base64.
+- **Two-argument `Type.forName` resolves namespaced custom objects.**
+  `Type.forName('pkg', 'Widget__c')` returned null while
+  `Type.forName('pkg__Widget__c')` resolved; both now return the object, as
+  do `'pkg.Widget__c'` and `'Schema.Widget__c'` and the object's share, change
+  event, and platform event objects. A name that already carries the prefix,
+  or a standard object with any namespace argument, returns null as in sfapex;
+  `Type.forName('System', 'Account')` returned `Account`. The one-argument
+  form now finds a change event, history object, or feed object that no code
+  had referenced yet.
+- **Two-argument `Type.forName` follows the calling class's API version.**
+  From API 60.0, `Type.forName('Schema', 'Account')` returns null, as in
+  sfapex; it returned `Schema.Account`. In a class saved at API 59.0 or
+  earlier, it still resolves like `Type.forName('Schema.Account')`, and now
+  also ignores a namespace argument for a name qualified by another namespace
+  (`Type.forName('Database', 'System.Url')` is `System.Url`). In an org without
+  a namespace, it finds a type declared with no namespace from a dotted name
+  or from the namespace joined to the name (`Type.forName('Garage', 'Car')` is
+  `Garage.Car`). The one-argument `Type.forName('ns.Widget__c')` now resolves
+  to `ns__Widget__c`, and `Type.forName('ns.Account')` returns null.
+- **`Datetime.newInstance` no longer hangs on Windows on December 31 of a leap
+  year.** `Datetime.newInstance(2020, 12, 31, 12, 0, 0)` never returned for a
+  user in a time zone such as `America/Los_Angeles`.
+- **Quick action references evaluate in Apex.** `QuickAction.Log_Visit`,
+  `Schema.Visit__c.QuickAction.Add_Contact`, `Visit__c.QuickAction.Add_Contact`,
+  and `QuickAction.Visit__c.Add_Contact` failed at runtime. They now evaluate
+  to the action's name (`'Log_Visit'`, `'Visit__c.Add_Contact'`), with the
+  object carrying its namespace, and an unknown action or object is the
+  compile error sfapex reports. Packages built with `aer package create`
+  now keep their quick actions.
+- **A field read on a primitive value is a compile error.** `s.Foo` on a
+  `String` or `d.year` on a `Date` reports "Variable does not exist", as
+  in sfapex.
+- **Calls through an interface or parent class run the overload that type
+  declares.** A call `checker.matches('x')` through an interface declaring only
+  `matches(Object)` ran a `matches(String)` overload the implementing class
+  added, and failed when that overload was private. Calling a private overload
+  whose parameter types exactly match the arguments from another class now
+  fails to compile with "Method is not visible", as in sfapex.
+- **A subclass with no sharing keyword takes its parent's sharing mode.** A
+  subclass of an `inherited sharing` class always ran with sharing at API 67.0
+  and later, even when called from a `without sharing` class; it now runs in
+  its caller's mode. A package-private method reached through a global
+  interface implemented by an ancestor class is now callable from another
+  namespace, and a Visualforce page finds a controller property declared on a
+  parent class instead of reporting "Unknown property".
+- **A static `@Future` method called through an interface runs
+  synchronously.** aer raised `AsyncException` "@future methods must be
+  static". As in sfapex, the method runs at the call, is not deferred to
+  `Test.stopTest()`, and does not count against `Limits.getFutureCalls()`.
+- **`Metadata.Operations.retrieve` returns a value for every custom metadata
+  field.** Fields the record leaves unset were omitted from the record's
+  `values` list; they are now present with a null value.
+- **A permission set group's summary permission set carries its custom
+  permissions.** After `Test.calculatePermissionSetGroup`, `SetupEntityAccess`
+  has a row for each custom permission the group's component permission sets
+  grant, so a query of `SetupEntityAccess` by custom permission finds the
+  group. A deleted `PermissionSetGroupComponent` no longer grants its
+  permission set's permissions to the group's members.
+- **User-mode upsert requires Create permission to write fields.** A user with
+  Edit but not Create on an object could upsert records that all had an Id.
+  As in sfapex, the upsert now throws the inaccessible-fields `DmlException`
+  naming the written fields, or reports them on the failed `UpsertResult`
+  with `allOrNone` false.
+- **User-mode upsert on a key field the user cannot read throws
+  `SObjectException`.** As in sfapex, the call fails with "Field
+  <Object>.<Field> is inaccessible in this context", whatever `allOrNone`
+  says, and saves no record.
+- **`Security.stripInaccessible` strips the fields of parent records set
+  through relationships.** With `CREATABLE`, `UPDATABLE`, or `UPSERTABLE`, a
+  parent set as `contact.Account = new Account(Site = 'x')` kept fields the
+  user could not write. They are now removed and listed by
+  `getRemovedFields()` under the parent's object name.
+- **Casting an `Object` holding a non-integer number to `Integer` or `Long`
+  throws `TypeException`.** A cast of an `Object` holding a `Decimal`,
+  `Double`, or `Long` to `Integer`, or a `Decimal` or `Double` to `Long`,
+  truncated the value. As in sfapex, it throws "Invalid conversion from runtime
+  type", even for a whole number.
+- **Formulas compute numbers as Salesforce does.** Formula arithmetic now
+  keeps the scale of its operands (`2.50 * 2.0` is `5.000`) with 39
+  significant digits, and the `^` operator is supported. A division by zero
+  or a non-finite result makes a formula field null (false for a checkbox),
+  fails a validation rule with "Invalid (Division by zero)", fails a workflow
+  rule with `CANNOT_INSERT_UPDATE_ACTIVATE_ENTITY`, and adds a
+  `FormulaRecalcFieldError` from `Formula.recalculateFormulas`.
+  `FormulaEval` returns an `Integer`, `Long`, or `Double` for those return
+  types and throws `System.FormulaEvaluationException` for a division by
+  zero.
+- **Decimal division keeps the scale Apex gives it.** `999.99 / 31` lost its
+  trailing rounded zero, `10.00 / 2` printed `5` instead of `5.00`, and a
+  quotient close to a whole number was rounded to it.
+- **`toLabel` in `ORDER BY` raises a catchable `QueryException`.** A dynamic
+  query sorting by `toLabel(field)` stopped the transaction with an
+  uncatchable database error. It now throws "Invalid aggregate function:
+  toLabel", and inline SOQL fails to compile with the same message.
+- **`List.sort()` orders lists of mixed types as sfapex does.** A list whose
+  elements are of different types, or a `Comparator` that is not a total
+  order, now sorts into the same order as in sfapex. After a list is
+  printed, serialized, hashed, or compared, sorting values of different types
+  raises the `UnexpectedException` sfapex raises, and its Ids are held as
+  18-character Strings. `==`, `!=`, and `equals` between an `Object` and a
+  String holding a valid Id compare them as Ids.
+- **Anonymous Apex top-level variables follow field rules.** A nested block may
+  declare a local with the same name as a top-level variable, and declaring a
+  top-level variable twice reports "Duplicate field".
+- **Records queried with address or geolocation compound fields can be
+  saved.** An update of a record queried with `BillingAddress` or a custom
+  address field failed with "unsupported type apexvalues.Address", and a
+  queried geolocation overwrote a latitude or longitude component assigned
+  after the query.
+- **Event has its `EventRelations` child relationships.** A subquery such as
+  `(SELECT Id FROM EventRelations)` on `Event` failed to compile, and an
+  `EventRelation` inserted without a `Status` now saves `New`.
+  `Attachment.Description` and `ContentVersion.Description` can be filtered
+  in a query.
+- **Package formulas resolve parent relationships from the lookup field
+  name.** A package formula such as `Next_Leg__r.Visit__r.Name` could fail to
+  load with "relationship not found" when another lookup's child relationship
+  had the same name.
+- **`aer package create` builds the schema `aer test` loads.** Source that
+  `aer test --default-namespace` loaded failed under `aer package create` or
+  built a different schema: an Event or Task validation rule on a custom
+  Activity field, a validation rule in an object folder with no other files,
+  a `MiddleName` or `Suffix` reference on Contact, and an
+  `objects/ns__Widget__c` folder beside `objects/Widget__c` now all load the
+  same way in both commands. A Contact formula on `MiddleName` now evaluates
+  in `aer test`.
+- **`aer package mock` handles Person Account orgs and name settings.** A mock
+  of a package with Contact custom fields in an org with Person Accounts
+  failed validation on the `__pc` fields copied to Account. Those fields are
+  now derived from the Contact field, a package formula naming `MiddleName`
+  or `Suffix` no longer fails validation, the reference check runs before the
+  slower org queries, and a missing standard field is reported as an org
+  feature aer did not detect instead of a missing field permission.
+
 ## v1.4.44 — 2026-10-27
 
 - **`System.schedule` computes the next fire time of every cron expression.**
