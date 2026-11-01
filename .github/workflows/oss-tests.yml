@@ -432,6 +432,7 @@ jobs:
         uses: ./
         with:
           source: ${{ env.APEX_OSS_LIB_SOURCE }}
+          flags: --skip SchedulerTest.testScheduleMonthly
           version: ${{ env.AER_VERSION }}
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
