@@ -1411,6 +1411,181 @@
   Depending on the order the fields were loaded, the outer roll-up was
   sometimes typed as a double.
 
+## v1.4.46 — 2026-10-31
+
+- **`QuickAction.performQuickAction` saves records.** `performQuickAction`
+  and `performQuickActions` returned a successful result without saving
+  anything, for any action name. A Create action now inserts its target
+  object, sets the parent field to the context record, and fills unset fields
+  from the action's predefined values; an Update action saves the record.
+  Under `allOrNothing`, a failed save rolls back every request and throws a
+  `DmlException`; with `allOrNothing` false, the failure is reported on the
+  result. An unknown or wrongly cased action name, a null or mistyped record,
+  or a missing context record raises the uncatchable `UnexpectedException`,
+  as in sfapex.
+- **Event start and end fields are derived on save.** An Event inserted with
+  `ActivityDateTime` and `DurationInMinutes` saved with `StartDateTime` and
+  `EndDateTime` null, and an update recalculated none of these fields. As in
+  sfapex, `StartDateTime` and `EndDateTime` sent on a save set
+  `ActivityDateTime` and `DurationInMinutes` before the triggers run, and the
+  start, end, and `ActivityDate` are derived from the stored fields after
+  them.
+- **Business hours observe the holidays of `BusinessHoursSettings`.** The
+  `<holidays>` entries were dropped, so `BusinessHours.isWithin` returned true
+  on a holiday and `nextStartDate`, `add`, `addGmt`, and `diff` counted
+  holiday hours. Each holiday is now stored as a `Holiday` row and closes the
+  business hours it lists, including daily, weekly, monthly, and yearly
+  recurring holidays. Deleting a holiday that business hours use fails with
+  `DELETE_FAILED`, and a settings file that Salesforce refuses to deploy is
+  rejected.
+- **Rich text area values are saved in the form Salesforce saves them.** A
+  value was saved exactly as written. It is now rewritten as sfapex
+  rewrites it: tags balanced and lower-cased, disallowed elements and
+  attributes removed, and `<br/>` read back as `<br>`. A value a before
+  trigger assigns is saved the same way, and the length limit applies to the
+  rewritten value. Saved text values and `String.trim()` keep a no-break space
+  at either end and remove control characters.
+- **`String.unescapeHtml4` and `unescapeHtml3` decode every HTML 4.0
+  reference.** They decoded only `&lt;`, `&gt;`, `&quot;`, and `&amp;`, so an
+  apostrophe saved as `&#39;` in a rich text value stayed encoded. They now
+  decode named, decimal, and hexadecimal references as Salesforce does, and
+  `escapeHtml4` and `escapeHtml3` write characters such as `é` and `€` as
+  references.
+- **Dates and times format by the user's locale and language.** Locales
+  other than twelve took the `Datetime.format()` pattern of another locale
+  with the same language, chosen at random, so under `en_AU` `Datetime.parse`
+  could reject text `format()` had just returned. Every `LocaleSidKey` now
+  has its own layout, and AM/PM markers, era text, and day periods follow the
+  user's `LanguageLocaleKey`. `User.LocaleSidKey` and `User.LanguageLocaleKey`
+  accept only the values Salesforce accepts, `--locale` rejects an unknown
+  locale, and the locale and language a transaction started with stay in
+  effect after the running user is updated.
+- **Language settings that turn off ICU locale formats are honored.** An org
+  whose `Language.settings` sets `enableICULocaleDateFormat` to false, and
+  any class saved at API 44.0 or earlier, now formats and parses dates,
+  times, and numbers with Salesforce's pre-ICU formats, so
+  `Datetime.parse('03/26/2014 10:00 AM')` no longer throws `TypeException` for
+  an `en_US` user of such an org. `Datetime.formatLong()` uses each locale's
+  layout and time zone names, and SOQL week literals start on the day
+  `toStartOfWeek()` returns.
+- **A run of `a` in a datetime format pattern renders one AM/PM marker.**
+  `'h:mm aa'` rendered `3:30 PMPM`; it now renders `3:30 PM`, as in sfapex.
+- **Contact, Lead, and person account names include the middle name and
+  suffix.** With `NameSettings` enabling them, `Name` now joins the non-blank
+  `FirstName`, `MiddleName`, `LastName`, and `Suffix`, as in sfapex.
+  `What.Name` and `Who.Name` now reflect a rename made by an update.
+- **`$User`, `$Profile`, and `$UserRole` formulas filter correctly in SOQL.**
+  A checkbox formula such as `OwnerId = $User.Id` read true when selected but
+  matched no record in a `WHERE` clause. The filter now reads the running
+  user's values, including after `System.runAs`.
+- **`$Setup` checkboxes read false when no setting record applies.** A
+  validation rule such as `NOT($Setup.Setting__c.Flag__c)` did not fire
+  because the checkbox read null. A hierarchy custom setting inserted during
+  a transaction is now seen by later rules in it, and a savepoint rollback
+  discards setting values it removed.
+- **Formula date comparisons compare calendar days.** `CloseDate = TODAY()`
+  could be false on the right day, and a checkbox formula could read
+  differently in `SELECT` and in `WHERE`. `DATETIMEVALUE` now returns a
+  Datetime, parses text as `yyyy-MM-dd HH:mm:ss` in GMT, and raises an error
+  for text that does not parse. `Formula.builder().build()` rejects
+  `ISBLANK` of a checkbox or picklist field with sfapex's messages.
+- **`VLOOKUP` in a validation rule does not find records of the same DML
+  chunk.** An insert of two records with the same `Name` failed on the second
+  under a `VLOOKUP` uniqueness rule. As in sfapex, a rule reads the chunk's
+  records as they were before the chunk was saved. An upsert now inserts the
+  new rows of each 200-row chunk before updating its existing rows, and
+  `getDmlIndex` on an upsert error reports the row's position instead of 0.
+- **Blank strings set in a before trigger read null in the after trigger.**
+  A `''` assigned to a Text or Picklist field in a before trigger reached the
+  after trigger's `Trigger.new` as `''`, so a comparison with
+  `Trigger.oldMap` reported a change.
+- **`User.UserType` and Task and Case `IsClosed` are derived on save.** They
+  appeared in `getPopulatedFieldsAsMap()` before insert, so a DML wrapper that
+  checks `isCreateable()` on each populated field rejected the records.
+- **SOQL `IN` lists match 15-character Ids.** A bound `List<String>` or
+  `Set<String>`, or a literal `IN` list, holding a 15-character Id matched no
+  record.
+- **`ORDER BY`, `MIN`, and `MAX` on a parent's picklist sort by the value
+  set.** `ORDER BY Parent__r.Grade__c` sorted the values alphabetically; it
+  now uses the order the values are defined in, as for a field of the queried
+  object.
+- **Compound fields read from child subqueries.** A Location field selected
+  in a subquery read null, and an Address field raised `SObjectException`.
+  Both now return their `System.Location` and `System.Address`, including
+  when selected through an alias such as `c.MailingAddress`.
+- **Query locator subqueries read their bind variables.** A bind in a child
+  subquery of `Database.getQueryLocator` bound as null or took the value of
+  another bind, so the subquery returned no rows or failed with "IN operator
+  must be used with an iterable expression".
+- **`@IsTest(SeeAllData='true')` opens org data.** A string value was ignored.
+  The value is now accepted as a Boolean or a string in any case, and a
+  method's `SeeAllData=false` no longer overrides a class's `SeeAllData=true`.
+- **`Messaging.sendEmail` fails messages with an unresolved org-wide email
+  address.** An `orgWideEmailAddressId` that named no record was accepted. It
+  now fails with `MALFORMED_ID`, `INVALID_CROSS_REFERENCE_KEY`, or
+  `INVALID_ID_FIELD` as in sfapex. The body is checked before the
+  recipients, and every invalid address is reported as its own
+  `SendEmailError`.
+- **An inserted `EmailTemplate` carries the org's namespace.** In a run with
+  a default namespace, `NamespacePrefix` was null, so a query filtered on it
+  returned nothing.
+- **`get()` on a describe map retries without the executing namespace
+  prefix.** In namespace `ns`, `fields.getMap().get('ns__name')` and
+  `Schema.getGlobalDescribe().get('ns__account')` returned null; they now
+  return the field and object as in sfapex.
+- **A class named like a standard object shadows it in its namespace.** `aer
+  package create` failed on a package with a class such as `PaymentGateway`
+  with "Method does not exist or incorrect signature". As in sfapex, the
+  bare name is the class, `Schema.PaymentGateway` is the object, and a SOQL
+  `FROM` clause still names the object.
+- **Calls passing an object for a primitive parameter fail to compile.**
+  Passing a class instance, enum value, SObject, collection, or `Object` to a
+  `String`, `Integer`, `Boolean`, `Id`, or `Date` parameter was accepted. It
+  now reports "Method does not exist or incorrect signature", or "Constructor
+  not defined" for a constructor, as in sfapex.
+- **`Decimal.setScale` and `divide` round ties to even by default.**
+  `31.085.setScale(2)` returned `31.09` and `1.divide(8, 2)` returned `0.13`;
+  they now return `31.08` and `0.12`, as in sfapex.
+- **Integers and Longs add to and subtract from a Time as milliseconds.**
+  `Time.newInstance(1, 0, 0, 0) + 3600000` produced a String; it now returns
+  `02:00:00.000Z`. A null number added to a Date, Datetime, or Time raises
+  `NullPointerException`, and arithmetic with operand types sfapex
+  rejects is a compile error.
+- **Casting an `Object` holding a String to `Datetime` or `Date` throws
+  `TypeException`.** aer parsed Strings shaped like dates, while sfapex
+  throws "Invalid conversion from runtime type String to Datetime".
+- **Type names print `Object` type arguments as `ANY`.**
+  `Map<Id, Map<String, Object>>.class.toString()` now returns
+  `Map<Id,Map<String,ANY>>`, as do `getName()`, `String.valueOf`, and
+  `StubProvider` parameter types. `Type.forName('Map<String,ANY>')` resolves,
+  and `Type.forName` of a nested generic equals its class literal.
+- **Stubbed Datetime parameters receive a Date argument as a Datetime.** A
+  `StubProvider` reported `Date` in `listOfParamTypes` for a call passing a
+  Date to a Datetime parameter. A Date argument also now selects a Datetime
+  overload over an `Object` overload.
+- **`System.assertEquals` compares long concatenated Strings by content.**
+  Two equal Strings of 16,384 or more characters built by concatenation were
+  reported unequal by `System.assertEquals`, `Assert.areEqual`, and
+  `Object.equals`.
+- **Two null String fields read through a relationship concatenate.**
+  `kid.Account.Site + kid.Account.Description` threw `NullPointerException`
+  instead of returning `'nullnull'`.
+- **A superclass reads its own property when a subclass declares a field of
+  the same name.** The superclass's methods read the subclass's field until
+  the property was assigned.
+- **A `List<String[]>` passes to a `List<List<String>>` parameter
+  unchanged.** The method received a one-element list holding the caller's
+  list.
+- **Flows call Apex actions from managed packages.** A flow action naming
+  `ns__Class` failed with "Invalid type: ns__Class.Response", and a Get
+  Records filter whose value is a global such as `$Label.Name` or `$User.Id`
+  failed with "Variable does not exist".
+- **PostgreSQL storage runs aggregate queries over parent fields.**
+  `SELECT MIN(Parent__r.Field__c) FROM Child__c` without `GROUP BY` failed
+  under `--db postgres://`. Inserting an Account or Contact whose name holds
+  a lone surrogate no longer fails with "invalid byte sequence for encoding
+  UTF8".
+
 ## v1.4.45 — 2026-10-29
 
 - **`JSON.serialize` raises `JSONException` for types it cannot serialize.**
