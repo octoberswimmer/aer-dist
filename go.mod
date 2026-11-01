@@ -2,12 +2,12 @@ module aer
 
 go 1.27.3
 
-require github.com/octoberswimmer/aer v1.6.0-beta.2
+require github.com/octoberswimmer/aer v1.6.0-beta.3
 
 require (
 	bitbucket.org/creachadair/stringset v0.0.11 // indirect
 	codeberg.org/TauCeti/mangle-go v0.5.0 // indirect
-	github.com/ForceCLI/force v1.15.0 // indirect
+	github.com/ForceCLI/force v1.16.0 // indirect
 	github.com/ForceCLI/force-md v0.70.0 // indirect
 	github.com/ForceCLI/inflect v0.0.0-20130829110746-cc00b5ad7a6a // indirect
 	github.com/adrg/xdg v0.5.3 // indirect
@@ -62,7 +62,7 @@ require (
 	github.com/octoberswimmer/libc v1.67.7-octoberswimmer.9 // indirect
 	github.com/octoberswimmer/memory v1.11.0-octoberswimmer.11 // indirect
 	github.com/octoberswimmer/regexp2 v1.11.5-octoberswimmer.3 // indirect
-	github.com/octoberswimmer/sformula v0.20.0 // indirect
+	github.com/octoberswimmer/sformula v0.21.0 // indirect
 	github.com/octoberswimmer/skyfire v0.7.0 // indirect
 	github.com/octoberswimmer/sqlite v1.46.1-octoberswimmer.15 // indirect
 	github.com/otiai10/copy v1.6.0 // indirect
