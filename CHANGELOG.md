@@ -812,9 +812,14 @@
   without `SeeAllData`. `navigationMenus/` files are stored as a
   `NavigationLinkSet` with its `NavigationMenuItem` rows under the site's
   `Network`, and a menu naming a network, object, or list view the source does
-  not define is reported as a deploy reports it. A survey flow creates a
-  `Survey` and a `SurveyVersion`, visible to `SeeAllData` tests, and
-  `Survey.TotalVersionsCount` counts the survey's versions.
+  not define is reported as a deploy reports it. A menu item may name the
+  standard `Report` and `Dashboard` list views every org has (`AllReports`,
+  `CreatedByMe`, `PrivateReports`, `PublicReports`, `AllDashboards`,
+  `PrivateDashboards`), which are queryable as `ListView` rows, and a
+  `.network` or `.navigationMenu` file can be passed to `aer test` by path.
+  A survey flow creates a `Survey` and a `SurveyVersion`, visible to
+  `SeeAllData` tests, and `Survey.TotalVersionsCount` counts the survey's
+  versions.
 - **Org settings that change behavior are loaded.** `Contract.settings` with
   `autoCalculateEndDate` off makes `Contract.EndDate` an ordinary date field
   Apex can assign; without the file it stays calculated, and an assignment to
@@ -869,6 +874,10 @@
   `startFlow()` is called, restarts it on finishing when the finish behavior is
   `RESTART`, and dispatches `statuschange` with `STARTED`, `PAUSED`,
   `FINISHED` (with the output variables), or `ERROR`.
+- **External Service registrations with `systemVersion` 9 load.** aer
+  rejected them with "the external service registration version 9 isn't
+  valid".  A registration whose provider type is `DocumentProcessing` generates
+  no classes.
 
 ### Fixes and performance
 
@@ -1410,6 +1419,37 @@
 - **A roll-up summary of a currency roll-up summary is a currency field.**
   Depending on the order the fields were loaded, the outer roll-up was
   sometimes typed as a double.
+- **External Service callouts send only the members that were set.** Each
+  member `m` of a generated schema class and of an operation's request class
+  has a `Boolean m_set`, null until `m` is assigned or deserialized, including
+  as null; response classes have none. The request body carries only the
+  members whose `m_set` is true, explicit nulls included, in declaration
+  order and without the `m_set` keys, as in sfapex. A discriminator class
+  that a wrapper schema names before the schema declares it is no longer
+  generated empty, and `JSON.deserialize` from user code into a generated
+  class types its members. In a namespaced org,
+  `ExternalService.<Registration>.<Type>` is rejected as "Invalid type", as
+  sfapex rejects it; only a top-level generated class may be named without
+  the namespace.
+- **`System.Address` is a `System.Location`.** `address.Latitude` and
+  `address.Longitude` failed to compile with "Variable does not exist", and an
+  `Address` could not be assigned, passed, or cast where a `Location` is
+  expected. An `Address` now reads its coordinates through the inherited
+  properties, `instanceof System.Location` is true for it, and a `Location`
+  method called on an `Address` runs instead of failing with
+  "getLatitude() called on non-Location object".
+- **Standard lookups on feature objects keep their target with several
+  features enabled.** With Person Accounts, Health Cloud, or Financial
+  Services Cloud enabled alongside the feature that defines an object such as
+  `OrderItemAdjustmentLineItem`, a standard lookup that the source metadata
+  declares, such as `OrderItemId`, lost its target, and a query reading
+  `OrderItem.Product2.Name` through it failed to compile as a traversal of a
+  polymorphic relationship.
+- **`aer package mock` finds a package's objects and fields whatever case the
+  namespace is typed in.** `aer package mock MYPKG` found the classes, pages,
+  tabs, and permission sets of a package the org spells `MyPkg`, but none of
+  its objects or fields. The mock now uses the org's spelling of the namespace
+  in every query and in the default package file name.
 
 ## v1.4.46 — 2026-10-31
 
