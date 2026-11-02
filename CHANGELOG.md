@@ -1451,6 +1451,46 @@
   its objects or fields. The mock now uses the org's spelling of the namespace
   in every query and in the default package file name.
 
+## v1.4.47 — 2026-11-02
+
+- **Formula field arguments may be wrapped in parentheses.** A validation rule
+  such as `VLOOKUP(($ObjectType.W__c.Fields.Name), ($ObjectType.W__c.Fields.Name), (Name))`
+  failed every save with "invalid VLOOKUP field reference", and a
+  parenthesized field in `ISCHANGED`, `PRIORVALUE`, `ISPICKVAL`, `CASE`,
+  `TEXT`, `ISBLANK`, or `PICKLISTCOUNT` was misread. These parentheses are now
+  read as grouping, as in Salesforce. A `VLOOKUP` whose arguments name an
+  unknown object or field, or fields of different objects, is reported as an
+  error when the schema is loaded, and `ISCHANGED` or `PRIORVALUE` of
+  something other than a field fails instead of returning false or null.
+- **`Formula.builder()` renders a record's Id fields as 18-character Ids.** A
+  formula built with `Formula.builder()` that returns the record's `Id` or a
+  lookup field, alone or in a concatenation, now returns the 18-character Id,
+  as sfapex does. Formula fields and global variables such as
+  `$Organization.Id` and `$User.Id` keep the 15-character Id.
+- **`performQuickAction` accepts a custom lookup as a Create action's
+  `targetParentField`.** An action whose `targetParentField` named a custom
+  lookup such as `Origin_Widget__c` failed with "target parent field ... does
+  not exist"; only standard parent names such as `Account` worked. In a
+  namespaced org or package, the custom fields an action's
+  `targetParentField` and predefined values name now take the namespace, so
+  those actions can be performed there too.
+- **`??` on a Number field yields a `Decimal`.** `(rec.Number__c ?? 0)` was
+  typed `Double`, so calling a `Decimal` method on the result, such as
+  `divide`, failed with an uncatchable "method not found: Double.divide". A
+  compound assignment such as `rec.Number__c += x` on a null Number field
+  also threw `NullPointerException` before evaluating `x`, which Apex does
+  only for `Integer`, `Long`, `Double`, and `Boolean` targets. Both now match
+  sfapex.
+- **Flows can test a Get Records element that stores its records in a
+  variable.** A decision that referenced such an element by name failed with
+  "Variable does not exist". As in Salesforce, the element's name now reads
+  as true when it found a record and false when it found none, for a single
+  record and a collection alike.
+- **Flows store whitespace-only text written to a lookup field as null.** A
+  Text formula result such as `IF(cond, Owner, " ")` assigned to a lookup
+  field failed the save with "StringException: Invalid id: ". Text that is
+  blank or only whitespace is now stored as null, as in Salesforce.
+
 ## v1.4.46 — 2026-10-31
 
 - **`QuickAction.performQuickAction` saves records.** `performQuickAction`
