@@ -416,7 +416,7 @@ jobs:
       - name: Checkout action
         uses: actions/checkout@v6
 
-      - name: Fetch pkozuchowski/Apex-Opensource-Library commit 9110e87
+      - name: Fetch cwarden/Apex-Opensource-Library commit be7cb56
         run: |
           set -euo pipefail
           root="oss/apex-opensource-library"
@@ -424,15 +424,14 @@ jobs:
           workdir=$(mktemp -d "${root}/repo.XXXXXX")
           cd "${workdir}"
           git init -q
-          git fetch -q --depth 1 https://github.com/pkozuchowski/Apex-Opensource-Library.git af14265159a530614f9f2347edae84b7c58b9840
+          git fetch -q --depth 1 https://github.com/cwarden/Apex-Opensource-Library.git be7cb56fde1896fa1b4412ebc6051f0926b37050
           git checkout -q FETCH_HEAD
           echo "APEX_OSS_LIB_SOURCE=${workdir}/force-app/commons" >> "$GITHUB_ENV"
 
-      - name: Run aer test (pkozuchowski/Apex-Opensource-Library commit 9110e87)
+      - name: Run aer test (cwarden/Apex-Opensource-Library commit be7cb56)
         uses: ./
         with:
           source: ${{ env.APEX_OSS_LIB_SOURCE }}
-          flags: --skip SchedulerTest.testScheduleMonthly
           version: ${{ env.AER_VERSION }}
         env:
           AER_LICENSE_KEY: ${{ secrets.AER_LICENSE_KEY }}
