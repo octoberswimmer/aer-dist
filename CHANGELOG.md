@@ -1451,6 +1451,45 @@
   its objects or fields. The mock now uses the org's spelling of the namespace
   in every query and in the default package file name.
 
+## v1.4.48 — 2026-11-02
+
+- **Regular expressions no longer fail with "Regex too complicated" on a
+  loaded machine.** `replaceAll`, `replaceFirst`, and patterns with lookarounds
+  or backreferences were limited to 2 seconds of matching, so a pattern that
+  passed when run alone could fail when other work slowed the machine. The
+  limit now counts matching steps, so the same pattern gives the same result
+  regardless of machine load.
+- **`ISBLANK` and `BLANKVALUE` in flow formulas treat only null or empty text
+  as blank.** `ISBLANK` of empty text was false, so a flow that set a default
+  with `IF(ISBLANK(TEXT(Picklist__c)), ...)` left the field blank, since
+  `TEXT()` of a blank picklist is the empty string. `BLANKVALUE` treated text
+  of only spaces as blank. Both now match Salesforce: empty text is blank, and
+  text of only spaces is not.
+- **Custom setting records print their fields.** `String.valueOf` of a record
+  returned by `getOrgDefaults`, `getValues`, or `getInstance` printed
+  `Type:{}`. It now lists the fields the record holds, null ones included, in
+  the order Salesforce uses, and `getPopulatedFieldsAsMap` returns the same
+  fields in the same order. `getInstance` now returns every field of the
+  setting, a custom setting's describe lists `SetupOwnerId` right after
+  `Name`, and an org default inserted without a `SetupOwnerId` is named with
+  its 15-character Id.
+- **`PermissionSetAssignment` requires a permission set or group.** An
+  assignment whose `PermissionSetId` was null or omitted, with no
+  `PermissionSetGroupId`, was saved, so a test that assigned a permission set
+  the org lacks continued without it. The insert now fails with
+  `INVALID_CROSS_REFERENCE_KEY`, "We can't save this assignment because there's
+  no permission set ID or permission set group ID.", as in sfapex.
+- **Unknown `DataWeaveScriptResource` types fail to compile.** Apex naming a
+  DataWeave script the org does not define compiled and failed only when the
+  script ran. It now fails with "Invalid type:
+  DataWeaveScriptResource.<name>", as in sfapex.
+- **A method returning a class named like a standard object can be called
+  directly.** `aer package create` failed to type check
+  `PaymentGatewayFactory.create().getName()` when `create()` returns a package
+  class named `PaymentGateway`, reporting "Method does not exist or incorrect
+  signature". The return type now resolves to the class in the namespace of
+  the class that declares the method.
+
 ## v1.4.47 — 2026-11-02
 
 - **Formula field arguments may be wrapped in parentheses.** A validation rule
