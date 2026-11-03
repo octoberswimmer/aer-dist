@@ -1451,6 +1451,100 @@
   its objects or fields. The mock now uses the org's spelling of the namespace
   in every query and in the default package file name.
 
+## v1.4.49 — 2026-11-03
+
+- **For-each loops that Salesforce rejects now fail to compile.** A loop
+  variable that the collection's elements cannot be assigned to, such as an
+  `Integer` over a `List<Long>` or an `Account` over a `Set<SObject>`, reports
+  "Invalid loop variable type expected <element> was <variable>". `Trigger.new`,
+  `Trigger.old`, `Database.queryWithBinds`, and a variable assigned from
+  `getSObjects` are `List<SObject>`, so they need an `SObject` variable. A loop
+  directly over a `Database.query` or `getSObjects` call takes any SObject or
+  SObject list variable. A loop over an iterator, a map, or a primitive reports
+  "Loop must iterate over collection: <type>". An `Integer` variable over a
+  `getSObjects` call reports "Loop variable must be a generic SObject or List or
+  a concrete SObject or List."
+- **List assignments check element types.** `List<Integer> x = new
+  List<String>()` compiled. A list whose elements cannot be assigned to the
+  target's element type now reports "Illegal assignment from ..." in a
+  declaration, an assignment, or a field initializer, and "Illegal conversion
+  from ..." when returned. Field initializers are checked like variable
+  initializers, so `static Integer v = 'x'` also fails to compile. A cast
+  between two lists or two maps compiles only when either type can be assigned
+  to the other.
+- **Storing the wrong type in a list throws `TypeException`.** A store through a
+  variable of a wider list type converted the value, so a `List<Integer>` stored
+  1.5 as 1, and adding a `String` to a `List<Integer>` raised an error Apex
+  could not catch. `add`, `set`, an index assignment, and `addAll` now throw a
+  catchable `TypeException`, such as "Collection store exception adding Decimal
+  to List<Integer>".
+- **The list copy constructor uses the element type it names.** The copy took
+  the source list's element type, and a source holding a narrower element type
+  produced a list containing the source list as its only element. The copy now
+  has the named element type and holds the source's elements.
+- **A `List<Contact>` argument selects a `List<SObject>` overload.** A method
+  overloaded on `List<Object>` and `List<SObject>` ran the `List<Object>`
+  overload. A list argument now selects the overload whose element type is
+  closest to its own.
+- **Custom lookups on Activity read as `LookedUpFromActivity`.** The child
+  relationship of a custom lookup on Activity was a `List<Activity>`, and
+  `getChildSObject` returned `Activity`. As in sfapex, the relationship is
+  now a `List<LookedUpFromActivity>`, its records are `LookedUpFromActivity`
+  records, and `getChildSObject` returns `LookedUpFromActivity`. Custom Activity
+  fields that are not formulas are also fields of `LookedUpFromActivity`,
+  `OpenActivity`, and `ActivityHistory`.
+- **A Create quick action sets its target record type.** `performQuickAction`
+  ignored the action's `targetRecordType` and inserted the record with no record
+  type, and `getTargetRecordTypeId` returned the same placeholder Id for every
+  action. The new record now takes the named record type, replacing any
+  `RecordTypeId` the request's record sets, null included, as in sfapex.
+  `getTargetRecordTypeId` returns its Id, or null for an action that names none.
+  A `targetRecordType` that does not exist is reported as an error in the
+  action's metadata.
+- **Quick action predefined value formulas can read blank fields.** A formula
+  such as `BLANKVALUE(Account.Phone, "n/a")` failed with "field 'Account' not
+  found" when the field on the context record was blank. A blank field now gives
+  a blank value.
+- **A `Date` bound against a `Datetime` field compares as midnight GMT.** `=`
+  matched any value on that GMT day, `>` and `<=` compared with 23:59:59, and a
+  bound `List<Date>` or `Set<Date>` under `IN` or `NOT IN` matched no rows. As in
+  sfapex, the `Date` now compares as midnight GMT for every operator and for
+  each element of a bound list or set, in inline SOQL, `Database.query`, and
+  `Database.queryWithBinds`. The running user's time zone does not change the
+  result.
+- **Apex tests number auto-number fields as sfapex does by default.** Test
+  records took numbers from the org's counter, and a test method's records
+  continued from the numbers its `@TestSetup` records took. Tests now number each
+  field from the org's next number plus 100000 without consuming the org's
+  counter, and `@TestSetup` and each test method start again from that number.
+  To take numbers from the org's counter, set `enableGaplessTestAutoNum` to false
+  in `settings/Apex.settings`. The `startingNumber` of an auto-number field or
+  Name is now read from metadata. Without one, a custom object's auto-number Name
+  starts at 0 and an auto-number field at 1.
+- **`JSON.serialize` omits static fields.** Serializing an Apex object wrote each
+  static field its class declares with a null value. Only instance fields and
+  properties are now written.
+- **`Case.ClosedDate` is set when a save closes a case.** The field was never
+  set. A case inserted closed now gets its `CreatedDate`, and a case closed by an
+  update gets that update's `LastModifiedDate`. Saving a case that was already
+  closed keeps the value, and reopening the case clears it. As in Salesforce, the
+  record passed to `insert` keeps a null `ClosedDate`, so query the case to read
+  the value.
+- **User-mode updates reject queried read-only fields that hold a value.** An
+  update of a record queried with a field such as `Opportunity.IsClosed` or
+  `WebCart.TotalTaxAmount` succeeded. As in sfapex, a user-mode update or
+  upsert of such a record now fails with "Operation failed due to fields being
+  inaccessible", naming the field, whatever field permissions the user holds.
+  A read-only field is left out of this check only when it is calculated, an
+  autonumber, an address or geolocation compound, or the object's name field, or
+  when the query returned it as null.
+- **`System.currentPageReference()` and `ApexPages.currentPage()` return the same
+  default page.** Before a test set a current page, a parameter put through
+  `System.currentPageReference()` was lost, so `ApexPages.currentPage()` could
+  not read it. Both methods now return one page whose parameters ignore case. As
+  in sfapex, that page has no URL: `getUrl()` is null, `String.valueOf`
+  renders `System.PageReference[null]`, and `getRedirect()` is true.
+
 ## v1.4.48 — 2026-11-02
 
 - **Regular expressions no longer fail with "Regex too complicated" on a
