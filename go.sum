@@ -699,12 +699,12 @@ github.com/ncruces/go-strftime v1.0.0/go.mod h1:Fwc5htZGVVkseilnfgOVb9mKy6w1naJm
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
 github.com/nxadm/tail v1.4.4 h1:DQuhQpB1tVlglWS2hLQ5OV6B5r8aGxSrPc5Qo6uTN78=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
-github.com/octoberswimmer/aer v1.4.49 h1:6Cz3U56g6kyTHurWDVWD4zXJ4iX0SqjR4ZlmVg0Uaqw=
-github.com/octoberswimmer/aer v1.4.49/go.mod h1:5bDZn0b8E1G/6VlCvxAE8rS2QLfmrb6IG9nxB72Ahis=
+github.com/octoberswimmer/aer v1.4.50 h1:u2YspSSHtrvFBNpmOP6VEn6xiqz0HvvBlM24+7VJ+/U=
+github.com/octoberswimmer/aer v1.4.50/go.mod h1:Xz450VWR4jM6oe7gU0XYKu1fAZD6JcyoT+QKcYZeVKk=
 github.com/octoberswimmer/antlr/v4 v4.13.1-octoberswimmer.3 h1:LQNXELq1U8IsyVp+mh9ZEWrHj68++spgnOV2P6oNqKY=
 github.com/octoberswimmer/antlr/v4 v4.13.1-octoberswimmer.3/go.mod h1:pHLfGz+l3a2OKxb2g1xTnLaOE4NvC9rX7AfzTCOyUVM=
-github.com/octoberswimmer/apexfmt v0.69.0 h1:+wzdHeyHA9Yzx6DOf8ckKzsmt9PfQgTvzbxIpW8iVDM=
-github.com/octoberswimmer/apexfmt v0.69.0/go.mod h1:gvLk7k7LJA4YibjYUR2RrSpRkzkzXnPRz0sIkxUEvA0=
+github.com/octoberswimmer/apexfmt v0.70.0 h1:CMYVBe6AbtwBV8HKGPnHy9LWTu0r8KhLYbwpFnimv1g=
+github.com/octoberswimmer/apexfmt v0.70.0/go.mod h1:gvLk7k7LJA4YibjYUR2RrSpRkzkzXnPRz0sIkxUEvA0=
 github.com/octoberswimmer/digger v0.38.0 h1:IaC3lGxYwoBxd46dNlyJ+xTQlGOl3RW6ofyet7jIiwk=
 github.com/octoberswimmer/digger v0.38.0/go.mod h1:gNAks190kBOj7KIFW51hTlrN5Oe5QK+Q7Mga0dLR96A=
 github.com/octoberswimmer/libc v1.67.7-octoberswimmer.9 h1:E06TpRVAMRyVVXSjuVbwIdc0nqHJ5oH51kMD6HzKefQ=
@@ -713,8 +713,8 @@ github.com/octoberswimmer/memory v1.11.0-octoberswimmer.11 h1:zwNeTjKFu0pyJnPBBM
 github.com/octoberswimmer/memory v1.11.0-octoberswimmer.11/go.mod h1:qAxvZaeFZnTB98TgFzMYVAawXSSXNHRdgf8fSS47svc=
 github.com/octoberswimmer/regexp2 v1.11.5-octoberswimmer.4 h1:AmX+T/mxi+QFQ3Oe8uqW/3sjsjo5K0eZ9xCHdE2xn/o=
 github.com/octoberswimmer/regexp2 v1.11.5-octoberswimmer.4/go.mod h1:tej/GSjEKPVpMI4az9xNsUJUZaybkXhYounkAPAHZ0I=
-github.com/octoberswimmer/sformula v0.21.0 h1:JE5y99qvOdYD6QfDwOeQpve/9J7BDmAFYAbKHkuCO4Q=
-github.com/octoberswimmer/sformula v0.21.0/go.mod h1:jj/jQdckA8mXgz9vOT8B1vfF5Jf9MrPuSQVAjLUr8Yo=
+github.com/octoberswimmer/sformula v0.22.0 h1:jNtEzbeu/d0ZpnzmjASmZM41nRSQ5Gf8/3zjtQu6h2Y=
+github.com/octoberswimmer/sformula v0.22.0/go.mod h1:jj/jQdckA8mXgz9vOT8B1vfF5Jf9MrPuSQVAjLUr8Yo=
 github.com/octoberswimmer/skyfire v0.6.0 h1:rTakOLMi/iTyg6r6pckyyeVlPedv46KiqSPgdurFTso=
 github.com/octoberswimmer/skyfire v0.6.0/go.mod h1:BTuqcnV0bbGxl1DjKVtiLiY9nZAVYPDsAmHcSGysrjk=
 github.com/octoberswimmer/sqlite v1.46.1-octoberswimmer.15 h1:UUg23m9Qu459i0UHG2/TfLz521YYb4XP3jEdS5udFOo=
