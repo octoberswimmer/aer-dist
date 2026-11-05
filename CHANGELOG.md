@@ -795,18 +795,9 @@
   flows, a record-triggered flow's `$Record` references, and custom metadata
   records retrieved in Metadata API format whose type is not defined. The
   errors `aer test` stops on end with a tip pointing at `aer check`.
-- **`OpenActivities` and `ActivityHistories` are built from tasks and
-  events.** The `ActivityHistories` subquery failed with "no such table" and
-  `OpenActivities` was always empty. Both lists now hold a record's tasks and
-  events: a task is open until it is closed, a timed event until it starts,
-  and an all-day event through its date in the running user's time zone.
-  Account's lists include its contacts' activities, and Contact and Lead
-  reach theirs through `WhoId`. A query of a non-queryable object such as
-  `ActivityHistory` or `FeedPost` fails with "entity type X does not support
-  query". An Event keeps `ActivityDateTime` and `StartDateTime` equal, moving
-  the start moves `EndDateTime`, an all-day event runs from midnight GMT of
-  its first day, and an insert that leaves `EventSubtype` unset stores
-  `Event`.
+- **An Event's start and end dates stay consistent.** An Event keeps
+  `ActivityDateTime` and `StartDateTime` equal, moving the start moves
+  `EndDateTime`, and an all-day event runs from midnight GMT of its first day.
 - **Call centers, navigation menus, and survey flows create their records.**
   `callCenters/` files are stored as `CallCenter` records, visible to tests
   without `SeeAllData`. `navigationMenus/` files are stored as a
@@ -874,10 +865,6 @@
   `startFlow()` is called, restarts it on finishing when the finish behavior is
   `RESTART`, and dispatches `statuschange` with `STARTED`, `PAUSED`,
   `FINISHED` (with the output variables), or `ERROR`.
-- **External Service registrations with `systemVersion` 9 load.** aer
-  rejected them with "the external service registration version 9 isn't
-  valid".  A registration whose provider type is `DocumentProcessing` generates
-  no classes.
 
 ### Fixes and performance
 
@@ -1241,12 +1228,7 @@
   `AccountHistory`, `CaseFeed`, or another standard History, Feed, Share, or
   ChangeEvent object compiled but failed because no table existed, including
   one named only in a dynamic query.
-- **Standard matching rules report Salesforce's matches and confidence.** The
-  Standard Account matching rule first narrows candidates by its match keys
-  (company with city or ZIP, website with city or ZIP), ignores a blank state,
-  drops `www.` from websites, and scores phone numbers by section. Matches of
-  the standard Account, Person Account, Contact, and Lead rules report
-  confidence 100.0. The Standard Person Account matching rule is defined.
+- **The Standard Person Account matching rule is defined.**
 - **REST API responses match Salesforce.** The sobject describe reports every
   object and field property Salesforce gives, with the parent relationship
   name in `relationshipName`, fields in describe order, and each object's CRUD
@@ -1419,12 +1401,7 @@
 - **A roll-up summary of a currency roll-up summary is a currency field.**
   Depending on the order the fields were loaded, the outer roll-up was
   sometimes typed as a double.
-- **External Service callouts send only the members that were set.** Each
-  member `m` of a generated schema class and of an operation's request class
-  has a `Boolean m_set`, null until `m` is assigned or deserialized, including
-  as null; response classes have none. The request body carries only the
-  members whose `m_set` is true, explicit nulls included, in declaration
-  order and without the `m_set` keys, as in sfapex. A discriminator class
+- **External Service generated classes are complete.** A discriminator class
   that a wrapper schema names before the schema declares it is no longer
   generated empty, and `JSON.deserialize` from user code into a generated
   class types its members. In a namespaced org,
@@ -1450,6 +1427,217 @@
   tabs, and permission sets of a package the org spells `MyPkg`, but none of
   its objects or fields. The mock now uses the org's spelling of the namespace
   in every query and in the default package file name.
+
+## v1.4.50 — 2026-11-05
+
+- **Syntax errors use sfapex's wording.** `Integer x = ;` reported
+  "mismatched input ';' expecting {...}" with the parser's list of tokens. It
+  now reports `Unexpected token ';'.`, in the deployed form that names the class
+  and line. Forms such as `Expecting ')' but was: ...` follow sfapex's
+  parser the same way.
+- **A trigger with a syntax error fails the run.** The trigger was skipped with
+  a warning, so its tests ran without it. `aer test` now stops on the error
+  unless `--skip-errors` is set.
+- **Method calls are checked against the methods the receiver has.** A call to
+  an unknown method on an interface or an enum compiled, as did `clone()` on an
+  enum, and a class with no members was exempt from the check. These now report
+  "Method does not exist or incorrect signature: void clone() from the type
+  Outer.Hue". A static member used through an instance, or an instance member
+  used in a static context, reports sfapex's message. A variable hides a
+  type or namespace of its name, so with `Hue hue;` in scope `Hue.RED` reports
+  "Static field cannot be referenced from a non static context". A nested class
+  sees only the static methods of its outer classes. `clone()` on a user
+  exception compiles and raises an uncatchable internal error, as in sfapex.
+- **More code that Salesforce rejects fails to compile.** These compiled and now
+  report the org's message:
+  - a field initializer or init block naming a later field, "Illegal forward
+    reference: b"
+  - assigning a final member outside its declaration, an init block, or a
+    constructor, "Final members can only be assigned in their declaration, init
+    blocks, or constructors"
+  - `x + 1` on a user type, "Arithmetic expressions must use numeric arguments"
+  - `-s` on a non-numeric value, "Unary negation must use a numeric argument"
+  - `~b` on a value that is not an `Integer` or `Long`, "Invalid type for
+    bitwise negate: Boolean"
+  - `interface A extends B, C`, "Expecting '{' but was: ','"
+- **More names are reserved.** A local, field, parameter, or type named `loop`,
+  `string`, `integer`, `package`, `switch`, `default`, `then`, or one of about
+  30 other words now reports "Identifier name is reserved: loop". These remain
+  legal method names. Words such as `and`, `or`, and `in` are syntax errors in
+  every position, method names included.
+- **Interface implementations convert parameters and returns as sfapex
+  does.** A method taking `Datetime` can implement an interface method taking
+  `Date`: aer required equal types and now applies the conversions of a method
+  argument. A method returning a type the interface's return type accepts by
+  assignment compiles, but the value is not converted at runtime. Calling
+  through the interface a `Long` method implemented with `Integer` raises the
+  uncatchable `UnexpectedException` "Illegal arguments", where aer returned the
+  value, and `Decimal` from `Integer` raises an uncatchable internal error. A
+  `Date` returned as `Datetime`, a `Long` or `Double` returned as `Decimal`, and
+  an `Id` returned as `String` stay unconverted in the variable that receives
+  them, and the operations sfapex fails on such a value fail the same way.
+- **Override errors follow method visibility.** A private or no-access method of
+  another top-level class is invisible to a subclass, so `override` on a method
+  of that signature reports "@Override specified for non-overriding method", and
+  a method of that signature without `override` compiles. From API 65.0,
+  `override void f()` with no access modifier reports "override methods require
+  at least one of the following global, public, protected". A redeclared
+  `getMessage()` in an exception class needs `override`; `toString()`,
+  `hashCode()`, and `equals(Object)` do not.
+- **Private methods dispatch by the declaring class's API version.** When the
+  class declaring a private method is below API 61.0, its call runs a method of
+  the same signature on the runtime class. At 61.0 and above the private method
+  runs. aer always ran the private method.
+- **Only `global` members and types are visible across namespaces at compile
+  time.** Package classes were exempt, and checks skipped namespaced code. Code
+  in one namespace now gets "Method is not visible: void ns.Type.m()", "Variable
+  is not visible: ns.Type.f", or "Type is not visible: ns.Type" for a non-global
+  member or type of another. Two packages sharing a namespace also see
+  `@NamespaceAccessible` members. A subscriber method with the signature of a
+  non-global package method needs no `override`, and `override` on it is
+  "@Override specified for non-overriding method". In a namespaced org, messages
+  name a type with its namespace, as the org does.
+- **Overrides run through `Exception` and `Object` variables.** With `Exception
+  e = new MyException('m')`, `e.getMessage()` returned the stored message rather
+  than running the class's override of `getMessage()`. The override now runs,
+  also when another namespace makes the call and the override is `public`. A
+  `public` `toString`, `hashCode`, or `equals` called from another namespace
+  through an `Object` variable failed with "method X.toString is not accessible
+  from Y" and now runs.
+- **Exception state no longer collides with fields a user exception declares.**
+  An exception class that declared a field named `message`, `cause`, or
+  `statusCode` overwrote the exception's own value, so after `this.message =
+  detail`, `getMessage()` returned the detail. `getMessage()`, `getCause()`, and
+  the DML methods now keep their values, and the string form lists the declared
+  fields: `FieldedException:[message=detail]: real`. An exception the same
+  string has already output renders as `(already output)` followed by its
+  message.
+- **`String.valueOf` uses a `toString()` declared on an exception.** It ignored
+  the method and printed `YException:[]: m`. It now prints the method's result
+  followed by the message, `custom: m`, as concatenation and collections do.
+- **An exception thrown by a user `toString()` propagates.** aer discarded it
+  and printed the default form. `String.valueOf`, concatenation, `System.debug`,
+  `String.format`, and printing a `List`, `Set`, or `Map` now raise it, and a
+  collection stops printing at the first exception.
+- **`String.join` prints what sfapex prints.** It called `toString()`, which
+  sfapex does not. A user class now prints its type name whatever
+  `toString()` returns, an enum its type rather than its constant (`Outer$Hue`),
+  a record its fields (`{Name=x}`), a `PageReference` its URL
+  (`/apex/Page?a=b`), and an exception
+  `common.apex.runtime.impl.ExecutionException: <message>`. A `Cookie` or
+  `ApexPages.Message` prints a Java class name and a hash code, and the hash
+  code differs from the org's, which changes between runs. A failed cast to `Id`
+  prints these forms too, such as `Invalid id: System.HttpRequest[Endpoint=null,
+  Method=null]`.
+- **`HttpResponse.toString()` and `Cookie.toString()` return sfapex's
+  text.** They now return `System.HttpResponse[Status=OK, StatusCode=200]` and
+  `System.Cookie[name=value;path=/;expires=-1;isSecure=false;isHttpOnly=false]`.
+- **A `Map` finds SObject keys that changed after they were put.** A map stores
+  a key under the hash it had when put, so after `insert` gave a key an Id,
+  `get()` with a key taken from `keySet()` returned null. As in sfapex,
+  `keySet()`, `values()`, `toString()`, `String.valueOf`, `equals()`, and
+  `hashCode()` now store SObject and class keys again under their current
+  hashes; `size()` and a `put` of another key do not. A copy made with `clone()`
+  or the `Map` constructor held null values for a changed key and now holds the
+  values, leaving the source map unchanged. SObject keys that have become equal
+  merge into one entry with the first key and the last value. Class keys that
+  have become equal stay separate.
+- **`ActivityHistories` and `OpenActivities` subqueries work.** Selecting
+  `Who.Name` or `Owner.Name` failed with "SObject ActivityHistory not found in
+  schema". Each subquery now holds the tasks and events the record reaches: a
+  task is history once closed, a timed event once started, and an all-day event
+  once its date is before the running user's today. Contact and Lead reach
+  theirs through `WhoId`, Account through `AccountId` and its contacts, and
+  other objects through `WhatId`. Rows sort as in Salesforce when the query has
+  no `ORDER BY`, and `Owner` reads as null. `Type` is `ActivityType`,
+  `ActivitySubtype` shows the task or event subtype, and an insert that leaves
+  `TaskSubtype` or `EventSubtype` unset stores the default.
+- **Restricted activity subqueries and unqueryable objects raise sfapex's
+  errors.** A user without View All Data or Modify All Data gets the uncatchable
+  implementation restriction exception unless the query returns one parent row
+  and the subquery has no `WHERE`, a `LIMIT` of at most 500, and the order
+  `ActivityDate DESC` (`ASC` for `OpenActivities`), `LastModifiedDate DESC`. A
+  query of `ActivityHistory`, `OpenActivity`, or another object that cannot be
+  queried, such as `FeedPost`, reports "entity type FeedPost does not support
+  query".
+- **Flows can call External Service actions.** A flow with an `externalService`
+  action failed to load. The action now runs in flow interviews and generated
+  flow classes, and never throws on a status: `responseCode` holds the status, a
+  declared response's body goes to the output named after its status (`2XX`,
+  `5XXExc`), and any other body is the text output `defaultExc`. A body that
+  does not map, a missing required input, a fraction for an integer input, and a
+  failed callout take the fault connector with the platform's message. Reading
+  an output of an action whose callout never returned raises the flow's error.
+- **External Service registrations travel with packages.** `aer package create`
+  stores them, and `aer test`, `aer exec`, and `aer server` generate their
+  classes.
+- **External Service classes record which members were set.** Each member `m` of
+  a generated schema class and of an operation's request class has a `Boolean
+  m_set`, null until `m` is assigned or deserialized, including as null. A
+  callout's body carries only the members that were set, explicit nulls
+  included, in declaration order. Apex that names the class of a registration
+  declaring a range response fails to compile, and `Type.forName` of it raises
+  `TypeException`. Registrations with `systemVersion` 9 load and generate no
+  Apex enums, and a registration whose provider type is `DocumentProcessing`
+  generates no classes.
+- **Flow formulas support `MOD` and `CHR`, and work on escaped text as
+  Salesforce does.**  A formula whose evaluation fails, such as a zero divisor
+  or `VALUE` of text that is no number, is blank. A branch that does not run
+  does not fail, and `AND` and `OR` stop at the argument that decides them.
+- **Flow interviews run Collection Sort.**
+- **A flow resource may use a name the generated code uses.** A variable named
+  `String` raised `NullPointerException`, and a variable named `Record` or a Get
+  Records element named `Date` made the generated class fail to compile. These
+  flows now load and run.
+- **A line break in a Text field is stored as a space.** Saving `'a\nb'` to a
+  Text field such as `Account.Name` kept the line break. As in sfapex, each line
+  break now becomes a space, a carriage return and line feed together count as
+  one, and a tab stays. A custom metadata record's Text field does the same, and
+  a Text Area field keeps its line breaks.
+- **PostgreSQL can store text containing U+0000.** Such a string failed the
+  insert with SQLSTATE 22021.
+- **`aer test --default-duplicate-rules` adds a new scratch org's standard
+  duplicate rules.** A project with no `duplicateRules` metadata had no active
+  `DuplicateRule` rows, so a query for the Contact rule returned nothing. The
+  flag registers the six rules: active `Standard_Account_Duplicate_Rule`,
+  `Standard_Contact_Duplicate_Rule`, and `Standard_Lead_Duplicate_Rule`, and
+  inactive `Standard_Person_Account_Duplicate_Rule`,
+  `Standard_Rule_for_Contacts_with_Duplicate_Leads`, and
+  `Standard_Rule_for_Leads_with_Duplicate_Contacts`. A `duplicateRules` file
+  with the same object and developer name replaces one. Active rules fail a
+  duplicate insert through Apex with `DUPLICATES_DETECTED` unless `allowSave` is
+  set. Without the flag, the same six rows are reported, all inactive.
+- **Standard matching rules report sfapex's matches and confidence.** Rules
+  flagged records that the org saves. The standard rules now narrow candidates
+  by match keys: for Account, company or website with city or ZIP; for Contact
+  and Lead, an email, a phone present on both records, or a company. They ignore
+  a blank state, drop `www.` from websites, and compare phone numbers by
+  section. A blank first name is
+  ignored in the email clause only when the new record leaves it blank.
+  `CompanyName` compares the words of a company name by their first six
+  characters, and a match reports confidence 100.0. These changes also apply
+  without the flag to a project's rule that uses a standard matching rule or the
+  `CompanyName` method.
+- **A package's bare names resolve in its own namespace on another package's
+  object.** A package can add a formula field, lookup filter, validation rule,
+  or field set to another package's object and reach its own field through that
+  package's lookups. A project in another namespace rewrote the bare name, so
+  tests stopped at startup with "field other__Flag__c not found on Account", and
+  `--skip-errors` did not help. The validation rule was also rejected by `aer
+  package create` and at load with `field "Flag__c" does not exist on Account`,
+  and the field set was reported as the other package's. All of these now
+  resolve. A packaged validation rule is named `ns__Rule`, as in a subscriber
+  org, and rules run in the order of their names without the prefix.
+- **The language server follows method overrides and interface
+  implementations.** Find references left out calls through a parent class or an
+  interface, including a standard interface such as `Queueable`, and calls to
+  the implementations of an interface method. It now includes a method's
+  ancestors and descendants and excludes its siblings. Go to implementation
+  returned the declaration of an interface or virtual method and now returns the
+  methods with a body that can run. Rename left the implementations of a renamed
+  interface method unchanged, which stopped the code compiling. It now renames
+  every method in the hierarchy, and refuses a method the standard library
+  declares.
 
 ## v1.4.49 — 2026-11-03
 
