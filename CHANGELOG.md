@@ -1428,6 +1428,22 @@
   its objects or fields. The mock now uses the org's spelling of the namespace
   in every query and in the default package file name.
 
+## v1.4.52 — 2026-11-06
+
+- **A `NullPointerException` from a batch job can be caught around
+  `Test.stopTest()`.** When a batch job's `start()`, `execute()`, or `finish()`
+  raised a `NullPointerException`, a `try`/`catch` around `Test.stopTest()` did
+  not catch it and the test failed. The exception now reaches the `catch`
+  clause, as it does in sfapex, for batch, queueable, and `@future` jobs.
+- **A package's top-level interface can name the package's types in its
+  method signatures.** `aer package create` left a type such as
+  `List<ColumnsService.Column>` in an interface method unresolved, so a call
+  through the interface that returned the list failed with "Illegal conversion
+  from List<ColumnsService.Column> to List<ns.ColumnsService.Column>", a call
+  that passed one failed with "Method does not exist or incorrect signature",
+  and a call returning a list of the wrong element type was not reported.
+  These calls now compile, and the wrong element type is reported.
+
 ## v1.4.51 — 2026-11-05
 
 - **More code that sfapex rejects fails to compile.** These compiled and now
