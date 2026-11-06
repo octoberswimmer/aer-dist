@@ -1,5 +1,34 @@
 # Changelog
 
+## v1.6.1 — 2026-11-06
+
+- **Report custom summary formulas evaluate conditions and functions.** A
+  custom summary formula could use only arithmetic, summary references,
+  `PARENTGROUPVAL`, and `PREVGROUPVAL`. A comparison operator failed with
+  "unexpected character", an unknown function evaluated to 0, and evaluation
+  errors were dropped, so a formula such as
+  `IF(AND(Amount:SUM > 0, ...), ..., NULL)` left its aggregate empty. Custom
+  summary formulas now support the comparison operators, `&&`, `||`, `^`,
+  `TRUE`, `FALSE`, `NULL`, and `IF`, `AND`, `OR`, `NOT`, `CASE`, `ISBLANK`,
+  `ISNULL`, `BLANKVALUE`, `NULLVALUE`, `ABS`, `CEILING`, `FLOOR`, `ROUND`,
+  `MOD`, `MAX`, `MIN`, `SQRT`, `EXP`, `LN`, and `LOG`. As in Salesforce, `^`
+  applies after `*` and `/`, a `NULL` result has no value and the label `-`,
+  and a division or `MOD` by zero has no value and the label `#Error!`. An
+  unknown function, a non-Boolean condition, a Boolean result, and `&` are
+  rejected with the messages the deploy gives.
+- **Reports Salesforce refuses to deploy are rejected.** A report with more
+  than five custom summary formulas, or one that lists a grouping field among
+  its columns, now fails to load, as it fails to deploy.
+- **`ACCOUNT_NAME` on an Opportunity report is the account's name.** The
+  `ACCOUNT_NAME`, `CONTACT_NAME`, `OPPORTUNITY_NAME`, `CAMPAIGN_NAME`, and
+  `LEAD_NAME` columns read the record's own Name on the report's base object
+  and the related record's Name on other report types. `ACCOUNT_NAME` on the
+  Opportunity report type read the opportunity's name, so a filter on it
+  matched nothing.
+- **Summary reports attach detail rows only at the lowest grouping level.**
+  In the fact maps of `Reports.ReportResults` and the REST report results, the
+  grand total and higher grouping levels no longer carry detail rows.
+
 ## v1.6.0 — 2026-11-06
 
 ### New capabilities
