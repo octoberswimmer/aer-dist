@@ -1428,6 +1428,77 @@
   its objects or fields. The mock now uses the org's spelling of the namespace
   in every query and in the default package file name.
 
+## v1.4.51 — 2026-11-05
+
+- **More code that sfapex rejects fails to compile.** These compiled and now
+  report sfapex's message:
+  - a nested class reading an instance field of its outer class
+  - reading a property that has no getter
+  - arguments of the wrong type to a method of a standard interface
+  - a global method whose signature names a type that is not global
+  - a declared name ending in a dot
+  - a static method and an instance method whose parameters convert, "Cannot
+    override static method"
+  - assigning a `Set` to a `List` or a `List` to a `Set`, "Illegal assignment
+    from Set<Id> to List<Id>"
+  - a call on metadata, on `trigger`, or on `null`, a static call of a method a
+    standard object does not have, `this.this(1)`, `this.super(1)`, and
+    `super.x(1)` in a class with no parent
+  - a name that a standard namespace does not have, and `System.Label` alone
+  - more than one expression in a `for` loop's update clause
+- **A `when` value may be an expression.** aer accepted only a literal or a
+  name. A when value is now checked against the switch's type: a mismatch or a
+  duplicate is reported on the switch's line, and any other value that is not a
+  literal on the `when` line. A name in parentheses is a variable when one is
+  in scope.
+- **The most specific overload is chosen before visibility is checked.** A
+  hidden overload was set aside first, so a call compiled against a visible,
+  less specific one. As in Salesforce, a call from another namespace, or from
+  another package of the same namespace, now reports "Method is not visible"
+  when the most specific overload is hidden.
+- **A type nested in a package class is visible to its own package.** Between
+  packages sharing a namespace, the compile-time check treated such a type as
+  belonging to no package and hid it from the package that declares it.
+- **Test output names exceptions as sfapex does.** Exception types carry
+  `System.`, as in `System.NullPointerException: Attempt to de-reference a null
+  object`, and an internal error prints as `Internal Salesforce Error:` with
+  `X` in place of the digits of its error ID.
+- **Describe results leave out state and country codes unless
+  `--feature StateAndCountryPicklist` is set.** Contact, Lead, and User still
+  listed `MailingCountryCode`, `CountryCode`, and the other address codes, so
+  code that tests for the feature with
+  `fields.getMap().keySet().contains('mailingcountrycode')` saw it enabled in
+  every run. `aer test`, `aer exec`, and `aer server` now report the same
+  fields, including `aer exec` with no source. With Person Accounts and without
+  the feature, Account listed `PersonMailingStateCode` and the other person
+  address codes, and a query selecting them, such as a flow's Get Records of
+  every field, failed with "no such column". These fields are now absent.
+- **aer's own errors cannot be caught by Apex.** A storage failure during a
+  trigger, a flow, a partial-save `Database.update`, or an approval request
+  became a catchable `DmlException`, so the test caught it and continued. Such
+  a failure now ends the run. An approval field update that a trigger's
+  `addError` rejects fails the request with that error, as in Salesforce,
+  rather than with a `DmlException` worded by aer, also with `allOrNone=false`.
+- **A roll-up summary recalculation updates the parent's audit fields.** The
+  parent kept its old `LastModifiedDate` and `SystemModstamp`. It now gets new
+  values and `LastModifiedById`, which after-update triggers see. As in
+  Salesforce, a child DML saves the parent, running its validation rules and
+  triggers, in some cases where the value does not change: inserting or
+  deleting a child of a SUM with an amount inside the filter, changing a SUM
+  child's amount, a SUM child entering the filter or moving to another parent,
+  a SUM child with an amount leaving the filter or its old parent, and
+  undeleting any child. MIN and MAX save the parent only when the value
+  changes. A summarized formula field no longer reads as changed when the
+  child is saved.
+- **Tests no longer fail intermittently with "sql: statement is closed".**
+- **Flows whose branches rejoin convert quickly.**
+- **`aer exec` loads record-triggered flows and External Service registrations
+  that `aer test` loads.** A local variable in a generated flow class took the
+  type of a same-named one in an earlier branch, so the call to an invocable
+  method failed with "Method does not exist or incorrect signature", and an
+  External Service operation's output class reported "Invalid character in
+  identifier".
+
 ## v1.4.50 — 2026-11-05
 
 - **Syntax errors use sfapex's wording.** `Integer x = ;` reported
