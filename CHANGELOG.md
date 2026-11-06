@@ -1,6 +1,6 @@
 # Changelog
 
-## v1.6 (in development)
+## v1.6.0 — 2026-11-06
 
 ### New capabilities
 
