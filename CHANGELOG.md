@@ -865,6 +865,17 @@
   `startFlow()` is called, restarts it on finishing when the finish behavior is
   `RESTART`, and dispatches `statuschange` with `STARTED`, `PAUSED`,
   `FINISHED` (with the output variables), or `ERROR`.
+- **`aer test --user-name` sets the default test user's name.** The running
+  user is named Admin User unless the option is given. The first word of the
+  value becomes the user's `FirstName` and the remaining words its `LastName`;
+  a single word sets only `LastName`.
+- **The Setup Apex Classes pages show the type hierarchy.**
+  `/lightning/setup/ApexClasses/home` has Type, Parent Class, and Interfaces
+  columns, and a class page shows the same attributes, labelling an interface's
+  entry Interfaces Extended. A class page lists the classes that implement an
+  interface or extend a class, directly or through another type, which it
+  names, and the type's inner interfaces and inner classes. A type the org
+  declares links to its page, and an inner type to its outer type's page.
 
 ### Fixes and performance
 
@@ -1427,6 +1438,179 @@
   tabs, and permission sets of a package the org spells `MyPkg`, but none of
   its objects or fields. The mock now uses the org's spelling of the namespace
   in every query and in the default package file name.
+- **SOQL filters on the long standard text areas Salesforce allows.** Any text
+  area longer than 255 characters was treated as unfilterable, so a filter on
+  one of the standard text areas Salesforce filters, such as `User.AboutMe`,
+  `Product2.Description`, and `CaseComment.CommentBody`, failed to compile in
+  inline SOQL and raised "field 'AboutMe' can not be filtered in a query call"
+  in dynamic SOQL. Filterability now follows the field's describe, which also
+  makes standard fields such as `Opportunity.HasOpenActivity` unfilterable, as
+  in sfapex.
+- **Test classes may override `@TestVisible` private methods.** A class nested
+  in a test class that overrode another class's `@TestVisible` private virtual
+  method failed to compile with "@Override specified for non-overriding
+  method". Redeclaring such a method without `override` is "Method must use
+  the override keyword", and a class outside test code still cannot override
+  it.
+- **Installed package triggers run before the org's own triggers.** sfapex
+  runs an object's triggers in ascending `ApexTrigger` Id order, so a package
+  installed before the org's triggers were created runs its triggers first.
+  aer ran source triggers first and a package's triggers in no fixed order, so
+  a subscriber before trigger did not see a field a package before trigger
+  set. Installed package triggers now run first and the org's own after them,
+  each group in name order. Source loaded with `--default-namespace` is the
+  org's own code.
+- **A subscriber's deactivation of a packaged validation rule applies.** A
+  subscriber's copy of a managed rule `ns__Rule` with `active` set to false
+  was a second rule beside the package's, which still fired. The package's
+  definition is now used with the subscriber copy's Active setting, the one
+  attribute a subscriber org can change.
+- **Lead conversion rolls back a failed conversion and leaves the lead out of
+  duplicate matching.** A Contact duplicate rule that matches Contacts against
+  Leads failed every conversion of a lead with a first name, last name, and
+  email, because the new contact matched its own lead; converted leads were
+  matched too. A conversion whose save failed kept the records saved before
+  the failure, still created the opportunity, and marked the lead converted.
+  Each conversion now stops at its first failed save and rolls back, reports
+  that save's `Database.Error` objects (a `Database.DuplicateError` included),
+  and throws a `DmlException` when `allOrNone` is set. The `Database.DMLOptions`
+  passed to `convertLead` apply to the records it saves, so
+  `DuplicateRuleHeader.allowSave` bypasses Alert rules.
+- **Duplicate rule record type filters accept contains, does not contain, and
+  starts with.** A rule filtered on record type with one of these operators
+  failed every save of its object with an unsupported operation error. They
+  now compare against the record type's name and developer name, as equals
+  and not equal do.
+- **Flow Submit for Approval actions submit the record.** A record-triggered
+  flow's submit action raised a `TypeException`, and the record was never
+  submitted. It now submits the record with the action's comment, submitter,
+  approval process, and skip entry criteria inputs, and faults with "No
+  applicable approval process was found." when no approval process accepts the
+  record, so without a fault connector the save fails with
+  `NO_APPLICABLE_PROCESS`. A `ProcessInstance`'s `StepsAndWorkitems` subquery
+  lists its steps and pending work items, and a top-level
+  `ProcessInstanceHistory` query is rejected, as in Salesforce.
+- **Send Slack Message flow actions fault as in an org with no Slack app
+  connected.** The action raised a `NullPointerException`. It now faults with
+  "The Slack App with an ID of <id> no longer has access to this Slack action.
+  ..." in `$Flow.FaultMessage` and in the `FlowException` of an unhandled
+  fault. An unhandled fault on a record-triggered flow's asynchronous path no
+  longer fails `Test.stopTest()` or the test; the path's work is rolled back
+  and the error is written to the debug log, as in Salesforce.
+- **Flow record elements that filter on a field SOQL cannot filter fault when
+  they run.** Salesforce deploys a flow whose Get, Update, or Delete Records
+  element filters on such a field, such as a long text area, and faults the
+  element. aer rejected the flow with a type error that stopped the whole run.
+  The element now faults with "This error occurred when the flow tried to look
+  up records: ..." through its fault connector; without one, the triggering
+  save fails with `INVALID_FIELD`, and a `Flow.Interview` ends with a
+  `FlowException`. A dynamic SOQL query filtering on such a field throws a
+  `QueryException`. An Update Records element on a relationship of `$Record`
+  whose filter logic is `or` generated a query with an empty WHERE clause and
+  failed every run that loaded the flow.
+- **Flow assignments to fields a flow cannot write follow the flow runtime.**
+  For a formula or roll-up summary field, or `Contract.EndDate` while the
+  Contract settings calculate it, an Assignment element and an after-save
+  update of `$Record` ignore the assignment. A Create or Update Records element
+  fails with `INVALID_FIELD_FOR_INSERT_UPDATE` ("Unable to create/update
+  fields: ..."), and a before-save update of `$Record` fails the save with
+  "Invalid target field for field update.". A flow assigning `EndDate` on a
+  Get Records output failed with "Field is not writeable: Contract.EndDate".
+  An Update Records element on `$Record.<ChildRelationship>` updated nothing,
+  and now updates each related record.
+- **Order tax and grand totals and order summary amounts are computed.**
+  `OrderItem.TotalTaxAmount` sums the item's `OrderItemTaxLineItem` amounts,
+  `Order.TotalTaxAmount` sums its items', and `Order.GrandTotalAmount` is
+  `TotalAmount` plus `TotalTaxAmount`. All three read null, so code copying
+  `GrandTotalAmount` into a required field failed with
+  `REQUIRED_FIELD_MISSING`. `ConnectApi.OrderSummaryCreation.createOrderSummary`
+  left every amount of the `OrderSummary`, `OrderDeliveryGroupSummary`, and
+  `OrderItemSummary` records null; it now computes them from the order's
+  items, adjustments, and tax lines, totalling products, delivery charges, and
+  fees by item `Type`. These amounts are not createable or updateable, as in
+  sfapex.
+- **`createOrderSummary` copies the order's fields and accepts unmanaged
+  summaries.** The summary took only five fields from the order. It now takes
+  every createable field the order shares with it, including `PoNumber`,
+  `PoDate`, `Description`, the billing address, email, and phone, `OwnerId`,
+  and custom fields, and takes `OrderedDate` from the order's `OrderedDate`
+  instead of its `CreatedDate`. An item without a `TotalLineAmount` is
+  rejected only for a `MANAGED` summary, the default; an `UNMANAGED` summary
+  accepts it and gives its item summary the quantity times the unit price.
+  `OrderSummary.OrderLifeCycleType` records the lifecycle.
+- **`OrderItem.TypeCode`, `Product2.ProductClass`, and `Account.IsBuyer` are
+  set by the platform.** These fields are not writeable and were always null
+  or false. `TypeCode` is `Product` for an Order Product and `Charge` for a
+  Delivery Charge or Fee. `ProductClass` follows `Type` (Simple,
+  VariationParent, Bundle, or Set), becomes Variation when a
+  `ProductAttribute` names the product, and returns to Simple when its last
+  attribute is deleted. `IsBuyer` is true while an active `BuyerAccount` names
+  the account.
+- **Product variation rules are enforced.** Changing a product's `Type` fails
+  with `INVALID_INPUT`, except a Simple product with no Type becoming a
+  Bundle. A `ProductAttribute` insert requires its variant parent to be a
+  VariationParent with an attribute set assigned and its product to be Simple,
+  an update cannot change its `VariantParentId`, and its `ProductId` is not
+  updateable. A product with variations cannot be deleted.
+- **`CartTestUtil.createCart`'s delivery group address has the org's default
+  country.** `getDeliverToAddress()` had no country, so a shipping calculator
+  that looks up rates by country found none. It returns null when the group
+  has no address component, as in Salesforce, and an `Address` reads null for
+  an unset text component instead of `''` and reads `geocodeAccuracy`.
+- **`ConnectApi` commerce and inventory classes declare their methods.**
+  `ConnectApi.CommerceCart`, `ConnectApi.CommerceCatalog`, and
+  `ConnectApi.OmnichannelInventoryService` declared no methods, so calls such
+  as `ConnectApi.CommerceCart.addItemsToCart` and
+  `ConnectApi.OmnichannelInventoryService.transferReservation` failed with
+  "method not found". They now declare the methods the Standard Apex Library
+  lists, except `CommerceCart.createCartFromQuote` and `createQuoteFromCart`.
+  `new ConnectApi.BatchInput(input)` failed with "constructor expects 0
+  arguments, got 1"; its three constructors, `getInput()`, and `getBinaries()`
+  now work.
+- **`ConnectApi.UserProfiles` photo methods reject a null or empty user Id.**
+  `deletePhoto`, `getPhoto`, `deleteBannerPhoto`, `getBannerPhoto`, and
+  `getUserProfile` throw `ConnectApi.ConnectApiException` with "Parameter
+  required: userId" for a null Id and "Illegal value for parameter: 'userId': "
+  for an empty one. `deletePhoto` accepted a null Id, and `getPhoto` threw an
+  `IllegalArgumentException`.
+- **Visualforce email template HTML bodies are wrapped in an `html` element.**
+  The `htmlEmailBody` of `Messaging.renderStoredEmailTemplate` and of
+  `sendEmail` with a template Id came back trimmed and unwrapped. It is now
+  wrapped in `<html></html>` unless its markup contains an html element, and
+  keeps its leading whitespace and drops its trailing whitespace, as in
+  sfapex.
+- **Tests without `SeeAllData` can query `Network` rows.** A query such as
+  `[SELECT Id FROM Network WHERE Name = 'Portal']` raised "List has no rows
+  for assignment to SObject". `Network.UrlPathPrefix` is read from the
+  network's metadata; it was always null.
+- **Standard picklist fields keep their values when the field file has no
+  value set.** The Metadata API retrieves a standard picklist field without a
+  `<valueSet>`, and such a file removed the field's values, so
+  `Account.Rating` and `ContactPointAddress.AddressType` described no values
+  and `BestTimeToContactTimezone` was no longer restricted.
+- **Orgs with person accounts load their `BusinessAccount` metadata.** A
+  retrieved `objects/BusinessAccount` was imported as an object, and loading
+  failed with duplicate child relationship names. Its fields are now added to
+  Account where Account does not define them.
+- **Mocked packages keep reparentable master-detail fields and load.** Every
+  master-detail field of a package built with `aer package mock` rejected
+  assignment after insert with "Field is not writeable". The mock now records
+  which master-detail fields allow reparenting, and a package mocked earlier
+  treats a field its describe reported updateable as reparentable.
+  `aer package unpack` writes master-detail fields as master-detail instead of
+  lookup. A mocked `Database.Batchable` class with an `execute` overload no
+  longer fails to load with "duplicate method declaration", and a class that
+  implements another namespace's interface no longer fails to load inserting
+  its `ApexClass` row.
+- **`aer exec` loads the packages `aer test` loads.** `aer exec` type checked
+  the classes of `.pkg` files and failed on packages `aer test` runs, and
+  rejected the generated class of a flow that calls two invocable actions
+  returning different inner classes. In some older package files,
+  `extends SecurityException` in a class that declares its own
+  `SecurityException` resolved to `System.SecurityException` in every command.
+- **Loading a package or a default namespace no longer panics on a custom
+  button or link whose merge field starts at a global,** such as
+  `{!$Setup.Setting__c.Host__c}`.
 
 ## v1.4.52 — 2026-11-06
 
