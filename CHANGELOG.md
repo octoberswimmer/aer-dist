@@ -1,5 +1,36 @@
 # Changelog
 
+## v1.6.2 — 2026-11-07
+
+- **Datetime ordering comparisons include milliseconds.** The `<`, `>`, `<=`,
+  and `>=` operators compared two Datetimes to the whole second, so a queried
+  `23:59:59.000` compared equal to an in-memory `23:59:59.999`, and a check of
+  a stored value against an end-of-day bound found it outside the range. They
+  now compare milliseconds, as sfapex does.
+- **Inline SOQL rejects unknown fields.** A static query that names a field
+  the object does not have, such as `SELECT PersonNope FROM Account`, compiled
+  unless the name ended in `__c` or `__pc`. It now fails to compile with the
+  message sfapex gives. Paths through a polymorphic name relationship
+  (`Task.What.Name`, `Task.Who.Name`, `Lead.Owner.Name`) resolve against the
+  fields every such record has, `SetupOwner.Type` on a hierarchy custom
+  setting resolves, and the fields of a share or history object named in a
+  `FROM` clause (`Log__Share`) resolve.
+- **A for-each loop over `database.query` is checked in any case.** A loop
+  over `database.query(...)` or `database.queryWithBinds(...)` written in
+  lowercase with a specific SObject loop variable compiled. It now fails with
+  "Invalid loop variable type expected SObject was Account", as it does when
+  written `Database.query`.
+- **Large record-triggered flows convert quickly.** A flow whose decision
+  outcomes rejoin at a loop, which Flow Builder's auto-layout produces after a
+  decision that precedes a loop, had the loop and every element after it
+  written out once per path through the decisions, so a flow with a dozen such
+  decisions took many seconds and hundreds of megabytes to load. Text
+  templates that reference another template or formula more than once
+  expanded the same way. Each element and template is now converted once.
+- **Faster startup for orgs with many field permissions.** Loading the
+  `FieldPermissions` rows of permission sets that grant access to many fields
+  takes a fraction of the time it did.
+
 ## v1.6.1 — 2026-11-06
 
 - **Report custom summary formulas evaluate conditions and functions.** A
