@@ -2,13 +2,13 @@ module aer
 
 go 1.27.3
 
-require github.com/octoberswimmer/aer v1.6.2
+require github.com/octoberswimmer/aer v1.7.0
 
 require (
 	bitbucket.org/creachadair/stringset v0.0.11 // indirect
 	codeberg.org/TauCeti/mangle-go v0.5.0 // indirect
 	github.com/ForceCLI/force v1.16.0 // indirect
-	github.com/ForceCLI/force-md v0.70.0 // indirect
+	github.com/ForceCLI/force-md v0.74.0 // indirect
 	github.com/ForceCLI/inflect v0.0.0-20130829110746-cc00b5ad7a6a // indirect
 	github.com/adrg/xdg v0.5.3 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
@@ -59,12 +59,14 @@ require (
 	github.com/nxadm/tail v1.4.4 // indirect
 	github.com/octoberswimmer/apexfmt v0.70.0 // indirect
 	github.com/octoberswimmer/digger v0.38.0 // indirect
-	github.com/octoberswimmer/libc v1.67.7-octoberswimmer.9 // indirect
-	github.com/octoberswimmer/memory v1.11.0-octoberswimmer.11 // indirect
+	github.com/octoberswimmer/libc v1.67.7-octoberswimmer.10 // indirect
+	github.com/octoberswimmer/memory v1.11.0-octoberswimmer.12 // indirect
 	github.com/octoberswimmer/regexp2 v1.11.5-octoberswimmer.4 // indirect
 	github.com/octoberswimmer/sformula v0.22.0 // indirect
 	github.com/octoberswimmer/skyfire v0.7.0 // indirect
 	github.com/octoberswimmer/sqlite v1.46.1-octoberswimmer.15 // indirect
+	github.com/opencontainers/go-digest v1.0.0 // indirect
+	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/otiai10/copy v1.6.0 // indirect
 	github.com/pb33f/jsonpath v0.8.2 // indirect
 	github.com/pb33f/libopenapi v0.36.3 // indirect
@@ -108,6 +110,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/klog/v2 v2.80.1 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
+	oras.land/oras-go/v2 v2.6.0 // indirect
 )
 
 replace github.com/antlr4-go/antlr/v4 => github.com/octoberswimmer/antlr/v4 v4.13.1-octoberswimmer.3
