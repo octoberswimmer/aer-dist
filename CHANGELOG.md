@@ -1,5 +1,279 @@
 # Changelog
 
+## v1.8 (in development)
+
+### New capabilities
+
+- **Packages can be published to and installed from an OCI registry.** A
+  workspace declares its dependencies by package name and tag in `aer.yaml`
+  (`ghcr.io/acme/core`, `v1.2.0`). `aer package get` adds a dependency, and
+  `aer package install` resolves the whole graph and writes `aer.lock` with
+  the digest of each package. Resolution reads only manifests, so it rejects a
+  package required at two tags, a package loaded both managed and unmanaged, a
+  cycle through a managed package, a managed package published under two
+  names, and a tag published again after a package was built against it
+  before downloading any package file; a version conflict lists the
+  dependency path that requires each tag. Every command that loads packages
+  loads the locked ones, downloads a missing package by its digest into
+  `aer-packages` in the user cache directory (or `AER_PACKAGE_DIR`), and stops
+  when `aer.lock` does not match `aer.yaml`. `aer package publish` takes a
+  `.pkg` file and a `name:tag` and refuses to move an existing tag without
+  `--overwrite`; `aer package update`, `pull`, `deps` and `login` complete
+  the set, and `aer cache prune`, `clean` and `info` cover the downloaded
+  packages. A package built by `aer package mock` is published the same way.
+- **Unmanaged packages can depend on each other.** Org-dependent unlocked
+  packages have no namespace and often reference each other in cycles. A
+  `package:` section in `aer.yaml` with `unmanaged: true`, or
+  `aer package create --unmanaged`, builds a package without a namespace and
+  under any file name, type checked together with its unmanaged dependencies.
+  A dependency cycle is allowed when every package in it is unmanaged.
+  `aer server` and `aer check` load the unmanaged packages `aer.lock` pins.
+- **`aer test --chaos` runs tests under other time zones, locales, clocks and
+  dates.** Each selected test class runs once with the configured settings
+  and once in each of 25 scenarios: seven time zones, six locales (including
+  `th_TH`, whose Datetimes carry the Buddhist era), a clock running at 0.001
+  times real speed, five calendar dates (the 1st and 31st of a month,
+  February 28 of a non-leap year, February 29, and December 31 at 23:59:59),
+  one second before and after local midnight, and one second before three
+  daylight saving transitions. After the usual summary, aer lists each test
+  that passes with the configured settings and fails in a scenario, with the
+  flags that reproduce the failure. `--chaos=<categories>` limits the run,
+  `--help-chaos` describes each scenario, and the new `--clock-rate` sets how
+  many simulated seconds pass per real second.
+- **`aer test --parallel-warnings` finds tests that can fail with
+  `UNABLE_TO_LOCK_ROW` in Salesforce.** Salesforce runs test classes in
+  parallel without fully isolating their data, while aer gives each class its
+  own database. With the flag, aer records what each test method writes
+  through Apex DML, flow saves and approval locks, including asynchronous jobs
+  and the class's `@testSetup`, and after the run lists each value written by
+  tests in more than one class: a `User.Username`, a unique field, a
+  hierarchy custom setting's `SetupOwnerId`, a permission set or permission
+  set license assignment, or an existing record the test updates, deletes or
+  undeletes. Each entry names the classes and methods and how to avoid the
+  conflict, and JSON output carries the list as a `parallelContention` event.
+- **Manufacturing Cloud.** The 65 objects of a Manufacturing Cloud org, with
+  their fields, describe values, picklists and DML rules, are available when
+  code or metadata references one of them. Sales agreements generate their
+  schedules, totals and status; account forecasts, targets and periods are
+  maintained; product stock, transactions, transfers, consumption and
+  serialized products are tracked with the triggers the platform's DML
+  fires. The nine standard Manufacturing actions run, including forecast
+  generation, mass updates and CSV imports, and `aer server` serves the
+  Manufacturing Connect REST resources and settings Tooling rows.
+  `ConnectApi.ManufacturingSampleManagement` and `ManufacturingDeepClone` are
+  available, and every ConnectApi property exists only at the API versions
+  that define it. Multi-currency Manufacturing orgs carry `CurrencyIsoCode`
+  where Salesforce does and refuse a currency change on a work order,
+  opportunity, order or sales agreement that has child records.
+- **Currency amounts render as Salesforce renders them for every locale.** In
+  a multi-currency org an amount renders as the record's ISO code and the
+  amount at the currency's decimal places, grouped for the user's locale
+  (`EUR 1.234,50`); in a single-currency org it renders in the format of the
+  org's Currency Locale for every user. This applies to HML and classic merge
+  fields in email templates, SOQL `FORMAT()` (which appends the amount
+  converted to the user's currency for a record in another currency),
+  `apex:outputField` in Visualforce pages and email bodies, report detail
+  cells and Sum, Average, Maximum and Minimum aggregates, the Analytics REST
+  API, the server's report pages and dashboard tables, and the ConnectApi
+  currency symbol. Previously amounts used a fixed `$`, en_US grouping, or no
+  formatting at all. The new `--currency-locale` flag of `aer test`,
+  `aer exec` and `aer server` sets a single-currency org's Currency Locale,
+  and a `CurrencyIsoCode` or `DefaultCurrencyIsoCode` naming none of a
+  multi-currency org's currencies is rejected with Salesforce's invalid
+  currency code error.
+- **Owner-based sharing rules write share rows.** After an insert, aer writes
+  one share row with `RowCause` `Rule` per target group of each matching
+  owner-based sharing rule, with the highest access the matching rules grant,
+  and recomputes the rows when the record's owner, the owner's role, the role
+  hierarchy or a group membership changes, as Salesforce does within the same
+  transaction. Rules may match and share with roles, roles and subordinates,
+  public groups, queues, all internal users, portal roles, all customer
+  portal users and all partner users. An Account rule writes every access
+  level of `AccountShare` from the rule's account settings, and a
+  with-sharing query on a private Contact, Opportunity or Case returns the
+  records whose account is shared with the user at that object's level.
+  Deleting a `Rule` row fails with `INVALID_CROSS_REFERENCE_KEY`.
+  Criteria-based rules write no rows, since Salesforce applies them after the
+  transaction commits.
+- **Invalid sharing rules are reported when the metadata loads.** A rule that
+  names a group, queue or role nothing defines, a rule shared with a guest
+  user that is not criteria-based, and a rule naming all customer portal or
+  all partner users in an org without Experience Cloud fail `aer test`,
+  `aer exec` and `aer server` at load, as Salesforce rejects them at deploy,
+  instead of failing the first DML on the rule's object. `--skip-errors`
+  drops such rules, and `aer check` lists the missing groups, queues and roles
+  so they can be fetched.
+- **`aer deduce` relates components to source files and directories.** New
+  `sourceFile` and `sourceDirectory` facts record where each Apex
+  declaration, trigger, Lightning and Visualforce component, and metadata
+  component is defined, and new `usesType` facts record every type a method,
+  field or trigger names, including in casts, `instanceof`, class literals
+  and collection type arguments. Custom metadata types, big objects, external
+  objects and knowledge article types are typed `CustomObject`. A new
+  "Dependency cycles between source directories" example lists each pair of
+  directories that depend on each other and the uses behind each dependency.
+  An object folder that adds fields to an object no source or package
+  defines is described under that object instead of being rejected.
+- **`aer package list` shows more of a package.** `-t`/`--type` limits the
+  listing to the given Metadata API types, and new sections list custom
+  labels, named credentials, document, report and dashboard folders, sharing
+  rules, duplicate and matching rules, Lightning message channels, and
+  External Service registrations. `aer package unpack` writes back duplicate
+  and matching rules, message channels and External Service registrations.
+- **Packages carry more metadata.** `aer package create` stores duplicate and
+  matching rules, Lightning message channels, Lightning pages, path
+  assistants, quick actions, platform event subscriber configurations and the
+  Security settings the package was built from, and loading the package
+  applies them, so `Datacloud.FindDuplicates` finds a package's duplicate
+  rules.
+- **`aer check` reports everything `aer test` rejects.** It now reports the
+  formula fields and validation rules of a loaded package that name a missing
+  field, what a loaded package's flows use, permission sets a permission set
+  group names that nothing defines, custom metadata types and records that
+  are referenced but not defined, test suite members that name no class,
+  Apex sharing reasons the code uses that the object does not define, and
+  the lookup targets of package fields. A child relationship used as a list
+  (`widget.Parts__r.size()`) is listed as a child relationship rather than
+  as a lookup field on the same object. Components that a loaded package
+  provides, including Apex types, Lightning web components, Aura bundles,
+  flows and custom permissions, are no longer reported as missing.
+  `--references` reports each reference's line and, for package code, the
+  file inside the package.
+- **Visualforce `$Component` resolves.** `$Component.pg:fm:pb:field` renders
+  the id of the matched component, searching outward from the expression's
+  position, including inside custom components and included pages. A
+  binding with several subscripts (`cntr.s_objects[a][b]`) parses, an
+  `apex:repeat` around table rows or select options renders its rows inside
+  the loop, and a Visualforce tab renders the page in a frame inside the
+  Lightning shell.
+
+### Fixes and performance
+
+- **Compiling and running Apex resolve names the same way.** The compile
+  check, the runtime and the language server each resolved names in their
+  own order, so a program could compile under one rule and run under
+  another. Every name and type is now resolved once, when the program
+  compiles, and the runtime and the language server use that result. These
+  now compile and run as in Salesforce:
+  - A `Map`'s `values()` whose values are records converts to a single record
+    as a query result does, and raises the query result's `QueryException`
+    when the map holds no entries or more than one.
+  - Lists of numbers assign as their elements do, nested lists and map values
+    included; a `List<SObject>` assigns to a `List<AggregateResult>`, so a
+    batch whose `start` returns `Iterable<AggregateResult>` implements
+    `execute(Database.BatchableContext, List<SObject>)`.
+  - `<>` is typed as `!=`, an assignment inside a collection initializer is a
+    value, `Account.sObjectType.Name` is the Name field's token,
+    `System.Trigger.oldMap` is the trigger context, `system.Label.X` in
+    lowercase is a label, and a return type spelled `Void` is void.
+  - A static call through an inner class name (`Builder.make(x)` inside
+    `Factory`) calls the enclosing class's static method when the inner class
+    has no member of that name.
+  - A `__r` name that is both a parent and a child relationship is the child
+    rows as a value and the parent record as the base of a member access.
+  - A custom share's `UserOrGroupId` can be tested and cast as a User or a
+    Group per record.
+  - `Component.Apex.OutputText` and the other dynamic Visualforce component
+    types are typed by the component reference, with the compiler's errors
+    for an unknown component or attribute.
+- **`List.add(element)` returns Object.** The compiler types it as Object
+  although the documentation declares it void, so `return l.add(x)` compiles
+  in a method returning Object and the call returns null. aer rejected it
+  with "Illegal conversion from void to Object".
+- **Static overloads are selected from the nearest class.** When a subclass
+  and its superclass both declare an applicable static method, the subclass's
+  is called. aer reported such a call as ambiguous or called the
+  superclass's.
+- **`List.sort` accepts a comparator of a wider type.** A class implementing
+  `Comparator<SObject>` sorts a `List<Opportunity>`, and a comparator the
+  list's elements do not convert to fails with "Incompatible Comparator
+  argument type".
+- **`getOrgDefaults()` works on a list custom setting.** It returned whichever
+  record came first; it now returns the last record in creation order, or a
+  record with no populated fields when the setting has none.
+- **`SObject.put` rejects non-numbers for numeric fields.** Storing a
+  Boolean, date or time value, Blob, record or Apex object into a numeric
+  field raises `SObjectException` "Illegal assignment from <Type> to
+  Decimal", as a String already did. The value was stored and the field's
+  next read failed with an error Apex could not catch.
+- **More code that Salesforce rejects fails to compile.** Passing an object,
+  collection, SObject, enum, exception or Object for a primitive parameter of
+  a method or constructor, and a `RowCause` naming an Apex sharing reason the
+  object does not define ("Variable does not exist: <Reason>"), are compile
+  errors.
+- **Invalid metadata fails the run.** `aer test`, `aer exec`, `aer server` and
+  `aer check` report invalid metadata once the schema is ready, and
+  `aer test --skip-errors` shows it as warnings. A formula field naming a
+  field that does not exist is rejected, as Salesforce rejects it when the
+  field is saved; under `--skip-errors` the field is kept without its
+  formula.
+- **Errors aer used to discard now surface as Salesforce reports them.**
+  `System.equals` compares as `==` does; an email template render fails when
+  a component controller throws; a JWT that does not parse is rejected; a
+  non-numeric `Url` port reads as no port; a `LIMIT` or `OFFSET` too large for
+  a number raises `QueryException`; a formula over a failed parent formula
+  reads null; a flow's number literals are not rounded; describe reports null
+  key prefixes; and a failed required-field update names the record. A
+  property's declaration line is covered only when the property is read or
+  written, not when its instance is constructed.
+- **Namespaced names never bind to bare ones.** Subscriber code read
+  `Parent__r` on `pkg__Child__c` as `pkg__Parent__r`, `get('pkg__Score__c')`
+  on a row queried with `Score__c` raised no exception, and a subscriber
+  formula field on a package object read `Score__c` as `pkg__Score__c`.
+  Names now resolve in the executing namespace and then as written, and the
+  object's namespace never applies, as in Salesforce. A subscriber's field set
+  on a managed object has no namespace, and `fieldSets.getMap()` is keyed by
+  namespace-qualified names.
+- **Dynamic SOQL resolves polymorphic paths as Salesforce does.** A field
+  read through a name-pointing relationship (`What`, `Who`, `Owner`) resolves
+  against the Name entity, and a field it lacks fails with "No such column
+  'X' on entity 'Name'". `Owner.Type` through a single-target `Owner` fails
+  with "No such column 'Type' on entity 'User'".
+- **Flow fixes.** A generated flow class creates each null member of an
+  Apex-defined variable it assigns through (`request.address.street`) instead
+  of raising a `NullPointerException`. A decision comparing a text field of a
+  loop's current item with a Boolean literal no longer fails the trigger
+  with "! operator can only be applied to boolean expressions". A custom
+  notification's body and title are rendered as text, a `{!...}` span the rich text editor split across
+  formatting tags is literal text, and a Send Custom Notification action
+  faults with `MISSING_ARGUMENT` when it names no target and with
+  `INVALID_FIELD` when its notification type does not exist. A formula
+  reading `Owner:User.Phone` of a queue-owned record reads blank.
+- **Packages built by earlier versions load correctly.** A mock built before
+  aer recorded each class's org API version no longer fails on compile rules
+  introduced at a later API version; `aer package mock` now records the
+  version. A class whose superclass does not resolve reports only that
+  superclass. Older packages keep constructor parameters typed with a
+  `Schema.` SObject and methods returning `Void`, and standard list views
+  carry the names the org shows (`Recently Completed Tasks`) instead of their
+  developer names.
+- **A managed package's standard fields win on its own objects.** When a
+  source folder or an unmanaged package added fields to a managed package's
+  object, the package's auto-number Name was replaced by a text Name, and a
+  record's Name defaulted to its Id.
+- **Unmanaged package code is named by its file.** Stack trace frames in an
+  unmanaged package named `missing.pkg.cls:23`; they now name
+  `<pkg>/<Class>.cls`, and trigger frames end in `.trigger`. In `aer server`,
+  an unmanaged package class's `ApexClass.Body` holds its source, and flow
+  errors name an unmanaged package by its name and tag or its file.
+- **Unmanaged packages use the workspace image.** `aer test` and
+  `aer server` parsed and type checked the whole program on every run when
+  an unmanaged `.pkg` file was loaded; they now restore the cached workspace
+  image.
+- **Namespaced source loads all of its rules.** Duplicate and matching rules
+  of a source directory loaded into a namespace load qualified with the
+  namespace, `aer exec` loads them, and `--default-namespace` applies to Aura
+  components and message channels.
+- **Metadata files starting with a UTF-8 byte order mark load.** Such a file,
+  which Salesforce deploys, was reported as "Could not identify metadata
+  type". A SiteDotCom site's files are no longer read as a CustomSite.
+- **PostgreSQL storage finds an exported org's Automated Process user.** The
+  lookup failed with "nondeterministic collations are not supported for
+  LIKE", and aer created a second Automated Process user.
+- **`--faketime` applies to orchestration timestamps.** Orchestration runs,
+  stages, steps, log entries and the `ReviewedDate` of approval work items
+  followed the real clock.
+
 ## v1.6.2 — 2026-11-07
 
 - **Datetime ordering comparisons include milliseconds.** The `<`, `>`, `<=`,
