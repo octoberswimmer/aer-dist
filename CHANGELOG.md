@@ -21,6 +21,11 @@
   `--overwrite`; `aer package update`, `pull`, `deps` and `login` complete
   the set, and `aer cache prune`, `clean` and `info` cover the downloaded
   packages. A package built by `aer package mock` is published the same way.
+  A workspace names the package it builds in the `package:` section of
+  `aer.yaml`, and `aer package name` prints that name, so a build workflow
+  can publish the package under it. `aer package --help` lists the commands
+  that work on `.pkg` files and the commands that use a registry under
+  separate headings.
 - **Unmanaged packages can depend on each other.** Org-dependent unlocked
   packages have no namespace and often reference each other in cycles. A
   `package:` section in `aer.yaml` with `unmanaged: true`, or
