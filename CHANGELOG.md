@@ -8,15 +8,24 @@
   workspace declares its dependencies by package name and tag in `aer.yaml`
   (`ghcr.io/acme/core`, `v1.2.0`). `aer package get` adds a dependency, and
   `aer package install` resolves the whole graph and writes `aer.lock` with
-  the digest of each package. Resolution reads only manifests, so it rejects a
-  package required at two tags, a package loaded both managed and unmanaged, a
-  cycle through a managed package, a managed package published under two
-  names, and a tag published again after a package was built against it
-  before downloading any package file; a version conflict lists the
-  dependency path that requires each tag. Every command that loads packages
-  loads the locked ones, downloads a missing package by its digest into
-  `aer-packages` in the user cache directory (or `AER_PACKAGE_DIR`), and stops
-  when `aer.lock` does not match `aer.yaml`. `aer package publish` takes a
+  the digest of each package. A managed dependency loads as the package named
+  by the last segment of its name, in the namespace its `namespace:` setting
+  gives or, without one, in a namespace of the package's name, so several
+  packages can share a namespace: `ghcr.io/acme/core` with `namespace: acme`
+  loads as package `core` in namespace `acme`. A namespace that differs from
+  the last segment only in case keeps its published spelling, `aer package
+  get` writes `namespace:` for a new dependency whose published namespace
+  differs from the last segment by more than case, and `namespace:` together
+  with `unmanaged: true` is an error. Resolution reads only manifests, so it
+  rejects a package required at two tags, a package loaded both managed and
+  unmanaged, a cycle through a managed package, a managed package published
+  under two names, and a tag published again after a package was built
+  against it before downloading any package file; a version conflict lists
+  the dependency path that requires each tag. Every command that loads
+  packages, including `aer doc`, `aer deduce` and `aer lsp`, loads the locked
+  ones, downloads a missing package by its digest into `aer-packages` in the
+  user cache directory (or `AER_PACKAGE_DIR`), and stops when `aer.lock` does
+  not match `aer.yaml`. `aer package publish` takes a
   `.pkg` file and a `name:tag` and refuses to move an existing tag without
   `--overwrite`; `aer package update`, `pull`, `deps` and `login` complete
   the set, and `aer cache prune`, `clean` and `info` cover the downloaded
@@ -154,6 +163,8 @@
 
 ### Fixes and performance
 
+- **`aer package create -o` creates the output directory.** Writing a package
+  to a directory that did not exist failed; aer now creates the directory.
 - **Compiling and running Apex resolve names the same way.** The compile
   check, the runtime and the language server each resolved names in their
   own order, so a program could compile under one rule and run under
