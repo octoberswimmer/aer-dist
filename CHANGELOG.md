@@ -264,6 +264,26 @@
   stages, steps, log entries and the `ReviewedDate` of approval work items
   followed the real clock.
 
+## v1.6.3 — 2026-11-09
+
+- **`any`, `cast`, `exception`, `object`, `rollback`, and `sort` are reserved
+  names.** A constructor parameter, local, field, parameter, or type with one
+  of these names compiled. It now fails with "Identifier name is reserved:
+  exception", as it does in sfapex. These remain legal method names.
+- **Coverage counts constructors that only call `super(...)`.** The
+  declaration line of a constructor whose only statement is `super(...)` was
+  counted only when the parent class was abstract and the class had protected
+  concrete methods. It is now counted for every such constructor, whatever its
+  access modifier or its parent's, and is covered when the constructor runs, so
+  a class's executable and covered line totals match Salesforce's.
+- **Per-test `ApexCodeCoverage` rows from `aer server` list lines as
+  Salesforce does.** For each test method, Salesforce's row lists the lines the
+  method ran and also the declaration line of every method and constructor that
+  an earlier test method of the same test class ran, with test methods ordered
+  by name, uppercase first. A test method that ran no lines of a class still
+  gets a row for it carrying those declaration lines. The server's rows listed
+  only the lines each test method ran.
+
 ## v1.6.2 — 2026-11-07
 
 - **Datetime ordering comparisons include milliseconds.** The `<`, `>`, `<=`,
