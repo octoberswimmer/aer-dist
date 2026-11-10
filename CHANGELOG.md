@@ -264,6 +264,32 @@
   stages, steps, log entries and the `ReviewedDate` of approval work items
   followed the real clock.
 
+## v1.6.5 — 2026-11-10
+
+- **A null String or Id sorts before non-null values in `<`, `<=`, `>` and
+  `>=`.** These operators returned false whenever either operand was null.
+  sfapex does that only for numbers, Dates and Datetimes. A null String
+  or Id is less than every non-null String or Id, so `s < '025-000'` with a
+  null `s` is true, and two null String or Id operands are equal, so `<=` and
+  `>=` are true and `<` and `>` are false.
+- **Aggregates of a parent's number, currency and percent fields return
+  numbers.** `MIN` and `MAX` of a field reached through a relationship
+  (`MAX(Opportunity__r.Amount)`) returned a value that could not be cast to
+  `Decimal` ("Invalid conversion from runtime type Object to Decimal"), and
+  `SUM` and `AVG` returned 0. They now return the field's values in `SELECT`,
+  `HAVING` and `ORDER BY`. In a multi-currency org, a parent's currency field
+  is converted at the rate of the parent record's currency.
+- **A parent's formula field reads null for a record with no parent.** A
+  query that selected or filtered on a parent's formula evaluated it with
+  blank fields when the lookup was empty, so a formula that treats blanks as
+  zero returned a value that aggregates counted and filters matched. As in
+  sfapex, it is now null: `AVG` skips the record, `= 1` does not match it
+  and `!= 100` does. `= NULL` on a parent's formula does not match such a
+  record either, as in Salesforce.
+- **`NOT (field = value)` matches records whose field is null.** A query
+  dropped these records. It now returns them, as sfapex does, for a field
+  of the queried object, a parent's field and a parent's formula field.
+
 ## v1.6.4 — 2026-11-09
 
 - **`XmlStreamReader` delivers the events sfapex delivers.** A
