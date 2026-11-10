@@ -264,6 +264,45 @@
   stages, steps, log entries and the `ReviewedDate` of approval work items
   followed the real clock.
 
+## v1.6.4 — 2026-11-09
+
+- **`XmlStreamReader` delivers the events sfapex delivers.** A
+  `hasNext()` loop stopped before the root element's `END_ELEMENT`, and the
+  reader had no `END_DOCUMENT` event. The XML declaration and the white space
+  outside the root element arrived as `PROCESSING_INSTRUCTION` and
+  `CHARACTERS` events, which sfapex does not deliver. Now `END_DOCUMENT`
+  follows the root element, and on it `hasNext()` returns false, `next()`
+  returns null and `nextTag()` raises "No Such Element". Text is split into
+  separate `CHARACTERS` events at entity and character references and at line
+  endings as Salesforce splits it, unless coalescing is on, and CDATA arrives
+  as `CHARACTERS`. `getPrefix()` returns the prefix each element was written
+  with, a namespace declaration applies only within its element, and
+  `setNamespaceAware(false)` is honored. Entities and attribute types declared
+  in an internal DTD are read.
+- **`XmlStreamReader` raises sfapex's errors.** Malformed XML raises
+  `XmlException` with the message and position sfapex reports, and so do
+  an external DTD, a recursive entity and too many entity expansions. Calling
+  an accessor on an event it does not apply to raises the Illegal State
+  `XmlException`, an error in the XML declaration is raised by the first
+  `next()` rather than the constructor, and `getLocation()` returns
+  `Line: L Column: C`. Constructing a reader from a concatenated string failed
+  with an error Apex could not catch; it now works.
+- **`NamespacePrefix` is set on `Folder`, `Report` and `Dashboard` rows.**
+  Under `--default-namespace`, and for folders, reports and dashboards from a
+  package, a query of `NamespacePrefix` returned null. It now returns the
+  namespace. A package folder and a subscriber folder with the same developer
+  name are two `Folder` rows, as in a subscriber org with the package
+  installed.
+- **Test runs on macOS and Windows limit their memory use.** aer read
+  available memory and its own memory use only on Linux. On macOS and Windows
+  a test run started a VM for every CPU and kept every database in memory
+  however little memory was free. It now sizes the run to the available
+  memory as it does on Linux.
+- **`aer test` removes temporary databases left by earlier runs.** A run that
+  was killed, or an interrupted run on Windows, left its databases in the
+  temp directory. Each `aer test` now removes the directories of aer
+  processes that are no longer running.
+
 ## v1.6.3 — 2026-11-09
 
 - **`any`, `cast`, `exception`, `object`, `rollback`, and `sort` are reserved
