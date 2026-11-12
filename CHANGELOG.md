@@ -264,6 +264,48 @@
   stages, steps, log entries and the `ReviewedDate` of approval work items
   followed the real clock.
 
+## v1.6.8 — 2026-11-12
+
+- **SOQL field paths more than five levels from the root object are
+  refused.** A query such as `Account.Parent.Parent.Parent.Parent.Parent.Name`
+  from Contact ran without an error. As in sfapex, it now fails with "cannot
+  query foreign key relationships more than 5 levels away from the root
+  SObject": a `QueryException` for dynamic SOQL and a compile error for inline
+  SOQL. Levels are counted from the object of the outermost query, so a child
+  subquery starts one level down, and a last relationship that reaches User is
+  not counted.
+- **`Database.getQueryLocator` checks user mode access when it creates the
+  locator.** A user-mode locator over an object or field the running user
+  cannot read was created, and the access failure surfaced only when the
+  query ran. As in sfapex, `getQueryLocator` and `getQueryLocatorWithBinds`
+  now throw the `QueryException` that `Database.query` raises, whether user
+  mode comes from the `AccessLevel` argument or `WITH USER_MODE`. When the
+  query has a bind, `getQueryLocatorWithBinds` reports the first bind as
+  "Variable does not exist", as sfapex does.
+- **`Database.executeBatch` is refused from future methods and from batch
+  `start()` and `execute()`.** The batch was queued from any context. As in
+  sfapex, these three contexts now throw a catchable `System.AsyncException`:
+  "Database.executeBatch cannot be called from a batch start, batch execute,
+  or future method." A batch's `finish()` can still start another batch.
+- **`Formula.builder()` rejects formulas over 3,900 characters.** `build()`
+  accepted them, and a formula of 16,384 characters or more stopped the run
+  with an error Apex could not catch. `build()` now throws
+  `FormulaValidationException` "Formula is too long (3,901 characters).
+  Maximum length is 3,900 characters". `withFormula()` throws
+  `IllegalArgumentException` "Formula text cannot be null or empty" for null
+  and `''`, and `build()` reports a formula of only spaces as "Syntax error.
+  Found 'end of formula'", as in sfapex.
+- **Picklist comparisons in formulas built on Apex classes ignore case.** A
+  formula built with `Formula.builder().withType()` on an Apex class compared
+  `TEXT(record.Picklist__c) = "literal"` with case; it now ignores case, as it
+  does for a formula built on an SObject. `build()` also accepts a reference
+  to a member the context class inherits from its parent class, which it had
+  reported as a field that does not exist.
+- **Formula fields evaluate faster.** Repeated evaluations of the same
+  formula field no longer repeat the lookups of its parsed form and of the
+  relationships it reads, which shortens test runs in orgs that evaluate
+  formula fields many times.
+
 ## v1.6.7 — 2026-11-12
 
 - **Batch classes with an `Iterable<Object>` execute parameter compile.** A
