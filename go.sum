@@ -723,8 +723,8 @@ github.com/ncruces/go-strftime v1.0.0/go.mod h1:Fwc5htZGVVkseilnfgOVb9mKy6w1naJm
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
 github.com/nxadm/tail v1.4.4 h1:DQuhQpB1tVlglWS2hLQ5OV6B5r8aGxSrPc5Qo6uTN78=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
-github.com/octoberswimmer/aer v1.6.7 h1:fyuG9u3FSqYtCFYSQefZ+lhY8H5chamItYM/OqIMGaw=
-github.com/octoberswimmer/aer v1.6.7/go.mod h1:1esEEtZ8rLCwQFlgTf17Ovmm8usEpc+lS2ShwajHhpw=
+github.com/octoberswimmer/aer v1.6.8 h1:GtH2pWNik34Be3WqaLSiG8PI9Es0tD41bdnW4RrzAQg=
+github.com/octoberswimmer/aer v1.6.8/go.mod h1:1esEEtZ8rLCwQFlgTf17Ovmm8usEpc+lS2ShwajHhpw=
 github.com/octoberswimmer/antlr/v4 v4.13.1-octoberswimmer.3 h1:LQNXELq1U8IsyVp+mh9ZEWrHj68++spgnOV2P6oNqKY=
 github.com/octoberswimmer/antlr/v4 v4.13.1-octoberswimmer.3/go.mod h1:pHLfGz+l3a2OKxb2g1xTnLaOE4NvC9rX7AfzTCOyUVM=
 github.com/octoberswimmer/apexfmt v0.70.0 h1:CMYVBe6AbtwBV8HKGPnHy9LWTu0r8KhLYbwpFnimv1g=
