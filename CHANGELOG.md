@@ -264,6 +264,114 @@
   stages, steps, log entries and the `ReviewedDate` of approval work items
   followed the real clock.
 
+## v1.6.6 — 2026-11-12
+
+- **Visualforce markup is parsed as Salesforce parses it.** aer read pages,
+  components and email templates with an HTML5 parser, which decoded entity
+  references, lowercased names and rebuilt the element tree, so markup
+  Salesforce rejects loaded and markup it accepts rendered differently. A
+  page, component or Visualforce email template that Salesforce does not save
+  now fails at load, and on `EmailTemplate` insert, with the `VF_COMPILE_ERROR`
+  or `FIELD_INTEGRITY_EXCEPTION` message the org gives.
+- **Visualforce pages render the markup Salesforce writes.** Components without
+  an `id` get `j_idN` client ids in document order, a repeat's row index
+  follows the repeat's id, every control is named by its client id, and an
+  input's `id` is written only when the page sets one. `apex:pageMessage` and
+  `apex:pageMessages` (grouped by severity), `apex:pageBlockTable` and
+  `apex:dataTable` rows with their `dataRow`, parity, `first` and `last`
+  classes, `apex:selectList`, `apex:selectRadio`, `apex:selectCheckboxes`,
+  `apex:tabPanel`, `apex:variable`, `apex:composition`, `apex:actionStatus`,
+  `apex:actionSupport`, `apex:actionPoller`, `apex:commandLink`,
+  `apex:iframe`, `apex:remoteObjects`, the `site:` components and
+  `apex:outputText` MessageFormat patterns render as in Salesforce. In
+  `aer server`, `apex:detail`, `apex:relatedList`, `apex:enhancedList` and
+  `chatter:feed` render the server's record views.
+- **A page's custom controller is constructed when the page first reads it.**
+  A form's view state is written after the whole page has rendered.
+  `ApexPages.addMessage`, `addMessages`, `hasMessages` and `getMessages` raise
+  the uncatchable `System.FinalException` outside a test and outside a
+  Visualforce request.
+- **`StandardController.save()` and `delete()` report DML failures as page
+  messages.** A `DmlException` escaped from both. As in sfapex, they now
+  add an `ERROR` page message for each DML error and return null, so a page
+  whose save or delete fails renders again with the error instead of failing
+  the request. Page messages from one request no longer appear on the next.
+- **Visualforce email templates hide fields the running user cannot read.** As
+  in sfapex, such a field renders empty in the body, in a component
+  attribute, inside `BLANKVALUE`, and in the subject and attachment file name.
+- **Visualforce email templates support more of Salesforce's behavior.**
+  `messaging:attachment` adds an `EmailFileAttachment` to the email, a bare
+  custom field name resolves in the executing namespace, and a `relatedTo`
+  child relationship can be iterated. Inserting an `EmailTemplate` whose
+  `DeveloperName` another template has fails with `DUPLICATE_DEVELOPER_NAME`,
+  and outside a test `EmailTemplate` DML is setup DML, so mixing it with other
+  DML fails with `MIXED_DML_OPERATION`. An email template `-meta.xml` file that
+  does not parse fails the load; it was reported only with `--verbose`.
+- **A permission set or profile cannot grant field permissions on a required
+  field.** Salesforce rejects `fieldPermissions` naming a required field, such
+  as a master-detail field, with "You cannot deploy to a required field:
+  Obj.Field". `aer test`, `aer exec` and `aer server` now fail the load on such
+  an entry, and remove it under `--skip-errors`. `aer package mock` recorded
+  every checkbox as required; it no longer does, and a package mocked by an
+  earlier version is read with its checkboxes not required.
+- **`STRING_TOO_LONG` messages match sfapex's.** The message ends with the
+  field's API name in brackets and names the failing record's row and, on
+  update, its Id. When a record has several values that are too long, the
+  first field in describe order is reported.
+- **Restricted dependent picklists reject values unavailable for the
+  controlling value.** aer accepted every combination. DML that writes a
+  dependent value the field does not make available for the controlling value
+  now fails with `INVALID_OR_NULL_FOR_RESTRICTED_PICKLIST` and `bad value for
+  restricted picklist field: <value>`. A blank controlling value makes no
+  value available. On update the check runs only when the dependent value
+  changes, so an update that changes only the controlling value saves. Each
+  value of a multi-select dependent picklist is checked, a checkbox controls
+  its dependent values as checked or unchecked, and an unrestricted dependent
+  picklist accepts any value.
+- **Dependent picklist values containing XML entities match record values.**
+  A dependent value or controlling value written in metadata as
+  `This &amp; That` was compared with the entity in place, so the
+  dependency never matched a record holding `This & That`.
+- **SOQL `FORMAT()` renders dates, datetimes and numbers in the running
+  user's locale.** `FORMAT()` returned the en_US form in every locale; it now
+  returns what `format()` returns, such as `02.01.2024` and `1.234.567,5` for
+  `de_DE` and `2/1/2567` for `th_TH`. `FORMAT()` works in a child relationship
+  subquery. `FORMAT()` in a `WHERE` clause raises the uncatchable
+  `System.UnexpectedException` "formatting is only supported in the SELECT
+  list", and in `ORDER BY` a `QueryException` with that message.
+- **`System.schedule` requires a fire time after the current time.** When a
+  cron expression's first time is the current second, the job fires at the
+  expression's next time, and an expression with no later time raises
+  `AsyncException` "Based on configured schedule, the given trigger will never
+  fire." Under `--faketime`, the schedule is computed from the current fake
+  time; it used the fake clock's start time, so a monthly job scheduled at
+  12:00:00 on the first of the month fired that day instead of a month later.
+- **Feature parameter values set in `@TestSetup` persist into each test
+  method.** A value set with `FeatureManagement.setPackageBooleanValue`,
+  `setPackageDateValue` or `setPackageIntegerValue` in `@TestSetup` was reset
+  to the parameter's metadata value before each test method.
+- **Tests can catch exceptions thrown by install handlers and sandbox
+  scripts.** `Test.testInstall`, `Test.testUninstall` and
+  `Test.testSandboxPostCopyScript` wrapped the handler's exception, so no
+  catch clause matched and the test failed with "failed to invoke onInstall".
+  The handler's exception is now rethrown unchanged.
+- **Dynamic Visualforce components work with `instanceof` and casts.** A
+  `Component.*` value was not an instance of its own type,
+  `ApexPages.Component` or `Object`, and casting one held as `Object` to
+  `ApexPages.Component` failed. Assigning a `Component.*` value to an
+  `ApexPages.Component` variable failed to compile.
+- **Methods can be called on an element of a `DescribeSObjectResult` array.**
+  `results[0].getSObjectType()` on a `Schema.DescribeSObjectResult[]` failed
+  with "invalid index result type".
+- **`Limits.getQueries()` counts only the executing namespace's queries.** It
+  returned the sum across the subscriber and every package namespace, so a
+  subscriber test that inserted a record whose package trigger ran 5 queries
+  read 5 instead of 0.
+- **`Math.min` and `Math.max` return a Decimal when either argument is a
+  Decimal.** They returned a Double unless both arguments were Decimals, so
+  `Math.max(0, 0.01).setScale(2)` failed with "method not found:
+  Double.setScale" and `Math.max(5, 0.01)` printed `5.0` instead of `5`.
+
 ## v1.6.5 — 2026-11-10
 
 - **A null String or Id sorts before non-null values in `<`, `<=`, `>` and
