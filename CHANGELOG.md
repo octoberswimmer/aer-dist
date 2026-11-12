@@ -264,6 +264,57 @@
   stages, steps, log entries and the `ReviewedDate` of approval work items
   followed the real clock.
 
+## v1.6.7 — 2026-11-12
+
+- **Batch classes with an `Iterable<Object>` execute parameter compile.** A
+  `Database.Batchable<Object>` class whose `execute` method takes
+  `Iterable<Object>` failed with "must implement the method: void
+  Database.Batchable<Object>.execute(Database.BatchableContext,
+  List<Object>)" since 1.4.50. As in sfapex, a method taking
+  `Iterable<Object>`, `Iterable<String>` or `Iterable<SObject>` now implements
+  an interface method taking a `List` or `Set` that converts to it.
+- **A `Database.QueryLocator` converts to `Iterable<Object>`.** A ternary
+  whose branches were a `QueryLocator` returned by a method and an
+  `Iterable<Object>` failed to compile with "Incompatible types in ternary
+  operator" since 1.4.50, and casting a `QueryLocator` to `Iterable<Object>`
+  threw "Invalid conversion from runtime type Database.QueryLocator to
+  System.Iterable". Both work as in sfapex, a `QueryLocator` assigns to
+  an `Iterable<Object>` variable, and `instanceof Iterable<Object>` and
+  `instanceof Iterable<SObject>` are true for one.
+- **Platform cache values put in `@TestSetup` are available to each test
+  method.** aer emptied the Org and Session caches before each test method,
+  so `Cache.Org.get` and `Cache.Session.get` returned null for a key the
+  setup had put. Each test method now starts with the values the setup left
+  in the cache, and a change one test method makes to a cached value does not
+  reach the next.
+- **`DAY_ONLY` in an aggregate query returns a Date.** A `DAY_ONLY(...)`
+  column, including `DAY_ONLY(convertTimezone(...))`, held a String such as
+  `2025-11-21 00:00:00` in the `AggregateResult`.
+- **`Database.delete` errors name the missing record's Id.** Deleting a
+  record, or a list of records, whose Id names no record raised a
+  `DmlException` without "with id <record id>". As in sfapex, the Id is
+  now omitted only when the row was passed to `Database.delete` as an Id.
+- **Users without Modify All Data can delete permission set assignments.**
+  Deleting a `PermissionSetAssignment` inside `System.runAs` as a Standard
+  User failed with `INSUFFICIENT_ACCESS_OR_READONLY`. sfapex lets such a
+  user delete their own assignments and other users'.
+- **`AppDefinition` returns the apps the running user can see.** The object
+  had no rows. A query now returns a row for each custom app granted to the
+  user through a permission set's or the profile's `applicationVisibilities`,
+  with the `DurableId` that `UserAppInfo.AppDefinitionId` names, and with
+  `UiType`, `NavType` and the form factor flags of the app's metadata.
+- **The `x` flag of an inline flag group allows whitespace and comments in
+  the group.** `Pattern.compile('(?x )a')` and `Pattern.compile('(?x#c\n)a')`
+  raised "Unknown inline modifier near index 2". As in Java, the whitespace
+  and comments after `x` are skipped, and `(?x:...)` and `(?-x)` end the
+  flag. A `(?#...)` comment group raises "Unknown inline modifier", as in
+  Java.
+- **Large test runs use less memory and do less repeated work.** Test VMs
+  share the org's permission set, layout, Lightning page and application
+  metadata instead of each holding a copy. Repeated `getInstance` calls on a
+  hierarchy custom setting and repeated reads of `Organization`,
+  `CurrencyType` and custom metadata no longer query the database each time.
+
 ## v1.6.6 — 2026-11-12
 
 - **Visualforce markup is parsed as Salesforce parses it.** aer read pages,
