@@ -110,7 +110,7 @@ require (
 	modernc.org/mathutil v1.7.1 // indirect
 )
 
-replace github.com/antlr4-go/antlr/v4 => github.com/octoberswimmer/antlr/v4 v4.13.1-octoberswimmer.3
+replace github.com/antlr4-go/antlr/v4 => github.com/octoberswimmer/antlr/v4 v4.13.1-octoberswimmer.4
 
 // mangle-go v0.5.0 merges each semi-naive round's new facts one round late,
 // losing recursive joins of facts first derived in the same round.
