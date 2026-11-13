@@ -264,6 +264,27 @@
   stages, steps, log entries and the `ReviewedDate` of approval work items
   followed the real clock.
 
+## v1.6.9 — 2026-11-12
+
+- **A `Database.QueryLocator` can be iterated as an `Iterable`.** Calling
+  `iterator()` on a locator held in an `Iterable<Object>` or
+  `Iterable<SObject>` variable, or looping over a locator with an enhanced
+  `for` loop, stopped the run with an Internal Salesforce Error that Apex
+  could not catch. As in sfapex, each of these now iterates the rows of the
+  query.
+- **A catch clause naming a packaged nested exception catches it.** A
+  `catch (ns.Outer.Inner e)` clause did not match the package's exception, and
+  the exception fell through to `catch (Exception e)`, in source loaded with
+  `--default-namespace`, in `aer exec`, and in `aer server`.
+- **`String.hashCode()` works on long concatenated strings.** On a long string
+  built by concatenation it failed with an error Apex could not catch; it now
+  returns the hash. On a null string it throws `System.NullPointerException`.
+- **Long concatenated strings and DML saves are faster.** `substring` and
+  other `String` methods no longer copy a long string built by concatenation
+  on each call, so a loop over a string of millions of characters runs in a
+  fraction of the time it took. Inserts and updates no longer compute formula
+  fields that nothing reads during the save.
+
 ## v1.6.8 — 2026-11-12
 
 - **SOQL field paths more than five levels from the root object are
