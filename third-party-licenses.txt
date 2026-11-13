@@ -342,7 +342,7 @@ THE SOFTWARE.
 
 
 ================================================================================
-github.com/antlr4-go/antlr/v4 v4.13.1-octoberswimmer.3
+github.com/antlr4-go/antlr/v4 v4.13.1-octoberswimmer.4
 BSD-3-Clause
 ================================================================================
 
