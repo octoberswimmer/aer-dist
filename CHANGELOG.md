@@ -264,6 +264,82 @@
   stages, steps, log entries and the `ReviewedDate` of approval work items
   followed the real clock.
 
+## v1.6.10 — 2026-11-13
+
+- **Case-sensitive unique text fields match by exact case in SOQL.** A
+  unique text field with `caseSensitive` set can hold values that differ only
+  in case, and a query filtering on one of them also returned the records
+  holding the other spellings. `=`, `!=`, `IN`, `NOT IN`, `LIKE` and
+  `NOT LIKE` on such a field now compare by exact case, including through
+  parent relationships and in child subqueries, and `COUNT_DISTINCT` counts
+  the spellings separately. `<`, `>`, `<=` and `>=` order values without
+  regard to case and then put the lowercase spelling first, as in sfapex.
+  `GROUP BY` still puts the spellings in one group. A text formula field that
+  is only a reference to such a field compares the same way.
+- **`GROUP BY CUBE` returns subtotal rows.** A `CUBE` query ran as a plain
+  `GROUP BY` and returned no subtotals. Without an `ORDER BY`, the rows of a
+  `ROLLUP` or `CUBE` query now come back in the order sfapex returns them:
+  for one field, the grand total and then the groups in ascending order; for
+  a `ROLLUP` of several fields, each subtotal after the groups it totals; and
+  for a `CUBE` of several fields, the grand total, the groups, and then each
+  set of subtotals.
+- **Three invalid queries are refused.** A semi-join whose inner query
+  selects from the outer query's object, a SOSL query returning an object
+  that does not support search, and a `ROLLUP` or `CUBE` of more than three
+  fields now fail as in sfapex: with a compile error for a query written in
+  Apex, and with a `QueryException` for a dynamic one.
+- **Custom objects with search enabled describe as searchable.** The
+  `enableSearch` setting of a custom object in source format was ignored, so
+  `DescribeSObjectResult.isSearchable()` returned false for it.
+- **`Database.countQuery` and `Database.countQueryWithBinds` count one query
+  row.** As in sfapex, a `COUNT()` query uses one query row however many
+  records it counts. An inline `[SELECT COUNT() ...]` did, but these two
+  methods did not, so `Limits.getQueryRows()` was one short for each call.
+- **Flow Date formulas that add days to a Datetime work.** A Date formula
+  such as `7 + {!dt}`, `DATETIMEVALUE({!$Record.Name}) + 7`, or an `IF`,
+  `CASE` or `BLANKVALUE` choosing a Datetime, either failed the whole test
+  run with a compile error or failed when the flow ran. These now hold the
+  Datetime's GMT date. A Date formula, Assignment or Create Records element
+  that reads a null Datetime gives null instead of throwing a
+  `NullPointerException`, and a division such as `12/24` keeps its fraction
+  of a day instead of dividing as Integers.
+- **Lead converted fields and `Case.ClosedDate` are writeable with Set Audit
+  Fields upon Record Creation.** A test that set `ConvertedDate`,
+  `ConvertedAccountId`, `ConvertedContactId` or `ConvertedOpportunityId` on a
+  Lead, or `ClosedDate` on a Case, failed to compile with "Field is not
+  writeable" whatever the org's settings. When the source's
+  `Security.settings` turns on `enableAuditFieldsInactiveOwner`, these fields
+  can now be set in a constructor, an assignment or `put()`, and a case
+  inserted in a closed status keeps the `ClosedDate` it was given. Without a
+  `Security.settings` file, the error includes a tip naming the setting.
+- **Inserts with a future `CreatedDate` or an invalid Lead `ConvertedDate`
+  are rejected.** As in sfapex, an insert that supplies a `CreatedDate` later
+  than the time of the insert fails with `FIELD_INTEGRITY_EXCEPTION`
+  "Create Date(...) in the future.", and a Lead insert whose `ConvertedDate`
+  is before its `CreatedDate` or in the future fails with "Converted
+  Date(...) before Create Date(...)." or "Converted Date(...) in the
+  future.".
+- **Site guest users get only the object access their profile grants.**
+  `Schema.SObjectType.Document.isAccessible()` returned true for a site's
+  guest user whose profile grants no access to `Document`, and guest users
+  could read other objects their profile does not grant. A custom metadata
+  type described as accessible to every user; a Standard User or guest user
+  now reads one only through a permission set whose
+  `customMetadataTypeAccesses` grants it. A `.site` file passed to `aer test`
+  as its own path was skipped, so a run on named files had no `Site` row.
+- **`\Q...\E` quotes inside an inline flag group are read as Java reads
+  them.** `Pattern.compile('(?\Qx\E)a')` and `Pattern.compile('(?\Q\E)a')`
+  raised "Unknown inline modifier near index 2". As in Java, the quotes are
+  replaced by their text before the pattern is parsed, so these read as
+  `(?x)a` and `(?)a`. The index in an "Unknown inline modifier" or "Illegal
+  repetition" message counts characters in the pattern without its quotes,
+  as Java does.
+- **Large test runs use less memory and evaluate formulas faster.** A formula
+  field that reads only its own record's stored fields is not evaluated again
+  for a record holding the same values, the parent records that formula
+  fields read load faster, and a workflow rule's criteria formula is
+  evaluated once per record instead of twice.
+
 ## v1.6.9 — 2026-11-12
 
 - **A `Database.QueryLocator` can be iterated as an `Iterable`.** Calling
