@@ -264,6 +264,153 @@
   stages, steps, log entries and the `ReviewedDate` of approval work items
   followed the real clock.
 
+## v1.6.11 — 2026-11-14
+
+- **An update that changes only `OwnerId` is an ownership transfer.** As in
+  sfapex, an update that sets `OwnerId` and no other updateable field needs
+  only read access to the record, so a user who can read a Private record but
+  not edit it can assign it a new owner. After the transfer, that user can
+  also delete the record, for the rest of the test class. A queried record
+  counts the updateable fields its query selected, so assigning `OwnerId` on
+  a record queried with `Name` still needs edit access. aer required edit
+  access for every update and refused the delete.
+- **Parallel test classes cannot write setup objects.** In a class annotated
+  `@IsTest(IsParallel=true)`, DML on `User`, `Group`, `GroupMember`,
+  `QueueSobject`, `UserRole`, `PermissionSet` and `PermissionSetAssignment`
+  now fails with `APEX_DATA_ACCESS_RESTRICTION`, and `System.schedule` and
+  `System.scheduleBatch` raise an uncatchable `System.UnexpectedException`,
+  except inside `System.runAs`, as in sfapex. Salesforce skips these checks
+  for tests run during a deployment; pass `--skip-parallel-validation` to
+  skip them in aer.
+- **A scheduled job runs when its test method returns.** A job scheduled
+  with `System.schedule` that no `Test.stopTest()` ran never ran, and its
+  `execute` lines were reported as uncovered. As in sfapex, it now runs once
+  the test method or `@TestSetup` method returns, as the user that scheduled
+  it, so a job scheduled inside `System.runAs` runs as that user. A job that
+  another scheduled job scheduled during `Test.stopTest()` does not run.
+- **Custom big objects follow Salesforce's query and write rules.**
+  `Database.insertImmediate`, `insertAsync`, `deleteImmediate` and
+  `deleteAsync` failed to compile with a big object argument ("Argument must
+  be of virtual sObject type."). They now compile, and as in sfapex
+  `insertAsync` raises a `TypeException`, and `insertImmediate` and
+  `deleteImmediate` raise an uncatchable `System.UnexpectedException` when
+  called from a test. A query that filters on a field outside the big
+  object's index fails with a compile error, or a `QueryException` when it
+  is dynamic; one that sorts by such a field raises an uncatchable
+  `System.UnexpectedException`. Describe reports the fields outside the index
+  as not filterable.
+- **Updating a record that is already being saved fails with
+  `SELF_REFERENCE_FROM_TRIGGER`.** A before update trigger that updated a
+  record of its own `Trigger.new`, and an after trigger that updated a record
+  a before trigger had rejected with `addError`, saved the update. Both now
+  fail as in sfapex. In a partial save, a row that a trigger exception failed
+  reports `CANNOT_INSERT_UPDATE_ACTIVATE_ENTITY` with the message an
+  all-or-none save reports, instead of `EXCEPTION_THROWN`, and the
+  "execution of" message names a packaged trigger with its namespace.
+- **Users on standard external profiles need the Digital Experiences
+  setting.** As in sfapex, inserting a User on the Customer Community Login
+  User, Customer Community Plus Login User or Customer Portal User profile,
+  or moving one to such a profile, fails with `FIELD_INTEGRITY_EXCEPTION` on
+  `ProfileId` unless the source's `Communities.settings` sets
+  `enableOotbProfExtUserOpsEnable` to true. Custom profiles with an external
+  user license are not affected.
+- **Share rows granted to high-volume community users are rejected.** A
+  share row whose `UserOrGroupId` is a user with a Customer Community,
+  Customer Community Login, High Volume Customer Portal, External Identity,
+  External Apps Login or Authenticated Website license now fails with
+  `FIELD_INTEGRITY_EXCEPTION`, as in sfapex.
+- **Owner and sharing rule share rows cannot be deleted.** Deleting a share
+  row whose `RowCause` is `Owner` or `Rule` succeeded. It now fails with
+  `DELETE_FAILED` "cannot delete owner, rule or ar implicit share rows", as
+  in sfapex. Manual rows, rows with an Apex sharing reason, and
+  `ImplicitParent` account share rows can still be deleted.
+- **A share type of an object without a share object does not compile.** A
+  custom object whose internal and external sharing models are both Public
+  Read/Write has no share object, and a class naming `Object__Share`, in a
+  type or in a SOQL `FROM` clause, now fails with "Invalid type" as in
+  sfapex. A share of an object that does not exist also compiled.
+- **After undelete triggers see restored lookups.** When a parent and a
+  child looking up to it were deleted together and then undeleted, the after
+  undelete trigger received the child with the lookup still null and its
+  formula fields calculated from the null value. It now receives the
+  restored lookup and recalculated formulas, as in sfapex.
+- **DML accessors on an exception without rows raise Salesforce's errors.**
+  On a `DmlException` or `EmailException` created with `new`, `getNumDml()`
+  returned 0 and `getDmlMessage`, `getDmlStatusCode` and the other indexed
+  accessors returned null. As in sfapex, they raise an uncatchable
+  `System.UnexpectedException`. On an exception that holds rows, an index out
+  of range raises `System.ListException`.
+- **`Messaging.renderStoredEmailTemplate` matches Salesforce for missing and
+  empty templates.** A template Id that names no template raises
+  `System.EmailTemplateRenderException` with `INVALID_CROSS_REFERENCE_KEY`,
+  a template that renders no body returns an empty plain text body, and the
+  HTML body is null for a template that renders none.
+- **A Finalizer can enqueue a job with its own job's duplicate signature.**
+  A job enqueued with an `AsyncOptions.DuplicateSignature` kept the signature
+  until its Finalizer returned, so a Finalizer that enqueued a successor with
+  the same signature got `DuplicateMessageException`. The signature is now
+  released when `execute()` returns, as in sfapex. An enqueue refused for a
+  duplicate signature now counts toward `Limits.getQueueableJobs()` and
+  writes an `AsyncApexJob` row, and a running job that enqueues a job with
+  its own signature gets `DuplicateMessageException` instead of "Maximum
+  stack depth has been reached".
+- **An aggregate query in a SOQL `for` loop counts the rows it returns.** As
+  in sfapex, an aggregate query that a `for` loop iterates with an
+  `AggregateResult` loop variable counts one row per `AggregateResult`
+  toward `Limits.getQueryRows()`, not one per record it aggregated.
+- **`Security.stripInaccessible` keeps a clone's queried null fields.** For
+  a clone of a queried record, the returned record now holds each queried
+  field with a null value, and the Id and audit fields `clone()` cleared, as
+  explicit nulls, as in sfapex. An insert of such a record that sends a null
+  `RecordTypeId` now fails as it does in sfapex.
+- **Test code can assign a `@TestVisible` property with a private setter by
+  its bare name.** An inner class of a test class extending the declaring
+  class failed to compile with "Variable is not visible" when it assigned
+  the property by name or through `this`.
+- **`Schema.RecordType.SObjectType` is the `SobjectType` field token.** As
+  `RecordType.SObjectType` is, so assigning it to a `Schema.SObjectType`
+  variable now fails to compile, and it evaluates to the field token.
+- **A relationship name shared by a parent and a child relationship reads as
+  the child list.** When a lookup's relationship name is also the name of a
+  child relationship of the same object, such as a self-lookup `Parent__c`
+  with child relationship `Parent`, `record.Parent__r` returned the parent
+  record. As in sfapex, it is now the child list, while
+  `record.Parent__r.Name` still reads the parent. A query that selects a path
+  through the parent relationship and a subquery on the child relationship
+  of the same name fails with "duplicate field selected".
+- **Inner classes take precedence over top-level types of the same name.**
+  When an inner class and a top-level interface share a name, `new
+  Shared(...)` in the declaring class, a class nested in it, or a subclass
+  failed with "Type cannot be constructed", and a catch clause naming the
+  inner exception caught the top-level class. An inner exception class that
+  extends an inner class of a superclass failed with "Exception class must
+  extend another Exception class". All of these now compile and run as in
+  sfapex.
+- **Class declaration rules apply to source loaded into a namespace.** With
+  `--default-namespace` or `path@ns`, a class with a name longer than 40
+  characters, a method named like a DML keyword, and other declarations that
+  Salesforce rejects compiled. They now fail as they do without a namespace.
+- **Feature parameter files with a package value root element load.** A
+  `.featureParameterBoolean`, `.featureParameterInteger` or
+  `.featureParameterDate` file whose root element is `<PackageBooleanValue>`,
+  `<PackageIntegerValue>` or `<PackageDateValue>` was skipped, and
+  `FeatureManagement.checkPackageBooleanValue` raised `NoDataFoundException`.
+  A feature parameter file that cannot be read now fails the run unless
+  `--skip-errors` is given.
+- **`aer server --package` loads custom metadata FieldDefinition values.** A
+  package whose custom metadata type has a FieldDefinition field controlled
+  by an EntityDefinition field made the server exit with "FieldDefinition
+  relationship value Name: names no entity". The server also enables the
+  `MiddleName` and `Suffix` fields when the loaded source or packages use
+  them, as `aer test` does.
+- **`Math.floor(Double)` returns a Double and `Long.intValue()` truncates to
+  32 bits.** Passing `Math.floor` of a Double to a Double parameter failed to
+  compile, and `2147483648L.intValue()` returned 2147483648 instead of
+  -2147483648.
+- **Object construction, `String.length()` and JSON parsing are faster.**
+  Creating many instances of a class, testing a long string's length in a
+  loop, and deserializing large single-line JSON take less time.
+
 ## v1.6.10 — 2026-11-13
 
 - **Case-sensitive unique text fields match by exact case in SOQL.** A
