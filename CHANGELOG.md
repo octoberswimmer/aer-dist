@@ -264,6 +264,92 @@
   stages, steps, log entries and the `ReviewedDate` of approval work items
   followed the real clock.
 
+## v1.6.12 — 2026-11-15
+
+- **A null text field matches SOQL `<` and `<=` comparisons.** `WHERE
+  AccountNumber < '025-000'` left out records with no `AccountNumber`. As in
+  sfapex, a null text, picklist, email, phone, URL, text area, combobox, Id
+  or lookup field now compares as the empty string: `<` and `<=` a value
+  match the record, `>` and `>=` do not, and `NOT (AccountNumber <
+  '025-000')` excludes it. This includes text formulas that evaluate to null
+  and text fields read through a null lookup. Null number, currency,
+  percent, Date, Datetime and Time fields still satisfy no range comparison.
+- **Picklist values outside the value set sort by code point.** `ORDER BY`
+  on an unrestricted picklist whose values `c`, `a` and `B` are not in its
+  value set returned `a, B, c`. As in sfapex, it now returns `B, a, c`, and
+  `c, a, B` with `DESC`.
+- **An aggregate query returns a grouped field under each alias.** `SELECT
+  Industry ind, Industry otherGroupBy ... GROUP BY Industry` returned the
+  value under `ind` only, and `get('otherGroupBy')` raised "Invalid field
+  otherGroupBy for AggregateResult". The value is now returned under both
+  aliases, and under both names when the field is selected once without an
+  alias and once with one.
+- **`Trigger.isBefore` and the other Boolean context variables are null
+  outside a trigger.** `Trigger.isBefore`, `isAfter`, `isInsert`,
+  `isUpdate`, `isDelete` and `isUndelete` returned false when no trigger was
+  running. As in sfapex, they now return null, so `if (Trigger.isBefore)`
+  raises a `NullPointerException`. `Trigger.isExecuting` still returns false.
+- **`StandardController.getId()` returns the current page's `id`
+  parameter.** When the controller's record has no Id, `getId()` returned
+  null. It now returns the 15-character form of the current page's `id`
+  parameter, read when `getId()` is called, so a page set with
+  `Test.setCurrentPage` after the controller is constructed is used. The
+  record's own Id takes precedence, and the page's `id` is not set on the
+  record.
+- **`PageReference.getUrl()` encodes parameters as `EncodingUtil.urlEncode`
+  does.** `*` was encoded as `%2A` and `~` was left unencoded. As in sfapex,
+  `*` is now left as is and `~` is encoded as `%7E`.
+- **Email template output fields can bind to controller properties.** In a
+  Visualforce email template component, `<apex:outputField>` or a field
+  `<apex:column>` whose value was a controller property, such as
+  `{!record.Name}`, failed with "object not found: record". It now renders
+  the field, and when the property is null it renders an empty field (an
+  output field writes an empty span, a column an empty cell). Rendering a
+  template no longer runs every getter of the controller, only those the
+  template reads, and the declaration line of an automatic property that a
+  template reads or assigns through `assignTo` is reported as uncovered, as
+  in sfapex.
+- **`Blob.toPdf` produces a real PDF.** It returned a PDF header followed by
+  the HTML text, which Apex code parsing the PDF could not read. It now
+  renders the HTML with `ufo`, as `getContentAsPDF` and PDF email
+  attachments do, resolving relative URLs against the org's domain. An empty
+  string produces a PDF instead of raising `InvalidParameterValueException`,
+  and a null argument raises `NullPointerException` with "Argument cannot be
+  null.", as in sfapex.
+- **PDFs show Japanese, Chinese, Korean, Greek and Cyrillic text set in
+  Arial Unicode MS.** Characters outside Windows-1252 were left out of the
+  PDF. They are now drawn with a font bundled in `ufo`, which is embedded in
+  the PDF as a subset, as Salesforce embeds a subset of Arial Unicode MS.
+  This requires a `ufo` release that supports fallback fonts; an older `ufo`
+  reports an error naming its protocol version.
+- **`Compression.ZipReader.extract` reads entries whose headers declare a
+  size of 0.** Extracting such an entry failed. As in sfapex, the whole
+  entry is now returned when its headers declare an uncompressed size of 0
+  and a CRC-32 of 0, so code that wraps raw deflate data in a hand-built ZIP
+  to inflate it works.
+- **`ContentVersion.Checksum` is set.** It is now the lowercase hex MD5
+  digest of `VersionData`, on a new document and on a new version of one.
+- **`ContentDistribution` URLs use Salesforce's format.**
+  `ContentDownloadUrl`, `PdfDownloadUrl` and `DistributionPublicUrl` held
+  placeholder values on `example.salesforce.com`. The download URLs now point
+  to the org's `file.force.com` domain with `asPdf=false` and `asPdf=true`,
+  and `DistributionPublicUrl` is `/sfc/p/<org>/a/<distribution>/<token>` on
+  the org's domain, with one 43-character token shared by all three.
+- **Url fields without a declared length have a length of 255.** A Url field
+  whose metadata has no `<length>` had no limit, so a longer value saved. As
+  in Salesforce, describe now reports a length of 255, and inserting or
+  updating a longer value fails with `STRING_TOO_LONG`.
+- **A custom object without a label is rejected.** A custom object defined
+  with no `<label>` loaded with its API name as its label. `aer check`,
+  `aer test`, `aer exec` and `aer server` now fail with "Must specify a
+  non-empty label for the CustomObject", as a deploy does. Custom metadata
+  types, platform events, big objects and external objects are checked too;
+  standard objects and objects of installed packages, whose retrieved
+  metadata omits the label, are not.
+- **Apex runs faster.** Evaluating variables and type names, calling methods
+  and builtin functions, and checking object permissions for each query take
+  less time, so large test suites finish sooner.
+
 ## v1.6.11 — 2026-11-14
 
 - **An update that changes only `OwnerId` is an ownership transfer.** As in
