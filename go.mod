@@ -2,13 +2,13 @@ module aer
 
 go 1.27.4
 
-require github.com/octoberswimmer/aer v1.6.12
+require github.com/octoberswimmer/aer v1.6.13
 
 require (
 	bitbucket.org/creachadair/stringset v0.0.11 // indirect
 	codeberg.org/TauCeti/mangle-go v0.5.0 // indirect
 	github.com/ForceCLI/force v1.16.0 // indirect
-	github.com/ForceCLI/force-md v0.70.0 // indirect
+	github.com/ForceCLI/force-md v0.75.0 // indirect
 	github.com/ForceCLI/inflect v0.0.0-20130829110746-cc00b5ad7a6a // indirect
 	github.com/adrg/xdg v0.5.3 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
