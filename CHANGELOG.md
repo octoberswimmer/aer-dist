@@ -264,6 +264,18 @@
   stages, steps, log entries and the `ReviewedDate` of approval work items
   followed the real clock.
 
+## v1.6.14 — 2026-11-16
+
+- **Tests saved before API 42.0 can add a second hierarchy custom setting
+  record for an owner created in `@TestSetup`.** A second record for the same
+  `SetupOwnerId` failed with `DUPLICATE_VALUE` in every context. As in
+  sfapex, when the test class or the class performing the DML is saved at API
+  41.0 or earlier, a test method can now insert a second record for an owner
+  whose record `@TestSetup` inserted, or move a record to that owner.
+  `getOrgDefaults()`, `getInstance()` and `$Setup` then read the record the
+  test method inserted. A second record inserted within `@TestSetup`, or
+  twice within a test method, still fails with `DUPLICATE_VALUE`.
+
 ## v1.6.13 — 2026-11-16
 
 - **The Automated Process user reads every record.** Queries run as the
