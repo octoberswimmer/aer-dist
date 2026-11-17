@@ -2,7 +2,7 @@ module aer
 
 go 1.27.4
 
-require github.com/octoberswimmer/aer v1.6.14
+require github.com/octoberswimmer/aer v1.6.15
 
 require (
 	bitbucket.org/creachadair/stringset v0.0.11 // indirect
