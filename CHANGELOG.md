@@ -264,6 +264,132 @@
   stages, steps, log entries and the `ReviewedDate` of approval work items
   followed the real clock.
 
+## v1.6.13 — 2026-11-16
+
+- **The Automated Process user reads every record.** Queries run as the
+  Automated Process user applied record sharing, so on an object with a
+  Private sharing model they returned only the records that user owned. As in
+  sfapex, the user now reads every record, with or without sharing and in
+  system or user mode.
+- **`SELECT COUNT()` on an inaccessible object raises `SecurityException` in
+  user mode by default.** In a class saved at API 67.0 or later, a query that
+  names no access mode runs in user mode. When the running user cannot read
+  the object, a `SELECT COUNT()` query run this way, inline or through
+  `Database.countQuery`, now raises `System.SecurityException` "Access to
+  entity '<object>' denied", as in sfapex. A query selecting fields, and a
+  count with `AccessLevel.USER_MODE`, still raise `QueryException` "sObject
+  type '<object>' is not supported".
+- **Flow loops run in bulk across a trigger batch.** A record-triggered flow
+  whose Loop body looks up records, creates or updates records, calls an Apex
+  action or calls a subflow ran that body once per record, so a batch of 200
+  records failed with "Too many SOQL queries: 101". As in Salesforce, each
+  element in the loop body now runs once per iteration for the whole batch: a
+  Get Records element runs one query and record DML runs one statement.
+- **Flow lookups that filter on several record fields run once per batch.** A
+  before-save Get Records element whose filter compares two or more Id fields
+  with fields of the triggering record, joined by AND, ran its query once per
+  record, and a batch of more than 100 records failed with "Too many SOQL
+  queries: 101". It now runs one query for the batch.
+- **`$Record__Prior` reads as null when a flow runs on create.** A
+  record-triggered flow that checked `$Record__Prior.Id` for null to tell a
+  new record from an updated one failed every insert with
+  `NullPointerException`.
+- **A flow's async path passes the whole `$Record` to a subflow.** A path that
+  passed `$Record` to a subflow and also read one of its fields handed the
+  subflow a record holding only that field, so the subflow read null through
+  the record's lookups and could take the wrong decision outcome. The record
+  now carries every field.
+- **A flow's async path selects the `$Record` fields its Get Records filters
+  use.** A filter value bound from a `$Record` field failed with "SObject row
+  was retrieved via SOQL without querying the requested field".
+- **Get Records fault connectors receive every query error.** A query error
+  other than an unfilterable field failed the flow instead of taking the
+  fault connector. As in Salesforce, a non-Id value compared with an Id field,
+  whether written in the flow or read from a variable or record field, now
+  faults the element with "invalid ID field: <value>", and one such value in a
+  trigger batch faults the lookup for every record in the batch. Before, the
+  value matched no rows, or a literal failed to load.
+- **`EmailTemplate` DML is setup DML in tests.** Inserting, updating or
+  deleting an email template after DML on a non-setup object such as Account
+  now fails with `MIXED_DML_OPERATION`, and a template can be inserted after a
+  `PermissionSet` or `PermissionSetAssignment`, as in sfapex. aer allowed the
+  first and failed the second.
+- **`EmailTemplate.DeveloperName` is limited to 40 characters.** A longer name
+  now fails with `FIELD_INTEGRITY_EXCEPTION`, as in Salesforce.
+- **Changing a Task or Event owner to a Standard User works.** The update
+  failed with `TRANSFER_REQUIRES_READ` because the new owner had no
+  `ObjectPermissions` row for the object, which sfapex never creates for
+  Task or Event. The new owner's read access is now checked the same way the
+  running user's is, including the access a user license grants without
+  permission rows.
+- **Rolling back to a discarded savepoint raises a catchable exception.**
+  Rolling back to a savepoint discards the savepoints set after it, and
+  releasing a savepoint discards it and those set after it. Rolling back to a
+  discarded savepoint failed with "no such savepoint", which a catch block
+  could not catch. It now raises `System.TypeException` "Savepoint does not
+  exist in this context", as in sfapex.
+- **`Attachment.Body` is required.** Inserting an attachment without a
+  `Body`, or with a null one, now fails with `REQUIRED_FIELD_MISSING`. An
+  attachment saved with `Blob.valueOf('')` reads back as an empty Blob instead
+  of null.
+- **`HttpResponse.setBodyAsBlob` keeps the Blob's bytes.** A Blob from
+  `EncodingUtil.base64Decode` was stored as the text `[37 80 68 ...]`. A null
+  argument now raises `NullPointerException` "Argument 1 cannot be null"
+  instead of setting the body to `<nil>`.
+- **`ContentVersion.ContentBodyId` is set.** Inserting a `ContentVersion` with
+  `VersionData` now creates a `ContentBody` and sets `ContentBodyId` to it;
+  each new version gets its own body, and a link version has none. An insert
+  that sets `ContentBodyId` fails with `FIELD_INTEGRITY_EXCEPTION` when
+  `VersionData` is also set and with
+  `INSUFFICIENT_ACCESS_ON_CROSS_REFERENCE_ENTITY` otherwise.
+- **`FeedItem` content fields are available to classes saved at API 35.0 or
+  earlier.** `ContentData`, `ContentDescription`, `ContentFileName`,
+  `ContentSize` and `ContentType` failed to compile with "Variable does not
+  exist". They now exist for code saved through API 35.0, and `FieldDefinition`
+  and `EntityParticle` queries return their rows only to such code.
+- **`ORDER BY` accepts standard text areas Salesforce sorts.** `SELECT Id FROM
+  ContentDocument ORDER BY Description` failed to compile with "field
+  'Description' can not be sorted in a query call". Long text areas that
+  Salesforce reports as sortable, such as `ContentDocument.Description` and
+  `Product2.Description`, can now be sorted.
+- **`toLabel()` on a parent field populates the parent record.** After
+  `SELECT toLabel(Account.Industry) ...`, the Account's
+  `getPopulatedFieldsAsMap()` now includes `Industry`, so code that copies
+  records through the populated fields keeps the field.
+- **`Dom.Document.load` ignores the declared encoding.** A document whose XML
+  declaration named an encoding other than UTF-8, such as `ISO-8859-1`,
+  `UTF-16` or a misspelling like `UFT-8`, raised `System.XmlException`. As in
+  sfapex, the declaration no longer affects how the String is read.
+- **`PageReference` URLs leave out parameters with null values.** `getUrl()`
+  and `String.valueOf` included such a parameter as `b=%3Cnil%3E`. The
+  parameter stays in `getParameters()`.
+- **`String.escapeSingleQuotes(null)` raises `NullPointerException`.** It
+  returned an empty string. It now raises `System.NullPointerException`
+  "Argument cannot be null.", as in sfapex.
+- **`Metadata.SortOrder` has the constants `Asc_x` and `Desc_x`.** It defined
+  `ASCENDING` and `DESCENDING`, which sfapex does not have.
+- **`ContactPointTypeConsent.EngagementChannelTypeId` is defined.** Code that
+  referenced the field, or its `EngagementChannelType` relationship, failed to
+  compile.
+- **Health Cloud defines `ContactContactRelation`, `PartyRoleRelation` and
+  `PartyRelationshipGroup`.** A Health Cloud codebase that referenced one of
+  them enabled Nonprofit Cloud, whose rule that a care plan's participant must
+  be a participant of its case then failed inserts with "<name> doesn't belong
+  to the case participants list".
+- **Validation rule formulas in CDATA sections load.** A formula written in a
+  `<![CDATA[ ... ]]>` section failed to parse, and some metadata text holding
+  XML entities such as `&amp;lt;` was decoded twice.
+- **Inherited inner types resolve in source loaded into a namespace.** A
+  subclass overriding a method that returns its superclass's inner type,
+  where a top-level class of the same name also exists, failed with "Method
+  return types clash".
+- **`--skip-errors` skips objects that cannot be loaded.** An object
+  definition that failed to load, such as a custom object without a label,
+  stopped the run even with `--skip-errors`. It is now left out and reported
+  with the other skipped metadata.
+- **Apex runs faster.** Method calls, static field access and relationship
+  field lookups take less time.
+
 ## v1.6.12 — 2026-11-15
 
 - **A null text field matches SOQL `<` and `<=` comparisons.** `WHERE
