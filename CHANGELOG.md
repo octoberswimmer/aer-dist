@@ -264,6 +264,28 @@
   stages, steps, log entries and the `ReviewedDate` of approval work items
   followed the real clock.
 
+## v1.6.15 — 2026-11-17
+
+- **Navigation menus can name the standard list views of standard objects.**
+  A navigation menu item naming the All or Recently Viewed list view of a
+  standard object, such as `All_DiagnosticSummaries`, failed validation as
+  naming an undefined list view, because aer knew only the Report and
+  Dashboard list views. These list views now exist as they do in an org: the
+  menu item loads, its `ListView` row is created, and `aer check` reports
+  them as standard.
+- **Presence statuses can name the Messaging and Phone service channels.** A
+  presence status naming `sfdc_livemessage` or `sfdc_phone` failed validation
+  as naming an undefined service channel, since the org creates these
+  channels rather than source. aer now creates the channel, routing
+  `MessagingSession` or `VoiceCall`, when a presence status names it and the
+  source does not define it, and `aer check` no longer reports it as missing.
+- **External Service registrations of MCP servers load.** An MCP server
+  registered in Agentforce Registry is an External Service registration of
+  type `ModelContextProtocol`, and loading one failed with "openapi: parse
+  failed: spec type not supported by libopenapi, sorry". As in Salesforce,
+  such a registration now loads and generates no Apex classes, so
+  `Type.forName('ExternalService.<Name>')` returns null.
+
 ## v1.6.14 — 2026-11-16
 
 - **Tests saved before API 42.0 can add a second hierarchy custom setting
