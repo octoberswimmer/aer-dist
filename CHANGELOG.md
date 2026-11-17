@@ -264,6 +264,63 @@
   stages, steps, log entries and the `ReviewedDate` of approval work items
   followed the real clock.
 
+## v1.6.16 — 2026-11-17
+
+- **`$Label`, `$Setup` and `$Permission` render in Visualforce email
+  templates.** `{!$Label.Name}` and expressions using it, such as
+  `{!LOWER($Label.Name)}`, rendered as an empty string in the subject and the
+  body, as did `$Setup` and `$Permission` references. A label now renders its
+  value, a hierarchy custom setting field its value for the running user, and
+  a custom permission whether the running user has it. An unknown label and a
+  failing body expression are errors rather than blank or error text in the
+  rendered email.
+- **Visualforce email templates referencing `$CustomMetadata` are rejected.**
+  As in Salesforce, loading such a template from source fails with "Field
+  $CustomMetadata.Type__mdt.Record.Field__c does not exist. Check spelling.",
+  and inserting it as an `EmailTemplate` fails with that message as a
+  `FIELD_INTEGRITY_EXCEPTION` on `Markup`. aer accepted both.
+- **Email Id setters reject a String that is not an Id.** `setWhatId`,
+  `setTargetObjectId`, `setOrgWideEmailAddressId` and `setTemplateId` of
+  `Messaging.SingleEmailMessage`, and `setTemplateId` of
+  `Messaging.MassEmailMessage`, stored any String, and the
+  `System.StringException` appeared only when the getter was called. As in
+  sfapex, the setter now raises `System.StringException` ("Invalid id: ")
+  for a String that is not an Id, the empty String included.
+- **Rendering an email template with an empty `whatId` no longer prints
+  warnings.** Each render printed a warning for every object without a table
+  while looking for the record.
+- **A helper method of a `without sharing` test class reads every record when
+  called inside `System.runAs`.** aer ignored the sharing keyword of every
+  `@IsTest` class during `runAs`, so such a helper applied the `runAs` user's
+  sharing and returned no rows where sfapex returns the record. As in
+  sfapex, code written directly in the `runAs` block applies the user's
+  sharing, and a method called from the block runs with the sharing mode of
+  its own class.
+- **`ApexTypeImplementor` lists inherited interfaces.** A class was listed
+  only under the interfaces its own `implements` clause named. As in
+  Salesforce, it is now also listed under each interface a class it extends
+  implements, at every level, and under each interface those interfaces
+  extend, so a concrete subclass of an abstract class implementing an
+  interface has a row. Two nested classes of one outer class implementing the
+  same interface each have a row; only the first did.
+- **`ApexTypeImplementor` queries follow Salesforce's restrictions.** A query
+  that does not filter on `InterfaceName` or `DurableId` raises
+  `System.QueryException` with "MALFORMED QUERY: ApexTypeImplementor: a
+  filter on a reified column is required [InterfaceName,DurableId]", and one
+  containing `OR` raises it with "MALFORMED QUERY: Disjunctions not
+  supported". aer ran both.
+- **`ApexPages.addMessage` ignores a message whose summary is already on the
+  page.** As in sfapex, the first message with a given summary is kept,
+  whatever the severity and detail of later ones, so
+  `ApexPages.getMessages()` returns that summary once. This also applies to
+  `ApexPages.addMessages`, to the page message `addError` adds, and to the
+  messages of a failed standard controller DML. A controller that called
+  `addError` and then copied the record's errors into `ApexPages.addMessage`
+  reported each error twice.
+- **Runs that enable optional features reuse the cached storage template.**
+  The prepared schema of such a run differed from one process to the next, so
+  every run rebuilt the template and stored another copy in the cache.
+
 ## v1.6.15 — 2026-11-17
 
 - **Navigation menus can name the standard list views of standard objects.**
