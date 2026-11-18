@@ -81,6 +81,27 @@
   that define it. Multi-currency Manufacturing orgs carry `CurrencyIsoCode`
   where Salesforce does and refuse a currency change on a work order,
   opportunity, order or sales agreement that has child records.
+- **Financial Services Cloud.** The standard Financial Services cloud objects
+  are available when code or metadata references one of them, with the fields,
+  describe values, picklists, key prefixes, auto-number formats and DML rules
+  of a Financial Services Cloud org at API 68.0, and each object and field
+  exists only at the API versions that define it. Insurance policy, insurance
+  contract transaction, loan application and payment request totals are
+  computed; `IsActive`, `IsPolicyholder`, `IsRoleActive` and the lookups that
+  member and related records take from their parent are derived; and the party
+  income, expense and asset rules, the residential loan application rules, the
+  financial goal member and policy related object rules and the party role
+  relationship rule of `AccountAccountRelation` and `ContactContactRelation`
+  are enforced. Deal, interaction and custom object participants follow
+  Compliant Data Sharing, and a complaint takes its `ComplaintCaseStatus` from
+  its case. The `createFinancialRecords` action runs, record aggregation
+  definitions run, and `aer server` serves the financial goal, mortgage, public
+  complaint, household snapshot, retrieval summary, Ethoca alert callback and
+  referral management Connect resources with the org's checks, messages and
+  status codes. The `fschousehold`, `FSCCashFlow`, `fsccomplaintmanagement`,
+  `fscwmgen` and `disputemanagement` Apex namespaces and the `ConnectApi`
+  complaint, Ethoca alert and record alert methods are available.
+  `RetrievalSummaryDefinition` and `ParticipantRole` metadata load from source.
 - **Currency amounts render as sfapex renders them for every locale.** In
   a multi-currency org an amount renders as the record's ISO code and the
   amount at the currency's decimal places, grouped for the user's locale
@@ -117,6 +138,34 @@
   `--skip-errors`
   drops such rules, and `aer check` lists the missing groups, queues and roles
   so they can be fetched.
+- **`aer server` applies criteria-based sharing rules.** Salesforce writes a
+  criteria-based rule's share rows after the transaction that inserts or
+  changes a record commits, so a test never sees them. `aer server` now
+  writes one `Rule` row per matching criteria-based rule once a request
+  commits, whether the request is anonymous Apex, a REST or Bulk API call, a
+  Connect resource, an action or an asynchronous job, and recalculates the
+  `Rule` rows of every record when sharing rules are deployed or the server
+  starts against an existing database. A rule that does not include records
+  owned by users who cannot have access leaves out records owned by
+  high-volume portal users and guest users. A rule whose criteria name a
+  field the object does not have fails at load unless `--skip-errors` drops
+  it, and `aer check` lists a criteria-based rule's missing groups, queues
+  and roles.
+- **Guest user sharing rules are applied.** Guest user sharing rules are read
+  from source and applied as criteria-based rules are: after the commit and
+  never inside a test. Each row has `RowCause` `GuestRule` and is shared with
+  the site's guest user group, which is created with the site's guest user
+  and counts among that user's groups for record access. Deleting a
+  `GuestRule` row fails with `INVALID_CROSS_REFERENCE_KEY`. A guest rule
+  shared with anything other than a guest user, a guest user no loaded site
+  has, and an owner-based or criteria-based rule shared with a guest user
+  fail at load.
+- **A site's guest user cannot own records.** A save that makes a site's
+  guest user the owner of a record fails with `FIELD_INTEGRITY_EXCEPTION`
+  "Guest users cannot be record owners.", and a record that guest user
+  creates belongs to the site's default record owner, the user who created
+  the site. A user that a test inserts with a guest profile is no site's
+  guest user and owns the records it creates.
 - **`aer deduce` relates components to source files and directories.** New
   `sourceFile` and `sourceDirectory` facts record where each Apex
   declaration, trigger, Lightning and Visualforce component, and metadata
@@ -263,6 +312,29 @@
 - **`--faketime` applies to orchestration timestamps.** Orchestration runs,
   stages, steps, log entries and the `ReviewedDate` of approval work items
   followed the real clock.
+- **Records owned by high-volume portal users have no `Owner` share row.**
+  aer wrote an `Owner` row for a record owned by a high-volume portal user;
+  Salesforce writes none.
+- **Deleting a queue-owned record moves its share rows.** The delete gives
+  the record to the deleting user, but the queue kept the `Owner` share row
+  and an undelete restored it. The `Owner` row now moves to the new owner and
+  the `Manual` rows are removed.
+- **`FieldDefinition` and `EntityParticle` report master labels.**
+  `FieldDefinition.Label` and `MasterLabel` and `EntityParticle.MasterLabel`
+  of a standard field are the field's master label, as in Salesforce:
+  `Account Owner` for `Account.OwnerId`, `Account Name` for
+  `Contact.AccountId`, and `Billing Address` for the `BillingCity` particle.
+- **`User.DefaultCurrencyIsoCode` exists only in a multi-currency org.** The
+  field was defined in single-currency orgs too.
+- **A `ContentDocumentLink` to a document that does not exist is rejected.**
+  The insert fails with `INVALID_CROSS_REFERENCE_KEY` "invalid cross
+  reference id"; it used to save.
+- **Unrestricted picklists save values of up to 255 characters.**
+- **`ORDER BY` on a field that cannot be sorted fails when the query runs.**
+  The query raises the uncatchable `System.UnexpectedException`, as in
+  Salesforce.
+- **`aer test` imports a single `.site` file.** A `.site` file named on the
+  command line is loaded as it is when its directory is given.
 
 ## v1.6.16 — 2026-11-17
 
