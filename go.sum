@@ -289,8 +289,8 @@ github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/ForceCLI/force v1.16.0 h1:69d4FvuXt683J7E0wKj8x6QC0ok/+Djhj838eoTDLhQ=
 github.com/ForceCLI/force v1.16.0/go.mod h1:cKt+CBSccA9doQn03m76Jmre2CoiFL9y40QlssNiG8A=
-github.com/ForceCLI/force-md v0.74.0 h1:pXmQw1AqTy9sgfmcTzAobtr4zPY9zz48mSwjnXXp1Hc=
-github.com/ForceCLI/force-md v0.74.0/go.mod h1:LWl4kxDDILnj9vqQ/Me5ppHwY37f9jtcHnDAgPiI+kg=
+github.com/ForceCLI/force-md v0.75.0 h1:zC1CoS4HowDtpQV33Wo2H/MKnQNz8TEZFRAjpa9gq0w=
+github.com/ForceCLI/force-md v0.75.0/go.mod h1:LWl4kxDDILnj9vqQ/Me5ppHwY37f9jtcHnDAgPiI+kg=
 github.com/ForceCLI/inflect v0.0.0-20130829110746-cc00b5ad7a6a h1:mMd54YgLoeupNpbph3KdwvF58O0lZ72RQaJ2cFPOFDE=
 github.com/ForceCLI/inflect v0.0.0-20130829110746-cc00b5ad7a6a/go.mod h1:DGKmCfb9oo5BivGO+szHk2ZvlqPDTlW4AYVpRBIVbms=
 github.com/GoogleCloudPlatform/grpc-gcp-go/grpcgcp v1.5.0/go.mod h1:dppbR7CwXD4pgtV9t3wD1812RaLDcBjtblcDF5f1vI0=
@@ -725,8 +725,8 @@ github.com/ncruces/go-strftime v1.0.0/go.mod h1:Fwc5htZGVVkseilnfgOVb9mKy6w1naJm
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
 github.com/nxadm/tail v1.4.4 h1:DQuhQpB1tVlglWS2hLQ5OV6B5r8aGxSrPc5Qo6uTN78=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
-github.com/octoberswimmer/aer v1.7.3 h1:Gs2ql9vrFcYcx3f314N7EkigJ3ICv/9cpiHPsS/E8Ik=
-github.com/octoberswimmer/aer v1.7.3/go.mod h1:eBIEQDvLXErPKujOjTl2rtO5igJpDNVnm8kxaJRcdB0=
+github.com/octoberswimmer/aer v1.7.4 h1:EsLIqFC8nVpmaH1nEB0zs8+qjdVJIQiAqops8eY5JoE=
+github.com/octoberswimmer/aer v1.7.4/go.mod h1:75ajBLTmcv8HE7XKtN7cvlT/5mn3KgV6ZdlRKQ5Pzok=
 github.com/octoberswimmer/antlr/v4 v4.13.1-octoberswimmer.3 h1:LQNXELq1U8IsyVp+mh9ZEWrHj68++spgnOV2P6oNqKY=
 github.com/octoberswimmer/antlr/v4 v4.13.1-octoberswimmer.3/go.mod h1:pHLfGz+l3a2OKxb2g1xTnLaOE4NvC9rX7AfzTCOyUVM=
 github.com/octoberswimmer/apexfmt v0.70.0 h1:CMYVBe6AbtwBV8HKGPnHy9LWTu0r8KhLYbwpFnimv1g=
