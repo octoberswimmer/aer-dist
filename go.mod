@@ -2,7 +2,7 @@ module aer
 
 go 1.27.4
 
-require github.com/octoberswimmer/aer v1.6.16
+require github.com/octoberswimmer/aer v1.6.17
 
 require (
 	bitbucket.org/creachadair/stringset v0.0.11 // indirect
@@ -51,6 +51,7 @@ require (
 	github.com/klauspost/compress v1.19.2 // indirect
 	github.com/lucasbbb/otp v1.0.0 // indirect
 	github.com/lucasbbb/venus v0.0.0-20210302100040-40540571cfac // indirect
+	github.com/mailgun/raymond/v2 v2.0.48 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/miekg/dns v1.1.73 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
