@@ -9,6 +9,7 @@ on:
 
 env:
   AER_VERSION: v1.7.4
+  UFO_VERSION: v0.0.2
 
 jobs:
   dlrs:
@@ -1017,6 +1018,27 @@ jobs:
           git fetch -q --depth 1 https://github.com/DaveMoudy/SalesforceDocGen.git 4fa5457e5a4a317c7802388ed2fdf0a9538a1492
           git checkout -q FETCH_HEAD
           echo "SALESFORCEDOCGEN_SOURCE=${workdir}/force-app/main" >> "$GITHUB_ENV"
+
+      # The DocGen tests call Blob.toPdf, which aer renders by running ufo.
+      # aer finds ufo on PATH.
+      - name: Install ufo ${{ env.UFO_VERSION }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          archive="ufo_linux_amd64_${UFO_VERSION}.zip"
+          download="${RUNNER_TEMP}/ufo-download"
+          bin="${RUNNER_TEMP}/ufo-bin"
+          mkdir -p "${download}" "${bin}"
+          gh release download "${UFO_VERSION}" \
+            --repo octoberswimmer/ufo \
+            --dir "${download}" \
+            --pattern "${archive}" \
+            --pattern "SHA256SUMS-${UFO_VERSION}"
+          (cd "${download}" && grep " ${archive}\$" "SHA256SUMS-${UFO_VERSION}" | sha256sum -c -)
+          unzip -q -o "${download}/${archive}" ufo -d "${bin}"
+          chmod +x "${bin}/ufo"
+          echo "${bin}" >> "$GITHUB_PATH"
 
       - name: Run aer test (DaveMoudy/SalesforceDocGen commit 4fa5457)
         uses: ./
