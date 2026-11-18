@@ -336,6 +336,97 @@
 - **`aer test` imports a single `.site` file.** A `.site` file named on the
   command line is loaded as it is when its directory is given.
 
+## v1.6.17 — 2026-11-18
+
+- **Standard fields retrieved from an org keep their standard definition.** A
+  standard field file such as
+  `objects/Opportunity/fields/StageName.field-meta.xml` carries a type and
+  settings like history tracking but no `<required>`, and aer built the field
+  from the file alone. `StageName` became nillable and subject to field
+  permissions, so a user with object Read and Create and no field
+  permissions saw it as neither createable nor accessible. As in Salesforce,
+  the field now keeps its standard definition, and the file changes only the
+  attributes it can set: inline help text, history tracking, a lookup filter,
+  Data Cloud attributes, the value set's controlling field, dependent value
+  settings, named value set, and the values and restricted flag of an inline
+  value set. This also applies to the fields that optional features, Person
+  Accounts, State and Country Picklists and multi-currency add.
+- **`DomainCreator` returns enhanced domain hostnames.** Hostnames were built
+  from the placeholder My Domain name `test-domain` in legacy formats
+  (`test-domain.force.com`, `test-domain.site.com`), did not match
+  `URL.getOrgDomainUrl()`, and were rejected by `DomainParser.parse`. They
+  now use the My Domain name of the org domain URL in the enhanced domain
+  formats (`.my.salesforce-sites.com`, `.my.site.com`, `.file.force.com`,
+  `.my.salesforce-setup.com`, the `.salesforce-experience.com` builder and
+  preview hostnames, and `<myDomain>--<package>.vf.force.com` and
+  `.container.force.com`, where a null package names the org's namespace or
+  `c`). `DomainParser.parse` accepts these hostnames and returns their domain
+  type and package, and still rejects legacy hostnames and other namespaces
+  with "Hostname must belong to this org".
+- **Async jobs can update and insert users without Manage Users.** A future
+  or queueable job enqueued inside `System.runAs` by a user without Manage
+  Users failed with `INSUFFICIENT_ACCESS_ON_CROSS_REFERENCE_ENTITY` when it
+  updated another user or inserted a user. As in sfapex, a future,
+  queueable, batch or scheduled job whose classes declare no sharing or
+  inherited sharing runs without sharing and the DML succeeds; a
+  `with sharing` job is still restricted.
+- **SObject Datetime fields read from JSON keep their milliseconds.**
+  `JSON.deserialize`, `deserializeStrict` and `JSONParser.readValueAs` into an
+  SObject truncated each Datetime field to whole seconds. As in sfapex, the
+  milliseconds are kept on the record and dropped only when it is saved.
+- **`@AuraEnabled` methods accept ConnectApi classes.** A method taking or
+  returning a ConnectApi class, alone or in a `List`, failed to compile with
+  "AuraEnabled methods do not support return type of
+  ConnectApi.NamedCredential". These types now compile, as in sfapex;
+  `Database.SaveResult`, `Exception`, `Schema.SObjectType` and the other
+  unsupported types are still rejected.
+- **Anonymous Apex in `aer server` runs as the session's user from the first
+  statement.** Until a `UserInfo` call loaded the default admin user, a block
+  ran with no current user, so a describe call reported a field the user's
+  profile withholds as accessible, and the same call returned false after
+  the `UserInfo` call. The Tooling REST and SOAP `executeAnonymous` requests
+  and the debug console now run the block as the session's user, and a
+  Tooling REST request whose token names no user gets 401.
+- **The server rejects a wire to an Apex method that is not cacheable.** As
+  in sfapex, a component wiring a method not declared
+  `@AuraEnabled(cacheable=true)` receives the error "Apex methods that are to
+  be cached must be marked as @AuraEnabled(cacheable=true)" and the method
+  does not run. Imperative calls are unchanged.
+- **A Home Lightning page is shown only when an assignment names it.** With
+  no app, profile or org default assignment, the server rendered the first
+  HomePage Lightning page in the source. The page assignment screen now lists
+  such a page as not applying, with the reason. `/lightning` opens the app's
+  first navigation item, and opens Home only when the app has none.
+- **WireMock mappings support scenarios, priority, delays, body files and
+  templates.** Mappings with `scenarioName`, `requiredScenarioState` and
+  `newScenarioState` answer a sequence of requests in order, and
+  `/dev/mocks` shows each scenario's state with reset buttons, also available
+  at `GET /dev/mocks/scenarios`, `POST /dev/mocks/scenarios/reset` and
+  `POST /dev/mocks/scenarios/{name}/reset`. Stubs are ordered by `priority`.
+  The `matchesJsonPath`, `doesNotMatch`, `doesNotContain`, `absent`,
+  `caseInsensitive`, `ignoreArrayOrder`, `ignoreExtraElements`, `and`, `or`
+  and `not` matchers, `fixedDelayMilliseconds` and `delayDistribution` (a
+  delay longer than the callout's timeout fails with "Read timed out"),
+  `bodyFileName` from the `__files` directory, `base64Body`, and the
+  `response-template` transformer are supported. A mapping using a field or
+  template helper aer does not implement now fails to load instead of being
+  answered differently from WireMock.
+- **The LWC preview supports `lightning/treeGrid`, datatable custom types and
+  `getObjectInfos`.** A component importing `lightning/treeGrid` or
+  `getObjectInfos` from `lightning/uiObjectInfoApi` failed to load. The tree
+  grid renders nested rows from `_children` with expand toggles and supports
+  `expandedRows`, `expandAll`, `collapseAll`, `getCurrentExpandedRows` and the
+  `toggle` and `toggleall` events. A `LightningDatatable` subclass's
+  `customTypes` render with their templates, and a `date-local` column no
+  longer shows the previous day in time zones behind UTC.
+- **The LWC preview assigns only the properties a user sets.** The property
+  form was filled with each property's initializer source text and assigned
+  every value to the component as a string, so a property initialized from an
+  import received the identifier's name. Inputs now start from a query
+  parameter of the property's name, or empty, only properties set by a query
+  parameter or typed in the form are assigned, and the other inputs show the
+  value the component holds.
+
 ## v1.6.16 — 2026-11-17
 
 - **`$Label`, `$Setup` and `$Permission` render in Visualforce email
