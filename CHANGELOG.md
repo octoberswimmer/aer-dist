@@ -129,7 +129,9 @@
   level of `AccountShare` from the rule's account settings, and a
   with-sharing query on a private Contact, Opportunity or Case returns the
   records whose account is shared with the user at that object's level.
-  Deleting a `Rule` row fails with `INVALID_CROSS_REFERENCE_KEY`.
+  Deleting a `Rule` row fails with `INVALID_CROSS_REFERENCE_KEY`. Merging
+  records leaves the losing record's `Rule` and `GuestRule` rows in place, to
+  be deleted with it, as sfapex does.
 - **Invalid sharing rules are reported when the metadata loads.** A rule that
   names a group, queue or role nothing defines, a rule shared with a guest
   user that is not criteria-based, and a rule naming all customer portal or
@@ -209,6 +211,16 @@
   `apex:repeat` around table rows or select options renders its rows inside
   the loop, and a Visualforce tab renders the page in a frame inside the
   Lightning shell.
+- **`aer exec` and `aer deduce` accept `--skip-errors`.** A source tree with
+  one invalid class or one object without a label could not be run with
+  `aer exec` or queried with `aer deduce`. With the flag, `aer exec` leaves
+  out the classes with parse, semantic or type errors and the classes that
+  use them, along with invalid metadata, flows and external services, as
+  `aer test` does; the anonymous Apex must still compile, and fails if it
+  uses a class that was left out. `aer deduce` leaves the metadata that
+  cannot be loaded out of its facts. The tip printed with such an error
+  suggests `--skip-errors` only for a command that accepts it, so
+  `aer check` and `aer package create` no longer suggest it.
 
 ### Fixes and performance
 
@@ -254,7 +266,8 @@
   `aer test --skip-errors` shows it as warnings. A formula field naming a
   field that does not exist is rejected, as Salesforce rejects it when the
   field is saved; under `--skip-errors` the field is kept without its
-  formula.
+  formula. A joined report's custom summary formulas may reference other
+  blocks with the `B0#`, `B1#` prefixes.
 - **Errors aer used to discard now surface as sfapex reports them.**
   `System.equals` compares as `==` does; an email template render fails when
   a component controller throws; a JWT that does not parse is rejected; a
@@ -335,6 +348,13 @@
   Salesforce.
 - **`aer test` imports a single `.site` file.** A `.site` file named on the
   command line is loaded as it is when its directory is given.
+- **`aer deduce` follows relationship paths in formulas.** A formula field or
+  validation rule reading `Contact.Account.Region__c` was recorded as
+  referencing only the first lookup field, and some lookups were not found
+  at all, so a source directory that read another directory's field through
+  a lookup did not depend on it. `aer deduce` now records a reference to the
+  lookup field of each hop and to the field the path ends at, and stops at a
+  polymorphic lookup.
 
 ## v1.6.18 — 2026-11-18
 
