@@ -356,6 +356,52 @@
   lookup field of each hop and to the field the path ends at, and stops at a
   polymorphic lookup.
 
+## v1.6.19 — 2026-11-19
+
+- **Queries on `User` return only the users the running user can read.** A
+  query on `User` returned every user to any running user, including a
+  site's guest user under `with sharing`, and a relationship field such as
+  `Manager.Email` exposed users the running user cannot read. As in sfapex,
+  a query under sharing now returns the running user's own record and the
+  users that View All Data, View All Users, Manage Users, the User org-wide
+  defaults, the role hierarchy, `UserShare` rows and Manage External Users
+  let it read. When `objects/User` sets no defaults, the internal default is
+  Public Read Only and the external default is Private. Portal, site and
+  guest users read the users shared to them and the users of their account
+  and sites that the Portal User Visibility and Site User Visibility
+  settings in `settings/Sharing.settings` (off by default) and each
+  network's member visibility settings allow.
+- **A user's field visibility preferences apply to portal, site and guest
+  users.** A user's `UserPreferencesShow<Field>ToExternalUsers` and
+  `UserPreferencesShow<Field>ToGuestUsers` preferences decide which of its
+  `Email`, `Phone`, `MobilePhone`, `Fax`, address, `Title` and `Manager`
+  fields portal, site and guest users read. A `USER_MODE` query reads null
+  for each field the preference hides from the viewer; a `with sharing`
+  query in system mode reads null only for `Email`, and only for a portal or
+  site viewer; a `without sharing` query reads every field. A new user's
+  `UserPreferencesShowTitleToExternalUsers` defaults to true.
+- **REST query results list fields in `SELECT` order.** Query records,
+  record GET responses and query envelopes listed their keys in alphabetical
+  order. As in Salesforce, a query record now lists `attributes` first and
+  then the fields in the order of the `SELECT` list, with a parent
+  relationship's fields together and a subquery's records as `totalSize`,
+  `done`, `records`; a query envelope lists `totalSize`, `done`,
+  `nextRecordsUrl`, `records`; and a record GET lists every field in describe
+  order, or the fields the `fields` parameter names in that order. Tooling
+  API query results follow the same order, with the envelope as `size`,
+  `totalSize`, `done`, `queryLocator`, `entityTypeName`, `records`.
+- **REST query column metadata names a parent column by its relationship.**
+  The column metadata of a Contact query selecting `Account.Name` named the
+  column `Contacts`, the child relationship name, so a client that laid out
+  the result from the metadata found no values under it. The column is now
+  named `Account`.
+- **Test runs in the browser can print debug output.** The js/wasm build
+  ran every test at verbosity 0, so a page embedding aer could not show the
+  `System.debug` output of tests. A test run request now accepts `verbose`,
+  which prints debug output as `aer test --verbose` does, and test and
+  anonymous Apex requests accept `allExceptions`, which logs every caught
+  exception as `--all-exceptions` does.
+
 ## v1.6.18 — 2026-11-18
 
 - **Visualforce component controllers are constructed for each component
