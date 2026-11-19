@@ -336,6 +336,57 @@
 - **`aer test` imports a single `.site` file.** A `.site` file named on the
   command line is loaded as it is when its directory is given.
 
+## v1.6.18 — 2026-11-18
+
+- **Visualforce component controllers are constructed for each component
+  instance.** A custom component with a controller in an email template got
+  a controller whose constructor and field initializers had not run, and
+  every component using the class shared that one object across a
+  template's renders. As in sfapex, each component instance now gets its
+  own controller, built with its constructor and field initializers, and a
+  constructor's exception is reported as the template render exception
+  sfapex raises. Every component of a page or of both email bodies is
+  built in markup order, with its attributes evaluated and `assignTo`
+  setters run, before any of them renders, and the setters run again as each
+  component renders; a postback restores the controllers from the view state.
+  A page component is now written in a `span`, or a `div` for
+  `layout="block"`, carrying the tag's client id, and nothing for
+  `layout="none"` or in an email template. Saving a view state or a queued
+  job no longer runs property getters. An email template whose markup names
+  a component that is not `global` is rejected on insert with
+  `FIELD_INTEGRITY_EXCEPTION`, and fails to load from source unless
+  `--skip-errors` is given.
+- **Deleting an email's recipient keeps the email's Task.** Deleting the
+  Contact or Lead that a `Messaging.sendEmail` call with
+  `setSaveAsActivity(true)` sent to deleted the Task the send created and the
+  `EmailMessageRelation` naming the recipient. As in sfapex, the Task is
+  kept with its `WhoId` cleared, which undeleting the recipient does not
+  restore, and the relation is kept with a null `RelationId`, which undelete
+  restores. A Task with the same `WhoId` that no email created is still
+  deleted. Deleting the record an email relates to now deletes the
+  `EmailMessage`, its relations and its Task, and undelete restores them.
+  Under `ALL ROWS`, a deleted Task or Event reads null `WhoId`, `WhatId`,
+  `Who.Name` and `What.Name` in the select list and in `WHERE`, and an
+  `EmailMessage` reads a null `ActivityId` while its Task is deleted.
+- **`StandardController.getId()` keeps the Id it first returned.** For a
+  controller built on a record with no Id, `getId()` returned the `id`
+  parameter of whichever page was current at each call, so a call after the
+  current page changed returned null or another record's Id. As in
+  sfapex, the first Id read from the page is kept; a call that finds no
+  `id` parameter still leaves a later call free to read one.
+- **Packaged record types are distinct from subscriber record types of the
+  same name.** A package's record type and a subscriber's record type with
+  the same developer name on one object were treated as one, and a profile
+  that named a packaged record type as `Contact.ns__Rt` matched nothing, so
+  its default was ignored, an insert stored a null `RecordTypeId`, and the
+  record type was not available to the profile. Packaged record types are
+  now identified by namespace and developer name, `DeveloperName` stays
+  bare with the namespace in `NamespacePrefix`, and a package's own profiles
+  and permission sets that name its record types bare apply to them.
+  `getRecordTypeInfosByDeveloperName()` and `getRecordTypeInfosByName()` are
+  keyed by the bare developer name or label, and a key two record types share
+  returns the one in the executing namespace.
+
 ## v1.6.17 — 2026-11-18
 
 - **Standard fields retrieved from an org keep their standard definition.** A
