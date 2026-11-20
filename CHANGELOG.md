@@ -356,6 +356,17 @@
   lookup field of each hop and to the field the path ends at, and stops at a
   polymorphic lookup.
 
+## v1.6.20 — 2026-11-19
+
+- **aer starts faster in the browser.** A page embedding the js/wasm build
+  took about 28 s to become ready on a first visit with the default schema and
+  12 to 13 s on a later visit, because the first anonymous Apex run and the
+  first test run each prepared their own database and every page load read the
+  schema of every optional feature to decide which features the source uses.
+  Anonymous Apex runs and test runs now share one prepared database, and the
+  feature lookup ships with the build instead of being computed at page load,
+  so a first visit takes about 16 s and a later visit about 9 s.
+
 ## v1.6.19 — 2026-11-19
 
 - **Queries on `User` return only the users the running user can read.** A
