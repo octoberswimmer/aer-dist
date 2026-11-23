@@ -356,6 +356,151 @@
   lookup field of each hop and to the field the path ends at, and stops at a
   polymorphic lookup.
 
+## v1.6.21 — 2026-11-22
+
+- **Tests enforce the Apex CPU time limit.** A test with an endless loop ran
+  until `--timeout` (300 s by default) and then failed with "Apex CPU time
+  limit exceeded". Tests now run under the 10,000 ms limit (60,000 ms in
+  asynchronous Apex), as in an org. As in an org, the `LimitException` is
+  raised when CPU time reaches 5,000 ms past the limit, while
+  `Limits.getLimitCpuTime()` still returns the limit. A test that runs past
+  `--timeout` now fails with a `TestTimeoutError` ("test did not finish
+  within the 5m0s timeout") instead of a CPU limit exception. aer's CPU time measurements now match
+  current orgs, which report less CPU time for the same work than aer did.
+  During a test, the clock advances by at least the CPU time used between two
+  readings, so a loop that waits for the clock to move uses about as much CPU
+  time as it would in an org, and records stamped after it carry the time the
+  test reads.
+- **`@BeforeClass` methods run in integration tests.** An `@IntegrationTest`
+  class with a `@BeforeClass` method failed to parse. The method now runs once
+  before the class's test methods, in its own transaction, which is committed
+  when it completes; when it fails, every test method of the class fails. A
+  class with two `@BeforeClass` or two `@TearDown` methods fails to compile
+  with "Only one method per type can be defined with: BeforeClass".
+  `Test.commitTestOnly()` raises a `StringException` outside an integration
+  test and in a `@BeforeClass` or `@TearDown` method, with Salesforce's
+  messages.
+- **Anonymous Apex accepts `return;`.** A `return` statement in anonymous Apex
+  was rejected. `return;` now ends the block and commits the work done before
+  it, and returning a value from anonymous Apex or any other void method fails
+  to compile with "Void method must not return a value".
+- **Tests saved before API 24.0 see the org's data.** Test classes saved at
+  API 23.0 or earlier see existing records without
+  `@IsTest(SeeAllData=true)`, and `SeeAllData=false` does not hide them, as in
+  sfapex.
+- **A test filter on a namespaced method runs only that method.**
+  `-f ns.WidgetTest.creates` also ran every method whose name starts with
+  `creates`, such as `creates_many`. It now runs only the named method.
+- **`aer test` on a single file loads its dependencies when they are named
+  only as types.** A class file whose dependencies appeared only in type
+  positions failed with "Invalid type" for each of them. The surrounding
+  workspace is now loaded in that case too. A file in a Metadata API tree
+  (with its own `package.xml`) inside an SFDX project now loads that tree
+  rather than the project's package directories.
+- **User-mode queries check field-level security in every clause.** A
+  `USER_MODE` query checked only the fields of its `SELECT` and `WHERE`
+  clauses, and skipped functions. It now also refuses an unreadable field read
+  by `toLabel()`, `DISTANCE()` or an aggregate function, in `ORDER BY`,
+  `GROUP BY` (including inside `ROLLUP()`, `CUBE()` and date functions) and
+  `HAVING`, in a path prefixed with the queried object's name
+  (`SELECT Contact.Phone FROM Contact`), and in `TYPEOF`: the lookup it reads
+  through, each `WHEN` object and field, and the `ELSE` fields. The errors use
+  sfapex's messages, such as "Invalid field: '<path>'" for an aggregate
+  in the `SELECT` clause and "No such column" for one in `ORDER BY`.
+- **A denied `COUNT()` query `WITH USER_MODE` raises `SecurityException`.** A
+  `SELECT COUNT()` query written `WITH USER_MODE` over an object the running
+  user cannot read raised `QueryException` "sObject type '<object>' is not
+  supported". It now raises `System.SecurityException` "Access to entity
+  '<object>' denied", as sfapex does; only a count run with
+  `AccessLevel.USER_MODE` raises the `QueryException`.
+- **`Who`, `What` and `Owner` fields read every kind of related record.**
+  `Who.LastName` read only contacts, so a filter on the last name of a lead
+  matched nothing; `What.RecordType.DeveloperName` matched only records of one
+  object and could fail with "Didn't understand relationship 'RecordType'";
+  and an Event related to a case read `What` as null. These fields now read
+  the related record of any object. As in sfapex, a Name field that only
+  users carry, such as the `Email` of a contact through `Who`, reads null, and
+  a field no related object supplies, such as `Owner.RecordTypeId`, reads null
+  rather than failing with "No such column". `Who.RecordTypeId` is available.
+- **Name entity fields are withheld from users who cannot read them.**
+  `What.ProfileId`, `What.UserRoleId`, `What.RecordTypeId` and paths through
+  them were readable in a `USER_MODE` query and kept by
+  `Security.stripInaccessible` for a user without access to them. They are now
+  refused and stripped, as the describe already reported.
+- **The Name entity cannot be queried directly.** A query `FROM Name` now
+  fails with "entity type Name does not support query", at compile time for
+  inline SOQL and as a `QueryException` for dynamic SOQL, as do queries on the
+  other objects Salesforce does not allow to be queried.
+- **Unaliased aggregates in `GROUP BY ROLLUP` and `CUBE` queries work.**
+  `SELECT COUNT(Id) FROM Account GROUP BY ROLLUP(Rating)` failed with an
+  internal error, and other unaliased aggregates were returned under a
+  malformed key. They are now returned as `expr0`, `expr1` and so on.
+- **A subquery with `WITH USER_MODE` reports sfapex's error.** A child
+  subquery with `WITH USER_MODE` or `WITH SYSTEM_MODE` was a syntax error. It
+  now fails with "WITH USER_MODE clause is only supported on top-level
+  queries".
+- **`Type.forName` resolves a bare name in the caller's namespace order.**
+  `Type.forName` of a bare name returned a System class whenever an object
+  shared its name. In code with no namespace it now returns
+  `System.Location` and `System.Address` first, then an object the org has,
+  then a declared type or System class; in namespaced code it returns the
+  namespace's own type first, then the System class, then the object. A
+  class, interface or enum named like an object is no longer treated as the
+  object by class literals, `instanceof` and `isAssignableFrom`.
+- **The `Network` object exists only with Experience Cloud.** An org without
+  Experience Cloud has no `Network` object, and aer now matches it; a
+  reference to `Schema.Network` or the `Network` type enables the feature,
+  while calls to `System.Network` methods do not.
+- **Custom Address fields require the custom address field setting.** As in
+  Salesforce, a custom field of type Address is an error unless
+  `CustomAddressField.settings` turns on `enableCustomAddressField`. With
+  `--skip-errors`, the field is dropped.
+- **Inserting a care plan goal assignment works.** Inserting a
+  `GoalAssignment` whose `ParentRecordId` is a `CarePlan` could fail with
+  "id value of incorrect type", depending on which features the run had
+  loaded.
+- **A duplicate-Id update or upsert counts toward DML limits.** An update or
+  upsert listing the same Id twice throws "Duplicate id in list"; as in
+  Salesforce, it now still counts one DML statement and the list's rows in
+  `Limits.getDmlStatements()` and `Limits.getDmlRows()`.
+ **Reading an unselected field from an inline query raises
+  `SObjectException`.** `[SELECT Id FROM Account].Name` raised an error Apex
+  could not catch; it now raises `SObjectException`, as reading the field
+  from a variable does.
+- **Constructing a standard library type without a callable no-argument
+  constructor reports sfapex's error.** `new T()` reported "Constructor
+  not defined" for every such type. It now reports "Method is not visible:
+  void T.<init>()" or "Type is not visible" where Salesforce does.
+- **`Test.invokeContinuationMethod` runs the callback.** It required three
+  arguments and ran nothing. It now takes the controller and the
+  continuation, runs the method the continuation names, and returns its
+  result, raising sfapex's exceptions when the controller has no such
+  method or the continuation names none.
+- **`XmlStreamWriter` no longer declares a namespace twice.**
+  `writeStartElement` and `writeEmptyElement` wrote a declaration for their
+  namespace URI, so a following `writeNamespace` declared the prefix again.
+  With a null prefix, they now use the prefix bound to the URI, and raise
+  `XmlException` when none is bound.
+- **ConnectApi additions.** The `ConnectApi.Payments` and
+  `ConnectApi.EinsteinLlm` methods compile, returning objects whose properties
+  are null. The `ConnectApi.ChatterFeeds` methods that have a `setTest`
+  method return the registered result in tests without `SeeAllData`.
+  `ConnectApi.ContentHub.getRepositories()` raises `NoAccessException`
+  "Insufficient Privileges" outside a test, as in an org without Files
+  Connect.
+- **WireMock mappings can use the state extension.** Mappings using the
+  WireMock state extension's `recordState` and `deleteState` listeners,
+  `state-matcher` request matcher and `state` template helper now load and
+  work in `aer server`. `/dev/mocks/state/contexts` lists and resets the
+  stored contexts. In a server cluster, scenario states and contexts are
+  shared by every server, so a callout's response no longer depends on which
+  server handles it. The `jsonPath` helper accepts `default=`.
+- **`-vv` test diagnostics report memory throttling.** The performance
+  diagnostics printed after a run now show the memory budget and its source,
+  whether memory limited how many tests ran at once, whether VMs were
+  destroyed or databases moved to disk to save memory, and how to raise the
+  budget.
+
 ## v1.6.20 — 2026-11-19
 
 - **aer starts faster in the browser.** A page embedding the js/wasm build
