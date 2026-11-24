@@ -356,6 +356,144 @@
   lookup field of each hop and to the field the path ends at, and stops at a
   polymorphic lookup.
 
+## v1.6.22 — 2026-11-24
+
+- **A flow that exceeds a governor limit fails the save with a catchable
+  `DmlException`.** A record-triggered flow that exceeded a limit such as the
+  DML rows limit raised an uncatchable `System.LimitException`. As in
+  sfapex, the save now fails with a `DmlException` whose status code is
+  `LIMIT_EXCEEDED` and whose message begins "CANNOT_EXECUTE_FLOW_TRIGGER". A
+  failed DML statement no longer leaves counted the queries, DML statements
+  and DML rows its triggers and flows used.
+- **DML and queries use CPU time.** Saving records and running queries
+  charged no CPU time, so a test that saves many records read about 1 ms of
+  CPU time where an org reads hundreds. Each DML statement, DML row, query and
+  query row now charges synthetic CPU time.
+- **Flow Get Records queries run once per trigger batch.** A Get Records
+  element ran one query per record unless its filter was a single equality
+  with a field of the triggering record, so a bulk insert could fail with
+  "Too many SOQL queries: 101". Elements with several conditions, OR or
+  custom logic, `Contains`, range operators, `In`, values from other
+  elements, and the filter queries of Update Records and Delete Records
+  elements now run once for the whole batch, as in the Flow runtime.
+- **Update Records on a parent of the triggering record updates it.** An
+  Update Records element on `$Record.Account`, `$Record.Account.Parent` or a
+  custom parent relationship updated nothing. It now saves its field
+  assignments to the parent record, as in Salesforce. An element on a
+  polymorphic relationship such as `$Record.What` still updates nothing, as in
+  Salesforce. Such an element that assigns a field the `OldValue` of a history
+  record no longer fails to compile with "Illegal assignment from Object to
+  String".
+- **Flow formula arithmetic follows the formula engine.** `+` was always text
+  concatenation, so `TEXT(1 + 1) & TEXT(2 + 2)` gave `6` instead of `24`, and a
+  Date plus `7.5` was concatenated as text. Operators are now typed by their
+  operands; a fractional day count added to a Date is truncated; `TEXT()` of a
+  number drops trailing zeros and `TEXT()` of a date/time is the GMT time with
+  a `Z` suffix; division keeps 39 significant digits; and a Number or Currency
+  formula is rounded to its declared scale. An Assignment element's Add or
+  Subtract on a Date moves it by whole days, treating a blank Date as today.
+- **Flows with formulas Salesforce rejects fail to load.** A flow whose
+  formula applies `+ - * /` to the wrong operand types, `MOD()` to a non-Number
+  or `TEXT()` to Text loaded and ran. It now fails `aer test` and `aer exec`
+  with Salesforce's deploy error, and is skipped with a warning under
+  `--skip-errors`. A Time field reads as Text in a flow formula, as in
+  Salesforce: arithmetic on it and `TEXT()`, `HOUR()`, `MINUTE()`, `SECOND()`
+  and `MILLISECOND()` of it are rejected, and at run time a formula that reads
+  it is blank unless every read is inside `ISBLANK()`, `ISNULL()` or
+  `TIMEVALUE()`. `aer test --reference` and `--verify` now deploy such flows
+  and report them at the end of the run instead of stopping before the deploy.
+- **`Decimal.valueOf` and `Decimal.divide` round as sfapex does.**
+  `Decimal.valueOf(String)` kept every digit; it now keeps 33 significant
+  digits, rounding half to even. `Decimal.divide(divisor, scale)` lost digits
+  past the 33rd before rounding, and `DOWN` and `HALF_DOWN` at a negative
+  scale truncated at the wrong place.
+- **Chatter and entitlement objects follow their settings.** `FeedItem`, the
+  Chatter group objects, `Entitlement`, `ServiceContract` and the milestone
+  objects are present unless `Chatter.settings` sets `enableChatter` or
+  `Entitlement.settings` sets `enableEntitlements` to false, as in a new org.
+  With either set to false, aer has none of that setting's objects and fields,
+  including Case and WorkOrder's SLA and milestone fields. Deploying a settings
+  file that turns off Chatter, entitlements, Surveys, Enterprise Territory
+  Management, Forecasting, contacts to multiple accounts, account or
+  opportunity teams, Omni-Channel, Communities or tagging to `aer server` now
+  removes that feature's objects, and a deployment that carries only a
+  Survey, OmniChannel, Communities, Search or Language settings file no longer
+  fails with "no supported metadata components found in deployment".
+- **Inserting a Quote requires an `OpportunityId`.** As in a new org, a Quote
+  inserted without an `OpportunityId` fails with `REQUIRED_FIELD_MISSING`
+  unless `Quote.settings` sets `enableQuotesWithoutOppEnabled` to true.
+- **Opportunity Splits.** Inserting an Opportunity created no split. With
+  splits enabled (by a `ForecastingSettings` forecast naming a split type, or
+  by Apex or source referencing `OpportunitySplit` or `OpportunitySplitType`),
+  aer now has the Revenue and Overlay split types, gives the owner a 100%
+  split of each type that must total 100%, sets `IsSplit`, computes
+  `SplitAmount`, moves percentages between the owner's split and other team
+  members' splits, and handles owner changes, with sfapex's errors for a
+  split owner who is not on the team and for totals that leave 100%. Without
+  splits enabled, `OpportunitySplit` and `OpportunitySplitType` no longer
+  exist.
+- **`Database.convertLead` matches sfapex more closely.** Lead field
+  mappings now apply to the opportunity. Converting into an existing account,
+  contact or opportunity fills only its blank fields. `setOpportunityId` and
+  `setOverwriteLeadSource` take effect, the lead's tasks, events and campaign
+  members move to the contact, and the opportunity closes on the last day of
+  the current fiscal quarter. Invalid requests report sfapex's errors
+  instead of converting or raising an error Apex could not catch, and
+  `allOrNone` rolls back rows already converted. A user-mode update of a
+  converted lead fails with `CANNOT_UPDATE_CONVERTED_LEAD` for a user without
+  View and Edit Converted Leads. `aer exec` and `aer server` applied no lead
+  field mappings when they started from a cached database; they now do.
+- **Fields the platform sets are no longer required on insert.** Inserting a
+  Solution with only `SolutionName` failed with `REQUIRED_FIELD_MISSING` for
+  `TimesUsed`, and other standard fields were wrongly required. aer now
+  skips fields Apex cannot set on a new record and fills the values sfapex
+  gives them. Inserts of `ApexTestQueueItem`, `CollaborationInvitation`,
+  `FeedComment`, `FeedSignal`, `RecommendationResponse`, `VoiceCall`,
+  `QuoteDocument` and several other objects report sfapex's errors, and
+  `new CreditMemo(BillingAccountId = id)` and similar constructors fail to
+  compile with "Field is not writeable", as in sfapex.
+- **Quote, Order Product and Communication Subscription Timing numbers are
+  auto-numbers.** `Quote.QuoteNumber`, `OrderItem.OrderItemNumber` and
+  `CommSubscriptionTiming.Name` read null after insert. They are now
+  auto-numbers, eight digits for quotes and ten for order products, and
+  `isAutoNumber()` returns true.
+- **Contact duplicate rules ignore person accounts.** In an org with Person
+  Accounts, a business contact sharing a person account's name, email and
+  phone was flagged as a duplicate. Contact rules and
+  `Datacloud.FindDuplicates` now compare only business contacts, as in
+  sfapex. The Phone matching method now matches 11-digit numbers that do
+  not start with 1, such as UK numbers, by their sections.
+- **Live callouts return redirects and header names as the server sent
+  them.** With `--allow-callouts`, `Http.send()` followed a 302 and returned
+  the destination's response. It now returns the 3xx response with its
+  `Location` header, as sfapex does. `HttpResponse.getHeader` matches the
+  header name in the case the server wrote it, so a server that sends
+  `location` answers `getHeader('location')` and not `getHeader('Location')`.
+- **Remote site settings and external credentials load in every command.**
+  Only `aer exec` loaded them. `aer test` and `aer server` now load them too,
+  `ConnectApi.NamedCredentials.getExternalCredential` returns a deployed
+  external credential, and a query of `ExternalCredential`,
+  `ExternalCredentialParameter` or `RemoteProxy` raises "sObject type 'X' is
+  not supported.", as in sfapex.
+- **`aer test`, `aer exec` and `aer server` load a project the same way.**
+  Custom share objects and feature objects could get different key prefixes
+  in each command; they now get the same ones. `aer server` failed to load
+  a project with a flow whose async path re-queries a field, and `aer exec`
+  with a default namespace failed type checking.
+- **LWC preview UI API wires return Salesforce's data.** `getObjectInfo`,
+  `getObjectInfos`, `getListUi`, `getListInfoByName` and `getRecord` now
+  return what Salesforce sends, built from the object's describe and list
+  views, formatted in the user's locale, time zone and currency, and reject
+  objects and fields with the org's errors. The navigation shows only the
+  custom tabs the user can see.
+- **LWC preview renders `lightning-datatable` row actions and `lwc:if`
+  loops.** A datatable column of type `action` now shows its row action menu,
+  filled from `rowActions`, and fires `rowaction`. A disabled
+  `lightning-menu-item` no longer fires `select`. A template that combines
+  `lwc:if`, `lwc:elseif` or `lwc:else` with `for:each` or `iterator:name` now
+  repeats its content for each item instead of rendering once with blank
+  values.
+
 ## v1.6.21 — 2026-11-22
 
 - **Tests enforce the Apex CPU time limit.** A test with an endless loop ran
