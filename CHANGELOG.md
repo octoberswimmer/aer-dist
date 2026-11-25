@@ -102,6 +102,28 @@
   `fscwmgen` and `disputemanagement` Apex namespaces and the `ConnectApi`
   complaint, Ethoca alert and record alert methods are available.
   `RetrievalSummaryDefinition` and `ParticipantRole` metadata load from source.
+- **Life Sciences Cloud.** The standard Life Sciences Cloud objects are
+  available when code or metadata references one of them, with the fields,
+  describe values, picklists, key prefixes, auto-number formats, delete
+  constraints and DML rules of a Life Sciences Cloud org at API 68.0, and each
+  object and field exists only at the API versions that define it. The
+  platform's save rules are enforced for action plan templates and action
+  plans, assessments, care programs, provider affiliations, territories and
+  their availabilities, visits and visit tasks, identifiers, digital
+  verifications and document checklist items, and the fields the platform
+  fills on save are derived. Product batch items adjust their product items.
+  The `evaluateAccess`, `buildProdTerrDtlAvlAction`,
+  `getLifeSciCnfgFieldNmAndVal`, `getQualifiedProducts` and
+  `cloneActvtyPlanTerritories` actions run, and `aer server` serves the Life
+  Sciences commercial, care program enrollment, contact tracing, provider,
+  advanced therapy management, benefits verification, patient, pricing
+  waterfall and document automation Connect resources with the org's checks,
+  messages and status codes. `careLimitTypes`, `careBenefitVerifySettings`,
+  `careProviderAfflRoleConfigs`, `providerSampleLimitTemplates` and
+  `actionableListDefinitions` metadata load from source as records of their
+  objects. The Health Cloud and Actionable Lists objects that exist in orgs
+  without Life Sciences Cloud load on their own when referenced, without the
+  rest of the Life Sciences schema.
 - **Currency amounts render as sfapex renders them for every locale.** In
   a multi-currency org an amount renders as the record's ISO code and the
   amount at the currency's decimal places, grouped for the user's locale
@@ -179,6 +201,22 @@
   directories that depend on each other and the uses behind each dependency.
   An object folder that adds fields to an object no source or package
   defines is described under that object instead of being rejected.
+- **`aer deduce` describes permission sets and custom permissions.** Each
+  permission set and custom permission is a component with `sourceFile` and
+  `sourceDirectory` facts, a new `grantsCustomPermission` fact links a
+  permission set to each custom permission it enables, and a new
+  `usesCustomPermission` fact links a Lightning page to each custom
+  permission its visibility rules name
+  (`{!$Permission.CustomPermission.Manage_Widgets}`), so a source directory
+  that enables or checks another directory's custom permission depends on it.
+- **`aer test --json --limits-usage` reports each test's governor limit
+  usage.** Each test record gets a `limits` field with the usage of the test
+  method and, when the method called `Test.startTest()`, of the block between
+  `Test.startTest()` and `Test.stopTest()`: CPU time and the SOQL, query row,
+  SOSL, DML statement, DML row, publish immediate DML, callout, email, future
+  and queueable counts, each as a used and limit pair, plus the counts of each
+  managed package namespace that used its own limits. Asynchronous jobs run by
+  `Test.stopTest()` or after the method returns are not included.
 - **`aer package list` shows more of a package.** `-t`/`--type` limits the
   listing to the given Metadata API types, and new sections list custom
   labels, named credentials, document, report and dashboard folders, sharing
@@ -355,6 +393,32 @@
   a lookup did not depend on it. `aer deduce` now records a reference to the
   lookup field of each hop and to the field the path ends at, and stops at a
   polymorphic lookup.
+- **Currency roll-up summaries convert each child's amount.** In a
+  multi-currency org a roll-up summed child amounts as they were stored. Each
+  amount is now converted from the child's currency to the parent's at the
+  `CurrencyType` rates and the total takes the field's scale, and a record
+  whose update changes its currency has its currency roll-ups recalculated.
+- **Unknown standard action names fail as in Salesforce.**
+  `Invocable.Action` throws `TypeException` for a name that is not an action
+  type, and a REST request for a standard action aer does not serve returns
+  404 `NOT_FOUND` "Invalid Action Type: <name>".
+- **`Address.SObjectType` and `Location.SObjectType` fail to compile.** They
+  name System classes, and now report "Variable does not exist: SObjectType".
+- **Deletes follow sfapex's constraints for every standard child
+  relationship.** Whether deleting a parent with children is refused, clears
+  the lookup or deletes the children no longer depends on which feature
+  defined the objects, and the error names the blocking record by its
+  15-character Id.
+- **Platform events generated for Health Cloud are delivered.**
+  `EventBus.publish` of `CareBnftVrfyRqstStsChgEvent` inserted the event and
+  delivered nothing to its trigger.
+- **Describe lists only the child relationships the org has.** A child
+  relationship from an object behind a feature or setting the schema does not
+  have was listed.
+- **`Territory2` inserts default unset access levels to Edit.** An insert
+  that set no access levels failed unless a `Territory2Settings` file was
+  loaded.
+- **A `.territory2Type` file named on the command line loads.**
 
 ## v1.6.23 — 2026-11-24
 
