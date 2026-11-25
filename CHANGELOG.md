@@ -356,6 +356,17 @@
   lookup field of each hop and to the field the path ends at, and stops at a
   polymorphic lookup.
 
+## v1.6.23 — 2026-11-24
+
+- **More tests run in parallel on macOS when memory is available.** On macOS,
+  `aer test` counted the memory that idle programs keep resident as used, so
+  aer was overly conservative about scaling up to make use of available memory.
+  aer now decides from the memory pressure level that macOS reports: it adds
+  VMs while the pressure level is normal and swap use is not growing, moves
+  test databases to disk at the warning level, and releases VMs at the warning
+  and critical levels. The `-vv` performance diagnostics show this rule in
+  place of the 80% memory ratio. Linux and Windows runs are unchanged.
+
 ## v1.6.22 — 2026-11-24
 
 - **A flow that exceeds a governor limit fails the save with a catchable
