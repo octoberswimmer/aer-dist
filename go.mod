@@ -2,7 +2,7 @@ module aer
 
 go 1.27.4
 
-require github.com/octoberswimmer/aer v1.7.5
+require github.com/octoberswimmer/aer v1.7.6
 
 require (
 	bitbucket.org/creachadair/stringset v0.0.11 // indirect
@@ -15,6 +15,7 @@ require (
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.10.0 // indirect
 	github.com/buger/jsonparser v1.1.2 // indirect
+	github.com/clipperhouse/uax29/v2 v2.7.0 // indirect
 	github.com/cwarden/mergo v0.3.12-0.20210528180603-9b708ca2c584 // indirect
 	github.com/dlclark/metaphone3 v0.0.0-20190903202417-5fe87fcdd547 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
@@ -40,6 +41,7 @@ require (
 	github.com/hashicorp/mdns v1.0.7 // indirect
 	github.com/hashicorp/memberlist v0.7.0 // indirect
 	github.com/hashicorp/serf v0.11.0 // indirect
+	github.com/hhrutter/tiff v1.0.7 // indirect
 	github.com/imdario/mergo v0.3.16 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
@@ -53,6 +55,7 @@ require (
 	github.com/lucasbbb/venus v0.0.0-20210302100040-40540571cfac // indirect
 	github.com/mailgun/raymond/v2 v2.0.48 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
+	github.com/mattn/go-runewidth v0.0.31 // indirect
 	github.com/miekg/dns v1.1.73 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/nbio/xml v0.0.0-20260302224236-9f64bb3b5a9e // indirect
@@ -72,6 +75,7 @@ require (
 	github.com/pb33f/jsonpath v0.8.2 // indirect
 	github.com/pb33f/libopenapi v0.36.3 // indirect
 	github.com/pb33f/ordered-map/v2 v2.3.1 // indirect
+	github.com/pdfcpu/pdfcpu v0.16.4 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/scip-code/scip/bindings/go/scip v0.10.0 // indirect
@@ -88,19 +92,21 @@ require (
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/src-d/gcfg v1.4.0 // indirect
 	github.com/xanzy/ssh-agent v0.2.1 // indirect
+	github.com/xdg-go/stringprep v1.0.4 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
+	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	go.yaml.in/yaml/v4 v4.0.0-rc.4 // indirect
-	golang.org/x/crypto v0.57.0 // indirect
+	golang.org/x/crypto v0.58.0 // indirect
 	golang.org/x/exp v0.0.0-20260112195511-716be5621a96 // indirect
-	golang.org/x/image v0.46.0 // indirect
+	golang.org/x/image v0.47.0 // indirect
 	golang.org/x/mod v0.41.0 // indirect
-	golang.org/x/net v0.59.0 // indirect
-	golang.org/x/sync v0.23.0 // indirect
-	golang.org/x/sys v0.48.0 // indirect
-	golang.org/x/term v0.46.0 // indirect
-	golang.org/x/text v0.42.0 // indirect
-	golang.org/x/tools v0.49.0 // indirect
+	golang.org/x/net v0.60.0 // indirect
+	golang.org/x/sync v0.24.0 // indirect
+	golang.org/x/sys v0.49.0 // indirect
+	golang.org/x/term v0.47.0 // indirect
+	golang.org/x/text v0.43.0 // indirect
+	golang.org/x/tools v0.51.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260928230214-8a89bd6388cc // indirect
 	google.golang.org/grpc v1.84.0 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
