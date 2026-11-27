@@ -419,6 +419,18 @@
   that set no access levels failed unless a `Territory2Settings` file was
   loaded.
 - **A `.territory2Type` file named on the command line loads.**
+- **A package that has not passed AppExchange security review shares the
+  subscriber's governor limits.** In subscriber orgs other than Developer
+  Edition orgs, only a security-reviewed package gets its own per-namespace
+  limits; another package's queries, publish-immediate DML and other
+  per-transaction counts are added to the subscriber's, so a package
+  trigger's queries show in the subscriber's `Limits.getQueries()`. aer gave
+  every package its own limits. `aer package create --non-certified` builds a
+  package whose code counts against the subscriber's limits, and
+  `aer package mock` marks a package non-certified when the installed version
+  has not passed security review. `aer package list` prints whether a package
+  is certified. A package file built before this release is treated as
+  certified.
 
 ## v1.6.24 — 2026-11-26
 
