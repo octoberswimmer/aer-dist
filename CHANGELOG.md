@@ -420,6 +420,195 @@
   loaded.
 - **A `.territory2Type` file named on the command line loads.**
 
+## v1.6.24 — 2026-11-26
+
+- **Record-triggered flows run on every save that meets their criteria.** A
+  flow that had been considered for a record was skipped on later saves of
+  that record in the same DML statement, even when its entry criteria had
+  been false. So when an after-update trigger and an after-save flow each
+  updated a record, a second flow whose criteria the later update met did not
+  run. As in Salesforce, a before-save or after-save flow now runs for each
+  save of a record whose entry criteria are met.
+- **A failed flow DML element names the records it failed.** A DML element
+  with no fault connector reported only its first error. The save now reports
+  each failed record as "The flow tried to update these records: <Id>. This
+  error occurred: ...", joined by "---", as Salesforce does whenever the save
+  holds more than one record or is a partial save. In a partial save
+  (`allOrNone` false), a flow fault failed every row with
+  `CANNOT_INSERT_UPDATE_ACTIVATE_ENTITY`; now only the rows that started an
+  interview of the failing flow fail, with the flow's own status code and
+  message, and the other rows are saved. A partial update now fails a record
+  that an after-save flow's Custom Error element marked, as a partial insert
+  already did.
+- **Workflow rules do not run for an update made during the record's own
+  save.** An after insert trigger that updated the records being inserted
+  ran workflow rules for that update, and their field updates fired the
+  update triggers again, which could exceed the SOQL limit. The rules now run
+  once, for the outer save, against the record as saved.
+- **Case milestones and after-save flows run in the order of the flow's API
+  version.** An after-save flow saved at API 54.0 or later now runs before the
+  milestones of a case entering its entitlement process are created, and one
+  saved at 53.0 or earlier runs after them. In both cases the flow's `$Record`
+  now carries the `SlaStartDate` the process set.
+- **A Lead inserted with a blank `Status` is blank to validation rules.** An
+  insert that set `Status` to null or `''` got the default lead status before
+  triggers ran, so a rule testing `ISBLANK(TEXT(Status))` never fired. Before
+  insert triggers and validation rules now see the blank value, and the
+  record is saved with the default status, which after insert triggers see.
+- **Record type picklist defaults apply to fields defined in other folders.**
+  A record type's picklist values were dropped when the field was not defined
+  in the record type's own object folder, as with a person account record type
+  naming Account fields or a record type naming a standard field such as
+  `Industry` that the source does not include. Records of those record types
+  now get the record type's default value. An entry that names no picklist
+  field is invalid metadata: aer reports every such entry in one run, along
+  with the tip about `aer check` and `--skip-errors`, and skips them under
+  `--skip-errors`. `Contact.Gender` now exists, sharing its values with
+  `Account.PersonGender`.
+- **`QuoteLineItem` takes `Product2Id` from its price book entry.** A quote
+  line inserted with a `PricebookEntryId` and no `Product2Id` kept a null
+  `Product2Id`, so formulas reading the product through the line were blank.
+  An explicit `Product2Id` is kept, as in sfapex.
+- **Asset participants default `UsageType` to Automotive.** An
+  `AssetContactParticipant` or `AssetAccountParticipant` inserted without
+  `UsageType` failed with `REQUIRED_FIELD_MISSING`. The insert now stores
+  Automotive.
+- **An overload with a subtype parameter is a separate method.** A method
+  such as `apply(Integer, AccountBuilder)` beside an override of an abstract
+  `apply(Integer, Builder)` failed to compile with "Method must use the
+  override keyword". As in sfapex, an override must match the parameter
+  types exactly, so the overload needs no `override` keyword.
+- **`hashCode()` and `toString()` work in any case.** A call to
+  `hashcode()` in a class that does not declare it failed with "method not
+  found", and a `toString()` override declared as `tostring()` was not used by
+  string concatenation or `String.valueOf`.
+- **`ApexTypeImplementor` lists only public and global classes.** A class is
+  listed only when it and its top-level class are declared public or global,
+  so a stub implementation nested in a private `@IsTest` class is not listed.
+  Code that looks for the single implementor of an interface no longer finds
+  the test stubs too.
+- **Savepoints block callouts and end with their transaction.**
+  `Database.setSavepoint` and `Database.rollback` marked uncommitted work, so
+  a callout after a savepoint failed with "You have uncommitted work pending"
+  even after a rollback. These calls now count one DML statement and no DML
+  rows, and a callout made while a savepoint is active raises
+  `CalloutException` "All active Savepoints must be released before making
+  callouts." Savepoints are released at `Test.startTest()` and
+  `Test.stopTest()` and at the start of each batch phase, queueable, finalizer
+  and test method; a rollback to one raises "Savepoint does not exist in this
+  context".
+- **Async job state is serialized.** A `Database.Stateful` batch's state is
+  now serialized after `start()` and each `execute()`: a `Savepoint` in it
+  fails the job with "System.SerializationException: Not Serializable:
+  System.Savepoint", which `Test.stopTest()` throws. Transient fields read as
+  null in the next phase and in a batch or queueable started by
+  `Database.executeBatch` or `System.enqueueJob`, even when they have an
+  initializer.
+- **The string form of a package object shows only accessible fields.**
+  `String.valueOf` and string concatenation of a managed package object, and
+  of an exception, listed its private and public fields to subscriber code.
+  They now list only the fields the calling code can access.
+- **`@JsonAccess` is enforced across namespaces.** `sameNamespace` was never
+  checked, and a class with no annotation could be serialized and deserialized
+  from any namespace. A class with no annotation saved at API 49.0 or later
+  now behaves as `sameNamespace`. One saved earlier can be deserialized from
+  any namespace, and serializing a package class from another namespace raises
+  "Cannot serialize type from package: ns.Class".
+- **Classes called from a trigger run at their own API version.** A class
+  method called from a trigger ran with the trigger's API version. The
+  trigger's version now applies only to the trigger body.
+- **Apex saved at older API versions behaves as it does in an org.** At
+  runtime, aer now applies these version rules:
+  - Before 54.0, `isAccessible()` of a custom setting or custom metadata type
+    is true without access.
+  - `Date.valueOf(Datetime)` keeps the time of day before 34.0, and before
+    54.0 for a Datetime from `newInstance`, `valueOf` or (before 35.0) JSON.
+  - Before 53.0, `getId()` of a failed `Database.update` result is null; from
+    53.0 a failed `Database.upsert` of an existing record returns the Id.
+  - Before 51.0, `String.format` treats a single quote as the start of quoted
+    text, so `"it's {0}"` formats as `"its {0}"`.
+  - From 41.0, `new URL(String)` rejects a bracket in the path and reports a
+    bad percent escape as "Malformed escape pair at index N"; before 41.0 it
+    accepts both.
+  - Before 35.0, deserializing JSON into an SObject throws "No such column"
+    for an unknown attribute, `JSON.deserialize` into `Id` gives the
+    15-character form, and `Pattern.split` keeps a leading empty item.
+  - Before 32.0, `null instanceof T` is true. Before 28.0, `JSON.serialize`
+    includes fields a query returned as null. Before 26.0, a batch's
+    `finish()` cannot start a batch.
+  - From 28.0, `VLOOKUP` in a validation rule sees only test data in a test
+    without `SeeAllData`; the version of the class issuing the DML decides.
+  - Before 17.0, a Decimal quotient takes the dividend's scale, decimal
+    literals pass through Double, and Number and Percent fields read as
+    Double. From 17.0, `HttpResponse.getBody()` decodes a byte body with the
+    charset its `Content-Type` names, and raises `CalloutException` "Could not
+    parse HTTP response body to string" for one Java does not support.
+  - Before 15.0, DML cuts an over-long text value to the field's length
+    instead of failing with `STRING_TOO_LONG`.
+  - Apex saved at 21.0 or earlier can insert and delete a `FeedPost`, which
+    creates and removes its `FeedItem`.
+  - Below 34.0, `fields.getMap()` keys a field of the executing namespace
+    without its prefix.
+- **Compile errors that depend on API version.** aer now reports these as
+  Salesforce does:
+  - Two `@AuraEnabled` methods of the same name: "Overload of AuraEnabled
+    method: both overload is not permitted", from 55.0.
+  - A `@ReadOnly` REST method without `@RemoteAction` or `webService`, before
+    49.0.
+  - `@NamespaceAccessible` inside a class that is neither global nor
+    `@NamespaceAccessible`, from 50.0 only, once per error and with the org's
+    message.
+  - A `FeedItem` query without an `Id` filter, before 23.0: "Implementation
+    restriction: FeedItem requires a filter by Id".
+  - `EventBus.ChangeEventHeader.changedFields` before 47.0 and
+    `BatchApexErrorEvent` before 44.0.
+  - Any annotation on an interface method is a syntax error, an
+    `@InvocableMethod` method accepts no annotation but `@Deprecated`, and
+    `@NamespaceAccessible` with `@AuraEnabled` reports "AuraEnabled methods
+    cannot be NamespaceAccessible".
+  - A trigger on `FeedPost` fails with "SObject type does not allow triggers:
+    FeedPost".
+  - A local declared with an invalid type reports "Invalid type" once, and a
+    later use of the variable reports "Variable does not exist".
+- **`Messaging.sendEmailMessage` and Case email messages follow the org's
+  rules.** `sendEmailMessage` requires `enableDraftEmails` in `Case.settings`
+  and raises sfapex's exceptions without it, for a null list, for a sent
+  email ("Email status must be draft.") and for a draft without a Case
+  parent. An `EmailMessage` inserted on a Case with `Status` 5 fails with
+  `INVALID_OPERATION`, and one without a `Status` gets 3.
+- **DataWeave `dw::Runtime::version()` returns "2.12"**, and the `F` date
+  pattern letter is the aligned week of the month, as in Salesforce.
+- **Instance initializer blocks count toward coverage.** Their statements
+  were run and marked covered but left out of the class's total, so a class
+  with one reported fewer lines than Salesforce.
+- **Flows that format values load alongside unmanaged package flows.**
+  Loading source flows together with an unmanaged package's flows failed with
+  "duplicate class declaration: AerFlowFormat", and in `aer server` every save
+  through a flow that formats a value failed with "identifier AerFlowFormat
+  not found in binding". A duplicate class, interface or enum is now reported
+  at the second declaration and names the file of the first.
+- **`aer server` honors API versions.** A Metadata API deploy now saves each
+  class and trigger at the API version in its `-meta.xml` file, and reports
+  Salesforce's `ApexApiVersionRetirement` notification for classes saved
+  below 20.0. The Tooling `apexCompileResults` resource exists from v68.0, and
+  REST and Bulk API 1.0 requests below v31.0 get Salesforce's "The requested
+  resource no longer exists." responses.
+- **`aer package mock` types custom metadata relationships.** A Metadata
+  Relationship field to `EntityDefinition` or `FieldDefinition` was mocked as
+  a plain string with no `__r` relationship, so a package validation rule
+  reading through it stopped the command with "the package's metadata
+  references fields the package does not contain".
+- **Parallel test runs size themselves from available memory on every
+  platform.** aer stopped adding test VMs once 80% of physical memory was in
+  use, counting every other program, so on a busy machine a run could stay at
+  one VM. It now keeps a reserve of 1 GiB or 5% of memory, whichever is
+  larger, free. On Windows it also reads the low-memory notification and job
+  object limits and keeps clear of the commit limit; on Linux it reads memory
+  pressure stall information and `memory.high` cgroup limits, which a
+  `MemoryHigh=` slice previously ignored until systemd-oomd killed the run.
+  The `-vv` performance diagnostics show the readings behind each refusal to
+  add a VM.
+
 ## v1.6.23 — 2026-11-24
 
 - **More tests run in parallel on macOS when memory is available.** On macOS,
