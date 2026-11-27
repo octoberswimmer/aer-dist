@@ -432,6 +432,81 @@
   is certified. A package file built before this release is treated as
   certified.
 
+## v1.6.25 — 2026-11-27
+
+- **`Security.stripInaccessible` keeps only the Id of a record the user
+  cannot access.** With `enforceRootObjectCRUD` set to false, the records of
+  an object the running user lacks the object permission for came back with
+  every field. As in sfapex, a `READABLE` strip now removes every field
+  except `Id`, child relationship lists included, and a `CREATABLE`,
+  `UPDATABLE` or `UPSERTABLE` strip removes the fields the record sets.
+  `getRemovedFields()` reports the removed fields.
+- **`EmailMessage.Name` is computed from `Subject`.** The field read as null
+  for every email message. It now holds the `Subject`, or "[No subject]" when
+  the subject is blank, and can be used in a query filter.
+- **Each flow has a `FlowVersionView` row.** A query for the version that a
+  `FlowDefinitionView` row's `ActiveVersionId` or `LatestVersionId` names
+  returned nothing. Each flow now has a `FlowVersionView` row whose
+  `ApiVersion`, `ApiVersionRuntime`, `RunInMode`, `Status`, `ProcessType`,
+  `Label` and `Description` come from the flow's metadata, and tests can query
+  it without `SeeAllData`. A packaged flow's `FlowDefinitionView` row is now
+  active and names its active version. As in sfapex, an Id or an
+  18-character String compared with `DurableId` matches the 15-character value
+  it holds.
+- **`@future` methods and batch jobs can enqueue one queueable job.**
+  `Limits.getLimitQueueableJobs()` returned 50 in a `@future` method and in a
+  batch job's `execute` method, and `System.enqueueJob` accepted up to 50
+  jobs. As in sfapex, the limit is now 1 in both, and `System.enqueueJob`
+  enforces it.
+- **Scheduled jobs run by tests get the synchronous governor limits.** A job
+  scheduled with `System.schedule` and run by `Test.stopTest()` or at the end
+  of a test method got the asynchronous limits. As in sfapex,
+  `Limits.getLimitCpuTime()` now returns 10,000 in such a job and
+  `Limits.getLimitHeapSize()` the synchronous heap limit.
+- **`node_modules` and hidden directories are skipped when loading source.**
+  A project with an npm-installed `node_modules` under a UI bundle loaded
+  slowly, most of all on Windows, and each `npm install` invalidated the
+  cached schema. aer no longer reads these directories when loading a project,
+  `aer server` no longer registers the LWC modules that npm packages ship as
+  the org's components, and the language server and `aer test --watch` no
+  longer scan or watch them. A static resource folder is still zipped with
+  everything in it, `node_modules` included, as Salesforce deploys it.
+- **Guest users cannot own records.** An insert or update that set `OwnerId`
+  to a site's guest user succeeded. It now fails with
+  `FIELD_INTEGRITY_EXCEPTION` "field integrity exception (Guest users cannot
+  be record owners.)", as in sfapex. A record a site's guest user inserts
+  is owned by the site's guest record default owner, which aer reads from
+  `<siteGuestRecordDefaultOwner>` in the site metadata, or by the default user
+  when the site names none; `Site.GuestRecordDefaultOwnerId` holds that user.
+  A site whose default owner is a username the org's users do not include
+  fails the guest user's insert with an error naming the site and the
+  username.
+- **`Auth.CommunitiesUtil` reports guest and external users.**
+  `isGuestUser()` always returned false and `isInternalUser()` always returned
+  true. `isGuestUser()` now returns true for a site's guest user, and
+  `isInternalUser()` returns false for a guest user and for portal and
+  community users.
+- **Signed `when` values, `merge as user` and `merge as system` compile.**
+  A `when` value with a plus sign or more than one sign (`when +-5`,
+  `when - -5L`) and the `merge as user` and `merge as system` statements were
+  syntax errors. They now compile and run as in sfapex: the signs apply
+  to the value, and the merge statements run as `Database.merge` with
+  `AccessLevel.USER_MODE` and `AccessLevel.SYSTEM_MODE`. A `switch` on a Long
+  now matches an Integer `when` value.
+- **A merge requires Delete access to every record it merges.** A merge
+  deleted losing records the running user could not delete. In user mode,
+  under `with sharing`, and in `System.runAs` from a class that declares no
+  sharing, a merge without Delete access to the master and every losing
+  record now fails with `INSUFFICIENT_ACCESS_ON_CROSS_REFERENCE_ENTITY`. In
+  user mode, a user who cannot read the object gets a `SecurityException`,
+  and a user who can read it but lacks Delete on it gets
+  `INSUFFICIENT_ACCESS_OR_READONLY` "Merge requires delete permissions on the
+  standard object", where `Database.merge` threw a `SecurityException`.
+- **SOSL `RETURNING` accepts a field after `TOLABEL()`, `CONVERTCURRENCY()`
+  or `FORMAT()`.** Such a field list was a syntax error. An unaliased
+  `FORMAT()` in a SOSL search now puts the formatted text in the field, as
+  Salesforce does, where aer put the field's own value.
+
 ## v1.6.24 — 2026-11-26
 
 - **Record-triggered flows run on every save that meets their criteria.** A
