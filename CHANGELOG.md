@@ -432,6 +432,31 @@
   is certified. A package file built before this release is treated as
   certified.
 
+## v1.6.26 — 2026-11-27
+
+- **Test runs on macOS no longer slow down when other programs hold memory.**
+  aer capped its own memory use at 80% of the memory macOS reported as
+  available, and macOS does not count the memory of other programs that it
+  can compress or swap. With another program holding 10 GB of a 16 GB Mac,
+  the cap was under 2 GiB, aer spent most of the run reclaiming memory, and a
+  run took more than twice as long. aer no longer sets this cap on macOS;
+  it still follows `GOMEMLIMIT`, and it decides how many tests to run at once
+  from the memory pressure level as before.
+- **`-vv` performance diagnostics are printed when tests fail.** A run with a
+  failing test ended before the diagnostics were printed, so `-vv` showed the
+  VM count, the memory budget and the refusals to add a VM only when every
+  test passed.
+- **Tests that query custom metadata run faster when test databases are on
+  disk.** With `--spill-to-disk=always`, a low memory budget, or memory
+  pressure, each test that queried a custom metadata type with an
+  `EntityDefinition` or `FieldDefinition` relationship rewrote those
+  definition rows into its database.
+- **A missing `--bootstrap-db` file is reported by name.** `aer test` failed
+  with "unable to open database file: out of memory (14)" when the bootstrap
+  database did not exist. `aer test`, `aer exec` and `aer server` now stop
+  before loading anything with "bootstrap database X does not exist", and
+  reject a directory passed as the bootstrap database.
+
 ## v1.6.25 — 2026-11-27
 
 - **`Security.stripInaccessible` keeps only the Id of a record the user
