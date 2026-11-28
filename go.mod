@@ -2,7 +2,7 @@ module aer
 
 go 1.27.4
 
-require github.com/octoberswimmer/aer v1.7.7
+require github.com/octoberswimmer/aer v1.7.8
 
 require (
 	bitbucket.org/creachadair/stringset v0.0.11 // indirect
@@ -61,7 +61,7 @@ require (
 	github.com/nbio/xml v0.0.0-20260302224236-9f64bb3b5a9e // indirect
 	github.com/ncruces/go-strftime v1.0.0 // indirect
 	github.com/nxadm/tail v1.4.4 // indirect
-	github.com/octoberswimmer/apexfmt v0.70.0 // indirect
+	github.com/octoberswimmer/apexfmt v0.71.0 // indirect
 	github.com/octoberswimmer/digger v0.39.0 // indirect
 	github.com/octoberswimmer/libc v1.67.7-octoberswimmer.10 // indirect
 	github.com/octoberswimmer/memory v1.11.0-octoberswimmer.12 // indirect
